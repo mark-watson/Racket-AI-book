@@ -1,2 +1,1 @@
-# Racket-AI-book
-My book materials
+# Java-AI-Book
