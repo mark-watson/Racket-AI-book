@@ -1,18 +1,13 @@
 # Knowledge Graph Navigator {#kgn}
 
 
-The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for processing a set of entity names and automatically explores the public Knowledge Graph [DBPedia](http://dbpedia.org) using SPARQL queries. I started to write KGN for my own use to automate some things I used to do manually when exploring Knowledge Graphs, and later thought that KGN might be also useful for educational purposes. KGN shows the user the auto-generated SPARQL queries so hopefully the user will learn by seeing examples. KGN uses the Clojure Jena wrapper
-example code from the last chapter as well the two Java classes **JenaAPis** and **QueryResults** (which wrap the Apache Jena library) that were also included in the example for the previous chapter.
+The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for processing a set of entity names and automatically explores the public Knowledge Graph [DBPedia](http://dbpedia.org) using SPARQL queries. I started to write KGN for my own use to automate some things I used to do manually when exploring Knowledge Graphs, and later thought that KGN might be also useful for educational purposes. KGN shows the user the auto-generated SPARQL queries so hopefully the user will learn by seeing examples. KGN uses the SPARQL query code we developed in the first chapter.
 
-**Note:** There are three separate examples for implementing SPARQL queries in this example:
+We used the Natural Language Processing (NLP) library **spaCy** in an example in chapter 2 that showed how to run an external Python program. Instead of using the deep learning NLP models included with **spaCy**, here I take a different approach using code I wrote about 15 years ago in Gambit Scheme that uses word lists of human and place names to identify person and place names, and constructed SPARQL queries to access data from DBPedia.
 
-- Use the code from the last chapter (Jena and query caching)
-- Use a small standalone set of Clojure functions to access DBPedia
-- Use a small standalone set of Clojure functions to access a local GraphDB RDF server with the data file **dbpedia_sample.nt** loaded into a graph named **dbpedia**.
+TBD: ^ fix this
 
-The example code is set up to use Jena and query caching; edit the file **sparql.clj** to enable the other options.
-
-I have implemented parts of KGN in several languages: Common Lisp, Java, Racket Scheme, Swift, Python, and Hy. The most full featured version of KGN, including a full user interface, is featured in my book [Loving Common Lisp, or the Savvy Programmer's Secret Weapon](https://leanpub.com/lovinglisp) that you can read free online. That version performs more speculative SPARQL queries to find information compared to the example here that I designed for ease of understanding, and modification.
+I have implemented parts of KGN in several languages: Common Lisp, Java, Clojure, Racket Scheme, Swift, Python, and Hy. The most full featured version of KGN, including a full user interface, is featured in my book [Loving Common Lisp, or the Savvy Programmer's Secret Weapon](https://leanpub.com/lovinglisp) that you can read free online. That version performs more speculative SPARQL queries to find information compared to the example here that I designed for ease of understanding, and modification. I am not covering the basics of RDF data and SPARQL queries here. While I provide sufficient background material to understand the code, please read the relevant chapters in my Common Lisp book for more background material.
 
 We will be running an example using data containing three person entities, one company entity, and one place entity. The following figure shows a very small part of the DBPedia Knowledge Graph that is centered around these entities. The data for this figure was collected by an example Knowledge Graph Creator from my Common Lisp book:
 
