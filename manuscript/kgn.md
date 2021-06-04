@@ -1,7 +1,12 @@
 # Knowledge Graph Navigator {#kgn}
 
 
-The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for processing a set of entity names and automatically explores the public Knowledge Graph [DBPedia](http://dbpedia.org) using SPARQL queries. I started to write KGN for my own use to automate some things I used to do manually when exploring Knowledge Graphs, and later thought that KGN might be also useful for educational purposes. KGN shows the user the auto-generated SPARQL queries so hopefully the user will learn by seeing examples. KGN uses the SPARQL query code we developed in the first chapter.
+The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for processing a set of entity names and automatically explores the public Knowledge Graph [DBPedia](http://dbpedia.org) using SPARQL queries. I started to write KGN for my own use to automate some things I used to do manually when exploring Knowledge Graphs, and later thought that KGN might be also useful for educational purposes. KGN shows the user the auto-generated SPARQL queries so hopefully the user will learn by seeing examples. KGN uses the SPARQL queries. I cover SPARQL and linked data/knowledge Graphs is previous books I have written and while I give you a brief background here, I ask interested users to look at either for more details:
+
+- The chapter **Knowledge Graph Navigator** in my book **Loving Common Lisp, or the Savvy Programmer’s Secret Weapon**
+- The chapters **Background Material for the Semantic Web and Knowledge Graphs**, **Knowledge Graph Navigator** in my book **Practical Artificial Intelligence Programming With Clojure**
+
+Both books are available as free downloads on my personal web site [https://markwatson.com](https://markwatson.com).
 
 We used the Natural Language Processing (NLP) library **spaCy** in an example in chapter 2 that showed how to run an external Python program. Instead of using the deep learning NLP models included with **spaCy**, here I take a different approach using code I wrote about 15 years ago in Gambit Scheme that uses word lists of human and place names to identify person and place names, and constructed SPARQL queries to access data from DBPedia.
 
