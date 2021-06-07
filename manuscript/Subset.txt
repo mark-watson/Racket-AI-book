@@ -1,10 +1,8 @@
 preface.md
-deeplearning.md
-opennlp.md
-libpython.md
-anomaly_detection.md
+datastores.md
+visualization.md
+external_processes.md
 webscrape.md
-semantic_web.md
-jena_wrapper.md
+nlp.md
 kgn.md
 conclusion.md
