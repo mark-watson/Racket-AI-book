@@ -1,6 +1,8 @@
 preface.md
 datastores.md
 visualization.md
+chess_search.md
+keras_models.md
 external_processes.md
 webscrape.md
 nlp.md
