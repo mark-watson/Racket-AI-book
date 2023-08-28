@@ -1,4 +1,5 @@
 preface.md
+tutorial.md
 datastores.md
 visualization.md
 chess_search.md
