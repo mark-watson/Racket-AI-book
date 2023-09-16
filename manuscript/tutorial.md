@@ -2,6 +2,12 @@
 
 If you are an experienced Racket developer then feel free to skip this chapter! I wrote this tutprial to cover just the aspects of using Racket that you, dear reader, will need in the book example programs.
 
+## Installing packages
+
+The DrRacket IDE lets you interactively install packages. I prefer using the command line so, for example, I would install SQlite support using:
+
+    raco pkg install sqlite-table
+
 ## Testing for Equality
 
 TBD
@@ -33,6 +39,9 @@ We will be using functions that take other functions as arguments. The following
 > 
 ```
 TBD: explain the **map** functions ability to adjust its expected arguments to the arity of the function being mapped over data.
+
+## Mapping Over Lists
+
 
 ## Hash Tables
 

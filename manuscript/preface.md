@@ -1,7 +1,8 @@
 # Preface
 
+I have been using Lisp languages since the 1970s. In 1982 my company bought a Lisp Machine for my use. A Lisp Machine provided an "all batteries included" working environment, but now no one seriously uses Lisp Machines. In this book I try to lead you, dear reader, through a process of creating a "batteries included" working environment using Racket Scheme.
 
-The latest edition of this book is always available for purchase at [https://leanpub.com/racket-ai](https://leanpub.com/racket-ai).  You can also download a free copy from my website [https://markwatson.com](https://markwatson.com). You are welcome to take free copies of all of my eBooks and to share them. I offer the purchase option for readers who wish to directly support my work.
+The latest edition of this book is always available for purchase at [https://leanpub.com/racket-ai](https://leanpub.com/racket-ai).  You can also read free online at [https://leanpub.com/racket-ai/read](https://leanpub.com/racket-ai/read). I offer the purchase option for readers who wish to directly support my work.
 
 I have been developing commercial Artificial Intelligence (AI) tools and applications since the 1980s and I usually use the Lisp languages Common Lisp, Clojure, Racket Scheme, and Gambit Scheme. This book contains Racket code that I wrote for my own use and I am wrapping it in a book in the hopes that my code and this book will also be useful to you, dear reader.
 
@@ -17,8 +18,12 @@ Git pull requests with code improvements will be appreciated by me and the reade
 
 ## Racket, Scheme, and Common Lisp
 
-To be clear, I actually like Common Lisp slightly more than Racket and other Scheme dialcts, even though Common Lisp is ancient and has defects. Then why do I use Racket?
-Racket is a family of languages, a very good IDE, and a rich ecosystem supported by many core Racket developers and Racket library authors.
+To be clear, I actually like Common Lisp slightly more than Racket and other Scheme dialects, even though Common Lisp is ancient and has defects. Then why do I use Racket?
+Racket is a family of languages, a very good IDE, and a rich ecosystem supported by many core Racket developers and Racket library authors. Choosing Racket Scheme for this book was an easy decision, but to be fair there are also other Scheme dialects that I enjoy using:
+
+- Gambit/C Scheme
+- Gerbil Scheme (based on Gambit/C)
+- Chez Scheme
 
 
 ## Personal Artificial Intelligence Journey: or, Life as a Lisp Developer
