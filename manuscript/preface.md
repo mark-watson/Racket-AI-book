@@ -16,6 +16,12 @@ This book uses two of the examples in my Java AI book that is also available for
 
 Git pull requests with code improvements will be appreciated by me and the readers of this book.
 
+## Book Example Programs
+
+The following diagram showing Racket software examples configured for your local laptop. There are several combined exampled that build both to a Racket package that get installed locally, as well as command line programs that get built and deployed to **~/bin**. Other examples are either a command line tool or a Racket package.
+
+![Example programs are packages and/or command line tools](images/software.png)
+
 ## Racket, Scheme, and Common Lisp
 
 To be clear, I actually like Common Lisp slightly more than Racket and other Scheme dialects, even though Common Lisp is ancient and has defects. Then why do I use Racket?
