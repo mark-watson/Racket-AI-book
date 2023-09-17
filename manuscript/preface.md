@@ -12,6 +12,8 @@ I wrote this book for both professional programmers and home hobbyists who alrea
 
 This book uses two of the examples in my Java AI book that is also available for purchase at [Leanpub.com](https://leanpub.com/javaai) and as a free download from my personal web site. I replicate these two bits of Java code in the GitHub repository for this book:
 
+TBD: fix the link after examples are a public repo:
+
 [https://github.com/mark-watson/Clojure-AI-Book-Code](https://github.com/mark-watson/Clojure-AI-Book-Code)
 
 Git pull requests with code improvements will be appreciated by me and the readers of this book.
