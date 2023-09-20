@@ -5,6 +5,7 @@ visualization.md
 keras_models.md
 external_processes.md
 webscrape.md
+openai.md
 nlp.md
 kgn.md
 conclusion.md
