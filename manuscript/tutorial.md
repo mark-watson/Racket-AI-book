@@ -1,12 +1,50 @@
 # A Quick Racket Tutorial
 
-If you are an experienced Racket developer then feel free to skip this chapter! I wrote this tutprial to cover just the aspects of using Racket that you, dear reader, will need in the book example programs.
+If you are an experienced Racket developer then feel free to skip this chapter! I wrote this tutorial to cover just the aspects of using Racket that you, dear reader, will need in the book example programs.
 
-## Installing packages
+## Installing Packages
 
 The DrRacket IDE lets you interactively install packages. I prefer using the command line so, for example, I would install SQlite support using:
 
     raco pkg install sqlite-table
+
+We can then require the code in this package in our Racket programs:
+
+```racket
+(require sqlite-table)
+```
+
+## Installing Local Packages In Place
+
+In a later chapter **Natural Language Processing (NLP)** we define a fairly complicated local package. This package has one unusual requirement that you may or may not need in your own projects: My NLP library requires static linguistic data files that are stored in the directory **Racket-AI-book-code/nlp/data**. If I am in the directory **Racket-AI-book-code/nlp** working on the Racket code, it is simple enough to just open the files in **./data/...**.
+
+The default for installing your own Racket packages is to link to the original source directory on your laptop's file system. Let's walk through this. To start with, I will make sure my library code is compiled and then install the code in the current directory:
+
+```bash
+cd Racket-AI-book-code/nlp/
+raco make *.rkt
+raco pkg install --scope user
+```
+
+Then I can run the **racket** REPL (or DrRacket) on my laptop and use my NLP package:
+
+We can then require the code in this package in our Racket programs (shown in a REPL):
+
+```racket
+> (require nlp)
+loading lex-hash......done.
+> (parts-of-speech (list->vector '("the" "cat" "ran")))
+'#("DT" "NN" "VBD")
+> (find-place-names
+    '#("George" "Bush" "went" "to" "San" "Diego"
+       "and" "London") '())
+'("London" "San Diego")
+> (find-place-names
+    '#("George" "Bush" "went" "to" "San" "Diego"
+       "and" "London") '())
+'("London" "San Diego")
+> 
+```
 
 ## Testing for Equality
 
