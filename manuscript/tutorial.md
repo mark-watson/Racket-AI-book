@@ -14,6 +14,8 @@ We can then require the code in this package in our Racket programs:
 (require sqlite-table)
 ```
 
+Note that when the argument to **require** is a symbol (not a string) then modules are searched and loaded from your system. When the argument is a string like "utils.rkt" that a module is loaded from a file in the current directory.
+
 ## Installing Local Packages In Place
 
 In a later chapter **Natural Language Processing (NLP)** we define a fairly complicated local package. This package has one unusual requirement that you may or may not need in your own projects: My NLP library requires static linguistic data files that are stored in the directory **Racket-AI-book-code/nlp/data**. If I am in the directory **Racket-AI-book-code/nlp** working on the Racket code, it is simple enough to just open the files in **./data/...**.
