@@ -1,5 +1,6 @@
 # Knowledge Graph Navigator {#kgn}
 
+TBD: change CLojure discusion to Racket KGN code discussion
 
 The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for processing a set of entity names and automatically explores the public Knowledge Graph [DBPedia](http://dbpedia.org) using SPARQL queries. I started to write KGN for my own use to automate some things I used to do manually when exploring Knowledge Graphs, and later thought that KGN might be also useful for educational purposes. KGN shows the user the auto-generated SPARQL queries so hopefully the user will learn by seeing examples. KGN uses the SPARQL queries. I cover SPARQL and linked data/knowledge Graphs is previous books I have written and while I give you a brief background here, I ask interested users to look at either for more details:
 

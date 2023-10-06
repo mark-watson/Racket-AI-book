@@ -1,5 +1,12 @@
-# Using the OpenAI APIs in Racket
+# Using the OpenAI and Anthropic APIs in Racket
 
+TBD
+
+## Introduction to Large Language Models
+
+TBD
+
+## Using the OpenAI APIs in Racket
 
 ```racket
 #lang racket
@@ -79,3 +86,70 @@ As Frank parked his sports car in the driveway, he took a moment to admire it on
 Frank knew that from that day forward, every drive in his new sports car would remind him of the endless possibilities that await when one dares to dream big. And as he turned off the engine and stepped out of the car, Frank couldn't wait to see where his next adventure would take him.
 > 
 ```
+
+## Using the Anthropic APIs in Racket
+
+
+TBD
+
+```racket
+#lang racket
+
+(require net/http-easy)
+(require racket/set)
+(require pprint)
+
+(provide question completion)
+
+(define (question prompt max-tokens)
+  (let* ((prompt-data
+          (string-join
+           (list
+            (string-append
+             "{\"prompt\": \"\\n\\nHuman: "
+             prompt
+             "\\n\\nAssistant: \", \"max_tokens_to_sample\": "
+             (number->string  max-tokens)
+             ", \"model\": \"claude-instant-1\" }"))))
+         (auth (lambda (uri headers params)
+                 (values
+                  (hash-set*
+                   headers
+                   'x-api-key
+                     (getenv "ANTHROPIC_API_KEY")
+                   'anthropic-version "2023-06-01"
+                   'content-type "application/json")
+                  params)))
+         (p
+          (post
+           "https://api.anthropic.com/v1/complete"
+           #:auth auth
+           #:data prompt-data))
+         (r (response-json p)))
+    (string-trim (hash-ref r 'completion))))
+
+(define (completion prompt max-tokens)
+  (question
+   (string-append
+    "Continue writing from the following text: "
+    prompt)
+   max-tokens))
+
+
+;; (displayln (question "Mary is 30 and Harry is 25. Who is older?" 20))
+;; (displayln (completion "Frank bought a new sports car. Frank drove" 200))
+```
+
+We will try the same examples we used with OpenAI APIs in the previous section:
+
+```racket
+$ racket
+> (require "anthropic.rkt")
+> (question "Mary is 30 and Harry is 25. Who is older?" 20)
+"Mary is older than Harry. Mary is 30 years old and Harry is 25 years old."
+> (completion "Frank bought a new sports car. Frank drove" 200)
+"Here is a possible continuation of the story:\n\nFrank bought a new sports car. Frank drove excitedly to show off his new purchase. The sleek red convertible turned heads as he cruised down the street with the top down. While stopping at a red light, Frank saw his neighbor Jane walking down the sidewalk. He pulled over and called out to her, \"Hey Jane, check out my new ride! Want to go for a spin?\" Jane smiled and said \"Wow that is one nice car! I'd love to go for a spin.\" She hopped in and they sped off down the road, the wind in their hair. Frank was thrilled to show off his new sports car and even more thrilled to share it with his beautiful neighbor Jane. Little did he know this joyride would be the beginning of something more between them."
+> 
+```
+
+TBD
