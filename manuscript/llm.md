@@ -1,12 +1,31 @@
-# Using the OpenAI and Anthropic APIs in Racket
+# Using the OpenAI, Anthropic and Local Hugging Face Large Language Models APIs in Racket
 
-TBD
+As I write this chapter in October 2023, Peter Norvig and Blaise Agüera y Arcas just wrote an article [Artificial General Intelligence Is Already Here](https://www.noemamag.com/artificial-general-intelligence-is-already-here/) making the case that we might already have Artificial General Intelligence (AGI) because of the capabilities of Large Language Models (LLMs) to solve new tasks.
+
+In the development of practical AI systems LLMss like those provided by OpenAI, Anthropic, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here.
+
+The OpenAI and Anthropic APIs serve as gateways to some of the most advanced language models available today. By accessing these APIs, developers can harness the power of these models for a variety of applications. Here, we delve deeper into the distinctive features and capabilities that these APIs offer, which could be harnessed through a Racket interface.
+
+OpenAI provides an API for developers to access models like GPT-4. The OpenAI API is designed with simplicity and ease of use in mind, making it a favorable choice for developers. It provides endpoints for different types of interactions, be it text completion, translation, or semantic search among others. We will use the completion API in this chapter. The robustness and versatility of the OpenAI API make it a valuable asset for anyone looking to integrate advanced language understanding and generation capabilities into their applications.
+
+On the other hand, Anthropic is a newer entrant in the field but with a strong emphasis on building models that are not only powerful but also understandable and steerable. The Anthropic API serves as a portal to access their language models. While the detailed offerings and capabilities might evolve, the core ethos of Anthropic is to provide models that developers can interact with in a more intuitive and controlled manner. This aligns with a growing desire within the AI community for models that are not black boxes, but instead, offer a level of interpretability and control that makes them safer and more reliable to use in different contexts. We will use the Anthropic completion API.
+
+What if you want the total control of running open LLMs on your own computers? The company [Hugging Face](https://huggingface.co) maintains a huge repository of pre-trained models.  Some of these models are licensed for research only but many are licensed (e.g., using Apache 2) for any commercial use.  Many of the Hugging Face models are derived from Meta and other companys. We will use the [llama.cpp server](https://github.com/ggerganov/llama.cpp/tree/master) at the end of this chapter to run our own LLM on a laptop and access it via Racket code.
+
+Lastly, this chapter will delve into practical examples showing the synergy between systems developed in Racket and the LLMs. Whether it’s automating creative writing, conducting semantic analysis, or building intelligent chatbots, the fusion of Racket with OpenAI, Anthropic, and Hugging Face's LLMs provides many opportunities for you, dear reader, to write innovative software that utilizes the power of LLMs.
 
 ## Introduction to Large Language Models
 
-TBD
+Large Language Models (LLMs) represent a huge advance in the evolution of artificial intelligence, particularly in the domain of natural language processing (NLP). They are trained on vast corpora of text data, learning to predict subsequent words in a sequence, which imbues them with the ability to generate human-like text, comprehend the semantics of language, and perform a variety of language-related tasks. The architecture of these models, typically based on deep learning paradigms such as Transformer, empowers them to encapsulate intricate patterns and relationships within language. These models are trained utilizing substantial computational resources.
+
+The utility of LLMs extends across a broad spectrum of applications including but not limited to text generation, translation, summarization, question answering, and sentiment analysis. Their ability to understand and process natural language makes them indispensable tools in modern AI-driven solutions. However, with great power comes great responsibility. The deployment of LLMs raises imperative considerations regarding ethics, bias, and the potential for misuse. Moreover, the black-box nature of these models presents challenges in interpretability and control, which are active areas of research in the quest to make LLMs more understandable and safe. The advent of LLMs has undeniably propelled the field of NLP to new heights, yet the journey towards fully responsible and transparent utilization of these powerful models is an ongoing endeavor. I recommend reading material at [Center for Humane Technology](https://www.humanetech.com/key-issues) for issues of the safe use of AI. You might also be interested in a book I wrote in April 2023 [Safe For Humans AI: A "humans-first" approach to designing and building AI systems](https://leanpub.com/safe-for-humans-AI/read) (link for reading my book free online).
 
 ## Using the OpenAI APIs in Racket
+
+We will now have some fun using Racket Scheme and OpenAI's APIs. The combination of Racket's language features and programming environment with OpenAI's linguistic models opens up many possibilities for developing sophisticated AI-driven applications.
+
+Our goal is straightforward interaction with OpenAI's APIs. The communication between your Racket code and OpenAI's models is orchestrated through well-defined API requests and responses, allowing for a seamless exchange of data. The following sections will show the technical aspects of interfacing Racket with OpenAI's APIs, showcasing how requests are formulated, transmitted, and how the JSON responses are handled. Whether your goal is to automate content generation, perform semantic analysis on text data, or build intelligent systems capable of engaging in natural language interactions, the code snippets and explanations provided will serve as a valuable resource in understanding and leveraging the power of AI through Racket and OpenAI's APIs.
+
 
 ```racket
 #lang racket
@@ -160,7 +179,10 @@ TBD
 
 ### Installing and Running Llama.cpp server with a Llama2-13b-orca Model
 
-I run this service easily on a M2 Mac with 16G of memory. Start by cloning the **llama.cpp** project and building it:
+
+The **llama.cpp** server acts as a conduit for translating REST API requests to the respective language model APIs. By setting up and running the **llama.cpp** server, a channel of communication is established, allowing Racket code to interact with these language models in a seamless manner. There is also a Python library to encapsulate running models inside a Python program (a subject I leave to my Python AI books).
+
+I run the **llama.cpp** service easily on a M2 Mac with 16G of memory. Start by cloning the **llama.cpp** project and building it:
 
 ```bash
 git clone https://github.com/ggerganov/llama.cpp.git
