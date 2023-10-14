@@ -153,3 +153,103 @@ $ racket
 ```
 
 TBD
+
+## Using a Local Hugging Face Llama2-13b-orca Model with Llama.cpp Server
+
+TBD
+
+### Installing and Running Llama.cpp server with a Llama2-13b-orca Model
+
+I run this service easily on a M2 Mac with 16G of memory. Start by cloning the **llama.cpp** project and building it:
+
+```bash
+git clone https://github.com/ggerganov/llama.cpp.git
+make
+mkdir models
+```
+
+Then get a model file from [https://huggingface.co/TheBloke/OpenAssistant-Llama2-13B-Orca-8K-3319-GGUF](https://huggingface.co/TheBloke/OpenAssistant-Llama2-13B-Orca-8K-3319-GGUF) and copy to **./models** directory:
+
+```bash
+$ ls -lh models
+8.6G openassistant-llama2-13b-orca-8k-3319.Q5_K_M.gguf
+```
+
+Note that there are many different variations of this model that trade off quality for memory use. I am using one of the larger models. If you only have 8G of memory try a smaller model.
+
+Run the REST server:
+
+```bash
+./server -m models/openassistant-llama2-13b-orca-8k-3319.Q5_K_M.gguf -c 2048
+```
+
+We can test the REST server using the **curl** utility:
+
+```bash
+ $ curl --request POST \
+    --url http://localhost:8080/completion \
+    --header "Content-Type: application/json" \
+    --data '{"prompt": "Answer the question: Mary is 30 years old and Sam is 25. Who is older and by how much?","n_predict": 128, "top_k": 1}'
+{"content":"\nAnswer: Mary is older than Sam by 5 years.","generation_settings":{"frequency_penalty":0.0,"grammar":"","ignore_eos":false,"logit_bias":[],"mirostat":0,"mirostat_eta":0.10000000149011612,"mirostat_tau":5.0,"model":"models/openassistant-llama2-13b-orca-8k-3319.Q5_K_M.gguf","n_ctx":2048,"n_keep":0,"n_predict":128,"n_probs":0,"penalize_nl":true,"presence_penalty":0.0,"repeat_last_n":64,"repeat_penalty":1.100000023841858,"seed":4294967295,"stop":[],"stream":false,"temp":0.800000011920929,"tfs_z":1.0,"top_k":1,"top_p":0.949999988079071,"typical_p":1.0},"model":"models/openassistant-llama2-13b-orca-8k-3319.Q5_K_M.gguf","prompt":"Answer the question: Mary is 30 years old and Sam is 25. Who is older and by how much?","stop":true,"stopped_eos":true,"stopped_limit":false,"stopped_word":false,"stopping_word":"","timings":{"predicted_ms":960.595,"predicted_n":13,"predicted_per_second":13.53327885321077,"predicted_per_token_ms":73.89192307692308,"prompt_ms":539.3580000000001,"prompt_n":27,"prompt_per_second":50.05951520140611,"prompt_per_token_ms":19.976222222222223},"tokens_cached":40,"tokens_evaluated":27,"tokens_predicted":13,"truncated":false}
+```
+
+The important part of the output is:
+
+```
+"content":"Answer: Mary is older than Sam by 5 years."
+```
+
+### A Racket Library for Using a Local Llama.cpp server with a Llama2-13b-orca Model
+
+TBD
+
+Here is the Racket library in the file **llama_local.rkt**:
+
+```racket
+#lang racket
+
+(require net/http-easy)
+(require racket/set)
+(require pprint)
+
+(define (helper prompt)
+  (let* ((prompt-data
+          (string-join
+           (list
+            (string-append
+             "{\"prompt\": \""
+             prompt
+             "\", \"n_predict\": 256, \"top_k\": 1}"))))
+         (ignore (displayln prompt-data))
+         (p
+          (post
+           "http://localhost:8080/completion"
+           #:data prompt-data))
+         (r (response-json p)))
+    (hash-ref r 'content)))
+
+(define (question question)
+  (helper (string-append "Answer: " question)))
+
+(define (completion prompt)
+  (helper
+   (string-append
+    "Continue writing from the following text: "
+    prompt)))
+```
+
+We can try this in a Racket REPL (output of the second example is edited for brevity):
+
+```racket
+> (question "Mary is 30 and Harry is 25. Who is older?")
+{"prompt": "Answer: Mary is 30 and Harry is 25. Who is older?", "n_predict": 256, "top_k": 1}
+"\nAnswer: Mary is older than Harry."
+> (completion "Frank bought a new sports car. Frank drove")
+{"prompt": "Continue writing from the following text: Frank bought a new sports car. Frank drove", "n_predict": 256, "top_k": 1}
+" his new sports car to work every day. He was very happy with his new sports car. One day, while he was driving his new sports car, he saw a beautiful girl walking on the side of the road. He stopped his new sports car and asked her if she needed a ride. The beautiful girl said yes, so Frank gave her a ride in his new sports car. They talked about many things during the ride to work. When they arrived at work, Frank asked the beautiful girl for her phone number. She gave him her phone number, and he promised to call her later that day...."
+> (question "Mary is 30 and Harry is 25. Who is older and by how much?")
+{"prompt": "Answer: Mary is 30 and Harry is 25. Who is older and by how much?", "n_predict": 256, "top_k": 1}
+"\nAnswer: Mary is older than Harry by 5 years."
+> 
+```
+
