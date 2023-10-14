@@ -1,8 +1,8 @@
-# Using the OpenAI, Anthropic and Local Hugging Face Large Language Models APIs in Racket
+# Using the OpenAI, Anthropic and Local Hugging Face Large Language Model APIs in Racket
 
 As I write this chapter in October 2023, Peter Norvig and Blaise Agüera y Arcas just wrote an article [Artificial General Intelligence Is Already Here](https://www.noemamag.com/artificial-general-intelligence-is-already-here/) making the case that we might already have Artificial General Intelligence (AGI) because of the capabilities of Large Language Models (LLMs) to solve new tasks.
 
-In the development of practical AI systems LLMss like those provided by OpenAI, Anthropic, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here.
+In the development of practical AI systems LLMs like those provided by OpenAI, Anthropic, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here.
 
 The OpenAI and Anthropic APIs serve as gateways to some of the most advanced language models available today. By accessing these APIs, developers can harness the power of these models for a variety of applications. Here, we delve deeper into the distinctive features and capabilities that these APIs offer, which could be harnessed through a Racket interface.
 
@@ -26,6 +26,9 @@ We will now have some fun using Racket Scheme and OpenAI's APIs. The combination
 
 Our goal is straightforward interaction with OpenAI's APIs. The communication between your Racket code and OpenAI's models is orchestrated through well-defined API requests and responses, allowing for a seamless exchange of data. The following sections will show the technical aspects of interfacing Racket with OpenAI's APIs, showcasing how requests are formulated, transmitted, and how the JSON responses are handled. Whether your goal is to automate content generation, perform semantic analysis on text data, or build intelligent systems capable of engaging in natural language interactions, the code snippets and explanations provided will serve as a valuable resource in understanding and leveraging the power of AI through Racket and OpenAI's APIs.
 
+The Racket code listed below defines two functions, **question** and **completion**, aimed at interacting with the OpenAI API to leverage the GPT-3.5 Turbo model for text generation. The function **question** accepts a **prompt** argument and constructs a JSON payload following the OpenAI's chat models schema. It constructs a value for **prompt-data** string containing a user message that instructs the model to "Answer the question" followed by the provided prompt. The **auth** lambda function within **question** is utilized to set necessary headers for the HTTP request, including the authorization header populated with the OpenAI API key obtained from the environment variable **OPENAI_API_KEY**. The function **post** from the **net/http-easy** library is employed to issue a POST request to the OpenAI API endpoint "https://api.openai.com/v1/chat/completions" with the crafted JSON payload and authentication headers. The response from the API is then parsed as JSON, and the content of the message from the first choice is extracted and returned.
+
+The function **completion**, on the other hand, serves a specific use case of continuing text from a given **prompt**. It reformats the prompt to prepend the phrase "Continue writing from the following text: " to the provided text, and then calls the function **question** with this modified prompt. This setup encapsulates the task of text continuation in a separate function, making it straightforward for developers to request text extensions from the OpenAI API by merely providing the initial text to the function **completion**. Through these functions, the code provides a structured mechanism to generate responses or text continuations from the GPT-3.5 Turbo model using a Racket Scheme programming environment.
 
 ```racket
 #lang racket
@@ -64,21 +67,14 @@ Our goal is straightforward interaction with OpenAI's APIs. The communication be
      (hash-ref (first (hash-ref r 'choices)) 'message)
      'content)))
 
-(println
-  (question "Mary is 30 and Harry is 25. Who is older?"))
-
 (define (completion prompt)
   (question
    (string-append
     "Continue writing from the following text: "
     prompt)))
-
-(println
- (completion
-  "Frank bought a new sports car. Frank drove"))
 ```
 
-The output looks like:
+The output looks like (output from the second example shortened for brevity):
 
 ```
 > (question "Mary is 30 and Harry is 25. Who is older?")
@@ -89,27 +85,15 @@ The output looks like:
 Frank bought a new sports car. Frank drove it out of the dealership with a wide grin on his face. The sleek, aerodynamic design of the car hugged the road as he accelerated, feeling the power under his hands. The adrenaline surged through his veins, and he couldn't help but let out a triumphant shout as he merged onto the highway.
 
 As he cruised down the open road, the wind whipping through his hair, Frank couldn't help but reflect on how far he had come. It had been a lifelong dream of his to own a sports car, a symbol of success and freedom in his eyes. He had worked tirelessly, saving every penny, making sacrifices along the way to finally make this dream a reality.
-
-With the sun drenching the car's glossy exterior, Frank felt a sense of pride and accomplishment wash over him. The car represented more than just a mode of transportation; it embodied his perseverance and determination to achieve his goals. It was a symbol of all the late nights spent working overtime, the countless hours researching, and the sacrifices of those small luxuries he had foregone in order to save every dollar.
-
-Lost in his thoughts and the thrill of the ride, Frank decided to take a detour off the highway and explore the curving backroads. He craved the freedom and adventure the open road offered, hoping to leave behind the stresses and worries of everyday life, even if just for a little while.
-
-As he navigated the twists and turns, Frank's senses were heightened. The engine's roar echoed through the secluded countryside, the scent of fresh air mingled with the intoxicating smell of burnt rubber. The adrenaline rush, combined with the beautiful scenery passing by, made Frank feel as though he were in his own personal paradise.
-
-Hours slipped away as Frank indulged in this extraordinary experience. The car, perfectly engineered, effortlessly glided through each hairpin turn, making Frank feel like a professional race car driver. The worries that plagued his mind seemed distant and insignificant, replaced by the pure joy of the present moment.
-
-With the sun slowly setting on the horizon, casting a golden glow over the landscape, Frank's journey was coming to an end. He found himself back on the highway, headed home with a heart full of contentment and a smile that couldn't be wiped away.
-
-As Frank parked his sports car in the driveway, he took a moment to admire it once more. It was more than just a machine; it was a symbol of his hard work and dedication. In that moment, he realized that the true value of the car lay not in its exterior or performance but in the journey it represented.
-
-Frank knew that from that day forward, every drive in his new sports car would remind him of the endless possibilities that await when one dares to dream big. And as he turned off the engine and stepped out of the car, Frank couldn't wait to see where his next adventure would take him.
+...
 > 
 ```
 
 ## Using the Anthropic APIs in Racket
 
+The Racket code listed below defines two functions, **question** and **completion**, which facilitate interaction with the Anthropic API to access a language model named **claude-instant-1** for text generation purposes. The function **question** takes two arguments: a **prompt** and a **max-tokens** value, which are used to construct a JSON payload that will be sent to the Anthropic API. Inside the function, several Racket libraries are utilized for handling HTTP requests and processing data. A POST request is initiated to the Anthropic API endpoint "https://api.anthropic.com/v1/complete" with the crafted JSON payload. This payload includes the prompt text, maximum tokens to sample, and specifies the model to be used. The **auth** lambda function is used to inject necessary headers for authentication and specifying the API version. Upon receiving the response from the API, it extracts the **completion** field from the JSON response, trims any leading or trailing whitespace, and returns it.
 
-TBD
+The function **completion** is defined to provide a more specific use-case scenario, where it is intended to continue text from a given **prompt**. It also accepts a **max-tokens** argument to limit the length of the generated text. This function internally calls the function **question** with a modified prompt that instructs the model to continue writing from the provided text. By doing so, it encapsulates the common task of text continuation, making it easy to request text extensions by simply providing the initial text and desired maximum token count. Through these defined functions, the code offers a structured way to interact with the Anthropic API for generating text responses or completions in a Racket Scheme environment.
 
 ```racket
 #lang racket
@@ -175,10 +159,11 @@ TBD
 
 ## Using a Local Hugging Face Llama2-13b-orca Model with Llama.cpp Server
 
-TBD
+Now we look an an approach to run LLMs locally on your own computers.
+
+Diving into AI unveils many ways where modern language models play a pivotal role in bridging the gap between machines and human language. Among the many open and public models, I chose Hugging Face's Llama2-13b-orca model because of its support for natural language processing tasks. To truly harness the potential of Llama2-13b-orca, an interface to Racket code is essential. This is where we use the Llama.cpp Server as a conduit between the local instance of the Hugging Face model and the applications that seek to utilize it. The combination of Llama2-13b-orca with the llama.cpp server code will meet our requirements for local deployment and ease of installation and use.
 
 ### Installing and Running Llama.cpp server with a Llama2-13b-orca Model
-
 
 The **llama.cpp** server acts as a conduit for translating REST API requests to the respective language model APIs. By setting up and running the **llama.cpp** server, a channel of communication is established, allowing Racket code to interact with these language models in a seamless manner. There is also a Python library to encapsulate running models inside a Python program (a subject I leave to my Python AI books).
 
@@ -223,9 +208,14 @@ The important part of the output is:
 
 ### A Racket Library for Using a Local Llama.cpp server with a Llama2-13b-orca Model
 
-TBD
 
-Here is the Racket library in the file **llama_local.rkt**:
+The following Racket code is designed to interface with a local instance of a Llama.cpp server to interact with a language model for generating text completions. This setup is particularly beneficial when there's a requirement to have a local language model server, reducing latency and ensuring data privacy. We start by requiring libraries for handling HTTP requests and responses. The functionality of this code is encapsulated in three functions: **helper**, **question**, and **completion**, each serving a unique purpose in the interaction with the Llama.cpp server.
+
+The **helper** function provides common functionality, handling the core logic of constructing the HTTP request, sending it to the Llama.cpp server, and processing the response. It accepts a **prompt** argument which forms the basis of the request payload. A JSON string is constructed with three key fields: **prompt**, **n_predict**, and **top_k**, which respectively contain the text prompt, the number of tokens to generate, and a parameter to control the diversity of the generated text. A debug line with `displayln` is used to output the constructed JSON payload to the console, aiding in troubleshooting. The function **post** is employed to send a POST request to the Llama.cpp server hosted locally on port 8080 at the **/completion** endpoint, with the constructed JSON payload as the request body. Upon receiving the response, it's parsed into a Racket hash data structure, and the **content** field, which contains the generated text, is extracted and returned.
+
+The **question** and **completion** functions serve as specialized interfaces to the **helper** function, crafting specific prompts aimed at answering a question and continuing a text, respectively. The **question** function prefixes the provided question text with "Answer: " to guide the model's response, while the **completion** function prefixes the provided text with a phrase instructing the model to continue from the given text. Both functions then pass these crafted prompts to the **helper** function, which in turn handles the interaction with the Llama.cpp server and extracts the generated text from the response.
+
+The following code is in the file **llama_local.rkt**:
 
 ```racket
 #lang racket

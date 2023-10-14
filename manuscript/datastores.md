@@ -5,7 +5,26 @@ We start with covering strategies for persistently storing data, what I consider
 
 ## Accessing Public Knowledge Graphs - a DBPedia Example
 
-TBD
+In this Racket code snippet, the primary objective is to interact with DBpedia's SPARQL endpoint to query information regarding a person based on their name or URI. The code is structured into several functions, each encapsulating a specific aspect of the querying process, thereby promoting modular design and ease of maintenance.
+
+**Function Definitions:**
+
+- **sparql-dbpedia-for-person**: This function takes a `person-uri` as an argument and constructs a SPARQL query to retrieve the comment and website associated with the person. The `@string-append` macro helps in constructing the SPARQL query string by concatenating the literals and the `person-uri` argument.
+
+- **sparql-dbpedia-person-uri**: Similar to the above function, this function accepts a `person-name` argument and constructs a SPARQL query to fetch the URI and comment of the person from DBpedia.
+
+- **sparql-query->hash**: This function encapsulates the logic for sending the constructed SPARQL query to the DBpedia endpoint. It takes a `query` argument, encodes it into a URL format, and sends an HTTP request to the DBpedia SPARQL endpoint. The response, expected in JSON format, is then converted to a Racket expression using `string->jsexpr`.
+
+- **json->listvals**: This function is designed to transform the JSON expression obtained from the SPARQL endpoint into a more manageable list of values. It processes the hash data structure, extracting the relevant bindings and converting them into a list format.
+
+- **gd** (Data Processing Function): This function processes the data structure obtained from `json->listvals`. It defines four inner functions `gg1`, `gg2`, `gg3`, and `gg4`, each designed to handle a specific number of variables returned in the SPARQL query result. It uses a `case` statement to determine which inner function to call based on the length of the data.
+
+- **sparql-dbpedia**: This is the entry function which accepts a `sparql` argument, invokes `sparql-query->hash` to execute the SPARQL query, and then calls `gd` to process the resulting data structure.
+
+**Usage Flow:**
+
+The typical flow would be to call **sparql-dbpedia-person-uri** with a person's name to obtain the person's URI and comment from DBpedia. Following that, **sparql-dbpedia-for-person** can be invoked with the obtained URI to fetch more detailed information like websites associated with the person. The results from these queries are then processed through **sparql-query->hash**, **json->listvals**, and **gd** to transform the raw JSON response into a structured list format, making it easier to work with within the Racket environment.
+
 
 ```racket
 #lang at-exp racket

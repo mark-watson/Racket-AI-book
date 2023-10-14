@@ -39,21 +39,21 @@ Welcome to Racket v8.10 [cs].
   ...
 ```
 
+Different element types are **html**, **head**, **p**, **h1**, **h2**, etc. If you are familiar with XPATH operations for XML data, then the function **se-path/list** will make more sense to your. Function **se-path/list** takes a list of element types from a list and recursively searches an input s-expression for lists starting with one of the target element types. In the following example we extract all elements of type **p**:
 
 ```racket
 > (se-path*/list '(p) lst) ;; get text from all p elements
 '("My customer list includes: Google, Capital One, Babylist, Olive AI, CompassLabs, Mind AI, Disney, SAIC, Americast, PacBell, CastTV, Lutris Technology, Arctan Group, Sitescout.com, Embed.ly, and Webmind Corporation."
   "I have worked in the fields of general\n"
-  "      artificial intelligence, machine learning, semantic web and linked data, and\n"
+  "   artificial intelligence, machine learning, semantic web and linked data, and\n"
   "      natural language processing since 1982."
-  "My eBooks are available to read for FREE or you can purchase them at "
+  "My eBooks are available to read for FREE or you can   purchase them at "
   (a (@ (href "https://leanpub.com/u/markwatson")) "leanpub")
   ...
 ```
 
 
 ```racket
-> (define lst-p (se-path*/list '(p) lst))
 > (define lst-p (se-path*/list '(p) lst))
 > (filter (lambda (s) (string? s)) lst-p) ;; keep only text strings
 '("My customer list includes: Google, Capital One, Babylist, Olive AI, CompassLabs, Mind AI, Disney, SAIC, Americast, PacBell, CastTV, Lutris Technology, Arctan Group, Sitescout.com, Embed.ly, and Webmind Corporation."
