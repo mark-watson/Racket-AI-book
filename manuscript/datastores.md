@@ -136,6 +136,30 @@ The typical flow would be to call **sparql-dbpedia-person-uri** with a person's 
 
 ## Sqlite
 
-TBD
+We will be using the Racket source file **sqlite.rkt** in the directory **Racket-AI-book-code/misc_code** for the code snippets in this REPL:
+
+```racket
+$ racket
+Welcome to Racket v8.10 [cs].
+> (require db)
+> (require sqlite-table)
+> (define db-file "test.db")
+> (define db (sqlite3-connect #:database db-file #:mode 'create))
+> (query-exec db
+     "create temporary table the_numbers (n integer, d varchar(20))")
+> (query-exec db
+     "create  table person (name varchar(30), age integer, email varchar(20))")
+> (query-exec db
+     "insert into person values ('Mary', 34, 'mary@test.com')")
+> (query-rows db "select * from person")
+'(#("Mary" 34 "mary@test.com"))
+> 
+```
+
+Here we see how to interact with a SQLite database using the **db** and **sqlite-table** libraries in Racket. The **sqlite3-connect** function is used to connect to the SQLite database specified by the string value of **db-file**. The **#:mode 'create** keyword argument indicates that a new database should be created if it doesn't already exist. The database connection object is bound to the identifier **db**. 
+
+The **query-exec** function call is made to create a permanent table named **person** with three columns: **name** of type **varchar(30)**, **age** of type **integer**, and **email** of type **varchar(20)**. The next **query-exec** function call is made to insert a new row into the **person** table with the values 'Mary', 34, and 'mary@test.com'. There is a function **query** that we don't use here that returns the types of the columns returned by a query. We use the alternative function **query-rows** that only returns the query results with no type information.
+
+
 
 
