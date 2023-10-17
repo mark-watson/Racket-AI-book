@@ -1,4 +1,4 @@
-# Using the OpenAI, Anthropic and Local Hugging Face Large Language Model APIs in Racket
+# Using the OpenAI, Anthropic, Mistral, and Local Hugging Face Large Language Model APIs in Racket
 
 As I write this chapter in October 2023, Peter Norvig and Blaise Agüera y Arcas just wrote an article [Artificial General Intelligence Is Already Here](https://www.noemamag.com/artificial-general-intelligence-is-already-here/) making the case that we might already have Artificial General Intelligence (AGI) because of the capabilities of Large Language Models (LLMs) to solve new tasks.
 
@@ -159,7 +159,7 @@ TBD
 
 ## Using a Local Hugging Face Llama2-13b-orca Model with Llama.cpp Server
 
-Now we look an an approach to run LLMs locally on your own computers.
+Now we look at an approach to run LLMs locally on your own computers.
 
 Diving into AI unveils many ways where modern language models play a pivotal role in bridging the gap between machines and human language. Among the many open and public models, I chose Hugging Face's Llama2-13b-orca model because of its support for natural language processing tasks. To truly harness the potential of Llama2-13b-orca, an interface to Racket code is essential. This is where we use the Llama.cpp Server as a conduit between the local instance of the Hugging Face model and the applications that seek to utilize it. The combination of Llama2-13b-orca with the llama.cpp server code will meet our requirements for local deployment and ease of installation and use.
 
@@ -265,3 +265,113 @@ We can try this in a Racket REPL (output of the second example is edited for bre
 > 
 ```
 
+## Using a Local Mistral-7B Model with Ollama.ai
+
+Now we look at another approach to run LLMs locally on your own computers. The [Ollama.ai project](https://ollama.ai) supplies a simple to install application for macOS and Linux (Windows support expected soon). When you download and run the application, it will install a command line tool **ollama** that we use here.
+
+
+### Installing and Running Ollama.ai server with a Mistral-7B Model
+
+The Mistral model is the best 7B LLM that I have used (as I write this chapter in October 2023). When you run the **ollama** command line tool it will download and cache for future use the requested model.
+
+For example, the first time we run **ollama** requesting the **mistral** LLM, you see that it is downloading the model:
+
+```bash
+ $ ollama run mistral
+pulling manifest
+pulling 6ae280299950... 100% |███████████████████████████████████████████████| (4.1/4.1 GB, 13 MB/s)           
+pulling fede2d8d6c1f... 100% |██████████████████████████████████████████████████████| (29/29 B, 20 B/s)        
+pulling b96850d2e482... 100% |███████████████████████████████████████████████████| (307/307 B, 170 B/s)        
+verifying sha256 digest
+writing manifest
+removing any unused layers
+success
+>>> Mary is 30 and Bill is 25. Who is older and by how much?
+Mary is older than Bill by 5 years.
+
+>>> /?
+Available Commands:
+  /set         Set session variables
+  /show        Show model information
+  /bye         Exit
+  /?, /help    Help for a command
+
+Use """ to begin a multi-line message.
+
+>>>
+```
+
+When you run the **ollama** command line tool, it also runs a REST API serve which we use later. The next time you run the **mistral** model, there is no download delay:
+
+```bash
+$ ollama run mistral
+>>> ^D
+(base) Marks-Mac-mini:~ $ ollama run mistral
+>>> If I am driving between Sedona Arizona and San Diego, what sites should I visit as a tourist?
+    
+There are many great sites to visit when driving from Sedona, Arizona to San Diego. Here are some 
+suggestions:
+
+* Grand Canyon National Park - A must-see attraction in the area, the Grand Canyon is a massive and 
+awe-inspiring natural wonder that offers countless opportunities for outdoor activities such as hiking, 
+camping, and rafting.
+* Yuma Territorial Prison State Historic Park - Located in Yuma, Arizona, this former prison was once the 
+largest and most secure facility of its kind in the world. Today, visitors can explore the site and learn 
+about its history through exhibits and guided tours.
+* Joshua Tree National Park - A unique and otherworldly landscape in southern California, Joshua Tree 
+National Park is home to a variety of natural wonders, including towering trees, giant boulders, and 
+scenic trails for hiking and camping.
+* La Jolla Cove - Located just north of San Diego, La Jolla Cove is a beautiful beach and tidal pool area 
+that offers opportunities for snorkeling, kayaking, and exploring marine life.
+* Balboa Park - A cultural and recreational hub in the heart of San Diego, Balboa Park is home to numerous
+museums, gardens, theaters, and other attractions that offer a glimpse into the city's history and culture.
+
+>>> 
+```
+
+### A Racket Library for Using a Local Ollama.ai REST Server with a Mistral-7B Model
+
+The example code in the file **ollama_ai_local.rkt** is very similar to the example code in the last section:
+
+```racket
+(require net/http-easy)
+(require racket/set)
+(require pprint)
+
+(define (helper prompt)
+  (let* ((prompt-data
+          (string-join
+           (list
+            (string-append
+             "{\"prompt\": \""
+             prompt
+             "\", \"model\": \"mistral\", \"stream\": false}"))))
+         (ignore (displayln prompt-data))
+         (p
+          (post
+           "http://localhost:11434/api/generate"
+           #:data prompt-data))
+         (r (response-json p)))
+    (hash-ref r 'response)))
+
+(define (question question)
+  (helper (string-append "Answer: " question)))
+
+(define (completion prompt)
+  (helper
+   (string-append
+    "Continue writing from the following text: "
+    prompt)))
+```
+
+We will run the same examples we used in the last section for comparison:
+
+```
+> (question "Mary is 30 and Harry is 25. Who is older and by how much?")
+{"prompt": "Answer: Mary is 30 and Harry is 25. Who is older and by how much?", "model": "mistral", "stream": false}
+"Answer: Mary is older than Harry by 5 years."
+> (completion "Frank bought a new sports car. Frank drove")
+{"prompt": "Continue writing from the following text: Frank bought a new sports car. Frank drove", "model": "mistral", "stream": false}
+"Frank drove his new sports car around town, enjoying the sleek design and powerful engine. The car was a bright red, which caught the attention of everyone on the road. Frank couldn't help but smile as he cruised down the highway, feeling the wind in his hair and the sun on his face.\n\nAs he drove, Frank couldn't resist the urge to test out the car's speed and agility. He weaved through traffic, expertly maneuvering the car around curves and turns. The car handled perfectly, and Frank felt a rush of adrenaline as he pushed it to its limits.\n\nEventually, Frank found himself at a local track where he could put his new sports car to the test. He revved up the engine and took off down the straightaway, hitting top speeds in no time. The car handled like a dream, and Frank couldn't help but feel a sense of pride as he crossed the finish line.\n\nAfterwards, Frank parked his sports car and walked over to a nearby café to grab a cup of coffee. As he sat outside, sipping his drink and watching the other cars drive by, he couldn't help but think about how much he loved his new ride. It was the perfect addition to his collection of cars, and he knew he would be driving it for years to come."
+> 
+```

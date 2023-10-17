@@ -2,6 +2,8 @@
 
 In the chapter on using external processes, we saw an example of using deep learning models using external Python processes. Here we will use code that I wrote in pure Scheme and converted to Racket for this book.
 
+In the following code, the provide statement exports the identifier **path-to-data**, making it accessible to other modules that import this module and have access to the **path-to-data** function.
+
 {lang=racket, linenos=off}
 ~~~~~~~~
 #lang racket
@@ -10,14 +12,11 @@ In the chapter on using external processes, we saw an example of using deep lear
 
 (provide path-to-data)
 
-(define (path-to-data)
-  (string->path "../nlp/data"))
+(define (path-to-data) "data")
+;; (string->path "../nlp/data"))
 
 (define count-substring 
   (compose length regexp-match*))
-
-(define (string-count-substrings substr str)
-  (length (regexp-match* substr str)))
 ~~~~~~~~
 
 
