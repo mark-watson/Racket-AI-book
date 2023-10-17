@@ -329,6 +329,8 @@ museums, gardens, theaters, and other attractions that offer a glimpse into the 
 >>> 
 ```
 
+While we use the **mistral** LLM here, there are many more available models listed in the GitHub repository for Ollama.ai: [https://github.com/jmorganca/ollama](https://github.com/jmorganca/ollama).
+
 ### A Racket Library for Using a Local Ollama.ai REST Server with a Mistral-7B Model
 
 The example code in the file **ollama_ai_local.rkt** is very similar to the example code in the last section:
