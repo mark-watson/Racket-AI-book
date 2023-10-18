@@ -333,7 +333,7 @@ While we use the **mistral** LLM here, there are many more available models list
 
 ### A Racket Library for Using a Local Ollama.ai REST Server with a Mistral-7B Model
 
-The example code in the file **ollama_ai_local.rkt** is very similar to the example code in the last section:
+The example code in the file **ollama_ai_local.rkt** is very similar to the example code in the last section. The main changes are a different REST service URI and the format of the returned JSON response:
 
 ```racket
 (require net/http-easy)
