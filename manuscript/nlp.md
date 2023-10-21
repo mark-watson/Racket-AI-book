@@ -1,24 +1,27 @@
 # Natural Language Processing
 
-In the chapter on using external processes, we saw an example of using deep learning models using external Python processes. Here we will use code that I wrote in pure Scheme and converted to Racket for this book.
+I have a Natural Language Processing (NLP) library that I wrote in Common Lisp. Here we will use code that I wrote in pure Scheme and converted to Racket for this book.
 
-In the following code, the provide statement exports the identifier **path-to-data**, making it accessible to other modules that import this module and have access to the **path-to-data** function.
+Since we will use the example code in this chapter as a library we start by defining a **main.rkt** file:
 
-{lang=racket, linenos=off}
-~~~~~~~~
-#lang racket
+```racket
+#lang racket/base
 
-(require racket/logging)
+(require "fasttag.rkt")
+(require "names.rkt")
 
-(provide path-to-data)
+(provide parts-of-speech)
+(provide find-human-names)
+(provide find-place-names)
+```
 
-(define (path-to-data) "data")
-;; (string->path "../nlp/data"))
+There are two main source files for the NLP library: **fasttag.rkt** and **names.rkt**.
 
-(define count-substring 
-  (compose length regexp-match*))
-~~~~~~~~
+The following listing of **fasttag.rkt** is a conversion of original code I wrote in Java and later translated to Common Lisp. The provided Racket Scheme code is designed to perform part-of-speech tagging for a given list of words. The code begins by loading a hash table (`lex-hash`) from a data file ("data/tag.dat"), where each key-value pair maps a word to its possible part of speech. Then it defines several helper functions and transformation rules for categorizing words based on various syntactic and morphological criteria.
 
+The core function, `parts-of-speech`, takes a vector of words and returns a vector of corresponding parts of speech. Inside this function, a number of rules are applied to each word in the list to refine its part of speech based on both its individual characteristics and its context within the list. For instance, Rule 1 changes the part of speech to "NN" (noun) if the previous word is "DT" (determiner) and the current word is categorized as a verb form ("VBD", "VBP", or "VB"). Rule 2 changes a word to a cardinal number ("CD") if it contains a period, and so on. The function applies these rules in sequence, updating the part of speech for each word accordingly.
+
+The `parts-of-speech` function iterates over each word in the input vector, checks it against `lex-hash`, and then applies the predefined rules. The result is a new vector of tags, one for each input word, where each tag represents the most likely part of speech for that word, based on the rules and the original lexicon.
 
 {lang=racket, linenos=off}
 ~~~~~~~~
@@ -26,7 +29,7 @@ In the following code, the provide statement exports the identifier **path-to-da
 
 (require srfi/13) ; the string SRFI
 
-(require "utils.rkt")
+;;(require "utils.rkt")
 
 (provide parts-of-speech)
 
@@ -43,7 +46,7 @@ In the following code, the provide statement exports the identifier **path-to-da
 (define lex-hash
   (let ((hash (make-hash)))
     (with-input-from-file
-        (string-append (path->string (path-to-data)) "/tag.dat")
+        "data/tag.dat"
       (lambda ()
         (let loop ()
           (let ((p (read)))
@@ -152,24 +155,62 @@ In the following code, the provide statement exports the identifier **path-to-da
        (set! ret (cons (first r) ret)))
      (vector->list words))  ;; not very efficient !!
     (list->vector (reverse ret))))
-
-
-(display (parts-of-speech (list->vector '("the" "cat" "ran"))))
-(display (parts-of-speech (list->vector '("banking" "in" "Europe" "is" "a" "good" "business" "and" "a" "liberty"))))
-
-
- (display (parts-of-speech
-           '#("President" "Bush" "went" "to" "San" "Diego" "to" "meet" "Ms" "." "Jones" "and" "Gen" "." "Pervez" "Musharraf" ".")))
 ~~~~~~~~
 
+The following listing of file **names.rkt** identifies human and place names in text. The Racket Scheme code is a script for Named Entity Recognition (NER). It is specifically designed to recognize human names and place names in given text.
 
+### Summary:
+
+- It provides two main functions: `find-human-names` and `find-place-names`.
+- Uses two kinds of data: human names and place names, loaded from text files.
+- Employs Part-of-Speech tagging through an external `fasttag.rkt` module.
+- Uses hash tables and lists for efficient look-up.
+- Handles names with various components (prefixes, first name, last name, etc.)
+
+### Details:
+
+#### Libraries and Modules
+- `(require "fasttag.rkt")`: Imports an external module presumably for Part-of-Speech tagging.
+
+#### Utilities:
+- `process-one-word-per-line`: Reads each line of a file and applies a given function `func` on it.
+  
+#### Data Preparation:
+- Hash tables `*last-name-hash*`, `*first-name-hash*`, `*place-name-hash*` are populated with last names, first names, and place names, respectively, from specified data files.
+
+#### Named Entity Recognition Functions:
+
+1. **`find-human-names`**: Takes a word vector and an exclusion list.
+   - Utilizes parts-of-speech tags.
+   - Checks for names that have 1 to 4 words.
+   - Adds names to `ret` list if conditions are met, considering the exclusion list.
+   - Returns processed names (`ret2`).
+
+2. **`find-place-names`**: Similar to `find-human-names`, but specifically for place names.
+   - Works on 1 to 3 word place names.
+   - Returns processed place names.
+
+#### Helper Functions:
+- `not-in-list-find-names-helper`: Ensures that an identified name does not overlap with another name or entry in the exclusion list.
+
+#### Example Code (Commented):
+- The commented section at the bottom appears to be for testing.
+
+### Reasoning Steps:
+
+1. Identify main functionalities: NER for human names and places.
+2. Examine utility functions and data preparation.
+3. Investigate the core logic for identifying names.
+4. Look for optimizations and helper methods.
+5. Note the example code for understanding its application.
+
+Overall, the code is fairly optimized for its purpose, utilizing hash tables for constant-time look-up and lists to store identified entities.
 
 {lang=racket, linenos=off}
 ~~~~~~~~
 #lang racket
 
 (require "fasttag.rkt")
-(require "utils.rkt")
 
 (provide find-human-names)
 (provide find-place-names)
@@ -183,13 +224,17 @@ In the following code, the provide statement exports the identifier **path-to-da
 		  (if (eof-object? l) #f (loop)))))))
 
 (define *last-name-hash* (make-hash))
-(process-one-word-per-line (string-append (path->string (path-to-data)) "/human_names/names.last") (lambda (x) (hash-set! *last-name-hash* x #t)))
+(process-one-word-per-line "data/human_names/names.last"
+                           (lambda (x) (hash-set! *last-name-hash* x #t)))
 (define *first-name-hash* (make-hash))
-(process-one-word-per-line (string-append (path->string (path-to-data)) "/human_names/names.male") (lambda (x) (hash-set! *first-name-hash* x #t)))
-(process-one-word-per-line (string-append (path->string (path-to-data)) "/human_names/names.female") (lambda (x) (hash-set! *first-name-hash* x #t)))
+(process-one-word-per-line "data/human_names/names.male"
+                           (lambda (x) (hash-set! *first-name-hash* x #t)))
+(process-one-word-per-line "data/human_names/names.female"
+                           (lambda (x) (hash-set! *first-name-hash* x #t)))
 
 (define *place-name-hash* (make-hash))
-(process-one-word-per-line (string-append (path->string (path-to-data)) "/placenames.txt") (lambda (x) (hash-set!  *place-name-hash* x #t)))
+(process-one-word-per-line "data/placenames.txt"
+                           (lambda (x) (hash-set!  *place-name-hash* x #t)))
 
 (display (hash-ref *last-name-hash* "Bartlow" #f))
 
@@ -375,11 +420,23 @@ In the following code, the provide statement exports the identifier **path-to-da
               (set! ret (cons (list i (+ i 1)) ret))
               #f)
           #f))
-    ;; TBD: calculate importance rating based on number of occurences of name in text: can use (string-count-substrings..) defined in utils.rkt
+    ;; TBD: calculate importance rating based on number of occurences of name in text: can use (count-substring..) defined in utils.rkt
     (set! ret2
           (map (lambda (index-pair)
                  (string-join (vector->list (vector-copy  word-vector (car index-pair) (cadr index-pair))) " "))
                ret))
     ret2))
+
+#|
+(define nn (find-human-names '#("President" "George" "Bush" "went" "to" "San" "Diego" "to" "meet" "Ms" "." "Jones" "and" "Gen" "." "Pervez" "Musharraf" ".") '()))
+(define nn2 (find-human-names '#("xxx" "eee" "tt") '()))
+
+(display (find-place-names '#("George" "Bush" "went" "to" "San" "Diego" "and" "London") '()))
+
+(define xx (find-place-names '#("George" "Bush" "went" "to" "San" "Diego" "and" "London") '()))
+(define xx2 (find-place-names '#("qqqq" "eeee" "gggg") '()))
+(define xx3 (find-place-names '#("where" "is" "San" "Francisco") '()))
+|#
+
 ~~~~~~~~
 
