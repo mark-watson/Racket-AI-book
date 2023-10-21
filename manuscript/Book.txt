@@ -3,7 +3,6 @@ tutorial.md
 datastores.md
 visualization.md
 keras_models.md
-external_processes.md
 webscrape.md
 llm.md
 nlp.md
