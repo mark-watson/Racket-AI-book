@@ -157,9 +157,7 @@ The `parts-of-speech` function iterates over each word in the input vector, chec
     (list->vector (reverse ret))))
 ~~~~~~~~
 
-The following listing of file **names.rkt** identifies human and place names in text. The Racket Scheme code is a script for Named Entity Recognition (NER). It is specifically designed to recognize human names and place names in given text.
-
-### Summary:
+The following listing of file **names.rkt** identifies human and place names in text. The Racket Scheme code is a script for Named Entity Recognition (NER). It is specifically designed to recognize human names and place names in given text:
 
 - It provides two main functions: `find-human-names` and `find-place-names`.
 - Uses two kinds of data: human names and place names, loaded from text files.
@@ -167,18 +165,11 @@ The following listing of file **names.rkt** identifies human and place names in 
 - Uses hash tables and lists for efficient look-up.
 - Handles names with various components (prefixes, first name, last name, etc.)
 
-### Details:
-
-#### Libraries and Modules
-- `(require "fasttag.rkt")`: Imports an external module presumably for Part-of-Speech tagging.
-
-#### Utilities:
-- `process-one-word-per-line`: Reads each line of a file and applies a given function `func` on it.
+The function **`process-one-word-per-line`** reads each line of a file and applies a given function `func` on it.
   
-#### Data Preparation:
-- Hash tables `*last-name-hash*`, `*first-name-hash*`, `*place-name-hash*` are populated with last names, first names, and place names, respectively, from specified data files.
+Initial data preparation consists of defining the hash tables `*last-name-hash*`, `*first-name-hash*`, `*place-name-hash*` are populated with last names, first names, and place names, respectively, from specified data files.
 
-#### Named Entity Recognition Functions:
+We define two Named Entity Recognition (NER) functions:
 
 1. **`find-human-names`**: Takes a word vector and an exclusion list.
    - Utilizes parts-of-speech tags.
@@ -190,19 +181,7 @@ The following listing of file **names.rkt** identifies human and place names in 
    - Works on 1 to 3 word place names.
    - Returns processed place names.
 
-#### Helper Functions:
-- `not-in-list-find-names-helper`: Ensures that an identified name does not overlap with another name or entry in the exclusion list.
-
-#### Example Code (Commented):
-- The commented section at the bottom appears to be for testing.
-
-### Reasoning Steps:
-
-1. Identify main functionalities: NER for human names and places.
-2. Examine utility functions and data preparation.
-3. Investigate the core logic for identifying names.
-4. Look for optimizations and helper methods.
-5. Note the example code for understanding its application.
+We define one helper functions **`not-in-list-find-names-helper`** that ensures that an identified name does not overlap with another name or entry in the exclusion list.
 
 Overall, the code is fairly optimized for its purpose, utilizing hash tables for constant-time look-up and lists to store identified entities.
 
