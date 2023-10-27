@@ -1,6 +1,6 @@
 # Natural Language Processing
 
-I have a Natural Language Processing (NLP) library that I wrote in Common Lisp. Here we will use code that I wrote in pure Scheme and converted to Racket for this book.
+I have a Natural Language Processing (NLP) library that I wrote in Common Lisp. Here we will use code that I wrote in pure Scheme and converted to Racket.
 
 The NLP library is still a work in progress so please check for future updates to this *live eBook*.
 
@@ -183,7 +183,7 @@ We define two Named Entity Recognition (NER) functions:
    - Works on 1 to 3 word place names.
    - Returns processed place names.
 
-We define one helper functions **`not-in-list-find-names-helper`** that ensures that an identified name does not overlap with another name or entry in the exclusion list.
+We define one helper functions **`not-in-list-find-names-helper`** to ensures that an identified name does not overlap with another name or entry in the exclusion list.
 
 Overall, the code is fairly optimized for its purpose, utilizing hash tables for constant-time look-up and lists to store identified entities.
 
@@ -414,7 +414,7 @@ Overall, the code is fairly optimized for its purpose, utilizing hash tables for
 |#
 ~~~~~~~~
 
-Let's try some examples in a Racker REPL:
+Let's try some examples in a Racket REPL:
 
 ```
 > Racket-AI-book-code/nlp $ racket

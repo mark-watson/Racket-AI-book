@@ -22,7 +22,7 @@ Note that when the argument to **require** is a symbol (not a string) then modul
 
 In a later chapter **Natural Language Processing (NLP)** we define a fairly complicated local package. This package has one unusual requirement that you may or may not need in your own projects: My NLP library requires static linguistic data files that are stored in the directory **Racket-AI-book-code/nlp/data**. If I am in the directory **Racket-AI-book-code/nlp** working on the Racket code, it is simple enough to just open the files in **./data/...**.
 
-The default for installing your own Racket packages is to link to the original source directory on your laptop's file system. Let's walk through this. To start with, I will make sure my library code is compiled and then install the code in the current directory:
+The default for installing your own Racket packages is to link to the original source directory on your laptop's file system. Let's walk through this. First, I will make sure my library code is compiled and then install the code in the current directory:
 
 ```bash
 cd Racket-AI-book-code/nlp/
@@ -127,7 +127,7 @@ A structurer type is like a list that has named list elements. When you define a
 
 If you don't add **#:mutable** to a **struct** definition, then no **set-NAME-ATTRIBUTE!** methods are generated.
 
-Racket also supports object oriented programming style classes with methods. I don't use classes in the book examples so you, dear reader, can read the official Racket [documentatiuon on classes](https://docs.racket-lang.org/guide/classes.html) if you want to use Racket in a non-functional way.
+Racket also supports object oriented programming style classes with methods. I don't use classes in the book examples so you, dear reader, can read the official Racket [documentation on classes](https://docs.racket-lang.org/guide/classes.html) if you want to use Racket in a non-functional way.
 
 
 ## Simple HTTP GET and POST Operations 

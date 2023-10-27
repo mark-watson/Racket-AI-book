@@ -2,7 +2,7 @@
 
 As I write this chapter in October 2023, Peter Norvig and Blaise Agüera y Arcas just wrote an article [Artificial General Intelligence Is Already Here](https://www.noemamag.com/artificial-general-intelligence-is-already-here/) making the case that we might already have Artificial General Intelligence (AGI) because of the capabilities of Large Language Models (LLMs) to solve new tasks.
 
-In the development of practical AI systems LLMs like those provided by OpenAI, Anthropic, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here.
+In the development of practical AI systems, LLMs like those provided by OpenAI, Anthropic, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here.
 
 The OpenAI and Anthropic APIs serve as gateways to some of the most advanced language models available today. By accessing these APIs, developers can harness the power of these models for a variety of applications. Here, we delve deeper into the distinctive features and capabilities that these APIs offer, which could be harnessed through a Racket interface.
 
@@ -10,7 +10,7 @@ OpenAI provides an API for developers to access models like GPT-4. The OpenAI AP
 
 On the other hand, Anthropic is a newer entrant in the field but with a strong emphasis on building models that are not only powerful but also understandable and steerable. The Anthropic API serves as a portal to access their language models. While the detailed offerings and capabilities might evolve, the core ethos of Anthropic is to provide models that developers can interact with in a more intuitive and controlled manner. This aligns with a growing desire within the AI community for models that are not black boxes, but instead, offer a level of interpretability and control that makes them safer and more reliable to use in different contexts. We will use the Anthropic completion API.
 
-What if you want the total control of running open LLMs on your own computers? The company [Hugging Face](https://huggingface.co) maintains a huge repository of pre-trained models.  Some of these models are licensed for research only but many are licensed (e.g., using Apache 2) for any commercial use.  Many of the Hugging Face models are derived from Meta and other companys. We will use the [llama.cpp server](https://github.com/ggerganov/llama.cpp/tree/master) at the end of this chapter to run our own LLM on a laptop and access it via Racket code.
+What if you want the total control of running open LLMs on your own computers? The company [Hugging Face](https://huggingface.co) maintains a huge repository of pre-trained models.  Some of these models are licensed for research only but many are licensed (e.g., using Apache 2) for any commercial use.  Many of the Hugging Face models are derived from Meta and other companies. We will use the [llama.cpp server](https://github.com/ggerganov/llama.cpp/tree/master) at the end of this chapter to run our own LLM on a laptop and access it via Racket code.
 
 Lastly, this chapter will delve into practical examples showing the synergy between systems developed in Racket and the LLMs. Whether it’s automating creative writing, conducting semantic analysis, or building intelligent chatbots, the fusion of Racket with OpenAI, Anthropic, and Hugging Face's LLMs provides many opportunities for you, dear reader, to write innovative software that utilizes the power of LLMs.
 
@@ -267,7 +267,7 @@ We can try this in a Racket REPL (output of the second example is edited for bre
 
 ## Using a Local Mistral-7B Model with Ollama.ai
 
-Now we look at another approach to run LLMs locally on your own computers. The [Ollama.ai project](https://ollama.ai) supplies a simple to install application for macOS and Linux (Windows support expected soon). When you download and run the application, it will install a command line tool **ollama** that we use here.
+Now we look at another approach to run LLMs locally on your own computers. The [Ollama.ai project](https://ollama.ai) supplies a simple-to-install application for macOS and Linux (Windows support expected soon). When you download and run the application, it will install a command line tool **ollama** that we use here.
 
 
 ### Installing and Running Ollama.ai server with a Mistral-7B Model

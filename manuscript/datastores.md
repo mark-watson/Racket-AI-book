@@ -150,14 +150,14 @@ Let's try an example in a Racket REPL:
     "Steve Jobs is the authorized self-titled biography of American business magnate and Apple co-founder Steve Jobs. The book was written at the request of Jobs by Walter Isaacson, a former executive at CNN and TIME who has written best-selling biographies of Benjamin Franklin and Albert Einstein. The book was released on October 24, 2011, by Simon & Schuster in the United States, 19 days after Jobs's death. A film adaptation written by Aaron Sorkin and directed by Danny Boyle, with Michael Fassbender starring in the title role, was released on October 9, 2015.")))
 ```
 
-In practice, I start exploring data on DBPedia using the SPARQL query web app [https://dbpedia.org/sparql](https://dbpedia.org/sparql). I experiment with different SPARQL queries for whatever application I am working on and then embed those quries in my Racket, Common Lisp, [Clojure](https://leanpub.com/clojureai/read#leanpub-auto-clojure-wrapper-for-the-jena-rdf-and-sparql-library) (link to read my Clojure AI book free online), and other programming languages I use.
+In practice, I start exploring data on DBPedia using the SPARQL query web app [https://dbpedia.org/sparql](https://dbpedia.org/sparql). I experiment with different SPARQL queries for whatever application I am working on and then embed those queries in my Racket, Common Lisp, [Clojure](https://leanpub.com/clojureai/read#leanpub-auto-clojure-wrapper-for-the-jena-rdf-and-sparql-library) (link to read my Clojure AI book free online), and other programming languages I use.
 
 In addition to using DBPedia I often also use the WikiData public Knowledge Graph and local RDF data stores hosted on my laptop with Apache Jena. I might add examples for these two use cases in future versions of this *live eBook*.
 
 
 ## Sqlite
 
-We will be using the Racket source file **sqlite.rkt** in the directory **Racket-AI-book-code/misc_code** for the code snippets in this REPL:
+Using SQlite in Racket is simple so we will just look at a simple example. We will be using the Racket source file **sqlite.rkt** in the directory **Racket-AI-book-code/misc_code** for the code snippets in this REPL:
 
 ```racket
 $ racket

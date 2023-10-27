@@ -2,7 +2,7 @@
 
 I often write software to automatically collect and use data from the web and other sources. As a practical matter, much of the data that many people use for machine learning comes from either the web or from internal data sources. This section provides some guidance and examples for getting text data from the web.
 
-Before we start a technical discussion about web scraping I want to point out that much of the information on the web is copyright and the first thing that you should do is to read the terms of service for web sites to insure that your use of "scraped" or "spidered" data conforms with the wishes of the persons or organizations who own the content and pay to run scraped web sites.
+Before we start a technical discussion about web scraping I want to point out that much of the information on the web is copyright, so first you should read the terms of service for web sites to insure that your use of "scraped" or "spidered" data conforms with the wishes of the persons or organizations who own the content and pay to run scraped web sites.
 
 We start with low-level Racket code examples in the GitHub repository for this book in the directory **Racket-AI-book-code/misc_code**. We will then implement a standalone library in the directory **Racket-AI-book-code/webscrape**.
 
@@ -39,7 +39,7 @@ Welcome to Racket v8.10 [cs].
   ...
 ```
 
-Different element types are **html**, **head**, **p**, **h1**, **h2**, etc. If you are familiar with XPATH operations for XML data, then the function **se-path/list** will make more sense to your. Function **se-path/list** takes a list of element types from a list and recursively searches an input s-expression for lists starting with one of the target element types. In the following example we extract all elements of type **p**:
+Different element types are **html**, **head**, **p**, **h1**, **h2**, etc. If you are familiar with XPATH operations for XML data, then the function **se-path/list** will make more sense to your. The function **se-path/list** takes a list of element types from a list and recursively searches an input s-expression for lists starting with one of the target element types. In the following example we extract all elements of type **p**:
 
 ```racket
 > (se-path*/list '(p) lst) ;; get text from all p elements
