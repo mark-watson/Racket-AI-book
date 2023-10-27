@@ -4,12 +4,11 @@ The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for
 
 The KGN application is still a work in progress so please check for updates to this *live eBook*. The following screenshots show the current version of the application:
 
-{width: "60%"}
+{width: "30%"}
 ![KGN finds multiple RDF subjects for "Steve Jobs" so a dialog is presented to choose one](images/kgn1.jpg)
 
-{width: "60%"}
+{width: "30%"}
 ![KGN query results](images/kgn2.jpg)
-
 
 I cover SPARQL and linked data/knowledge Graphs is previous books I have written and while I give you a brief background here, I ask interested users to look at either for more details:
 
