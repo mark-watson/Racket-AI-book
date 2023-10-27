@@ -1,11 +1,13 @@
 # Datastores
 
-We start with covering strategies for persistently storing data, what I consider to be infrastructure Racket code. In this chapter we develop code for using the SQLite relational database. In the next two chapters we cover data visualization using external processes to integrate programs written in different programming languages with our Racket Projects.
+For my personal research projects the only datastores that I often use are the embedded relational database and Resource Description Framework (RDF) datastores that might be local to my laptop or public Knowledge Graphs like DBPedia and WikiData. The use of RDF data and the SPARQL query language is part of the fields of the semantic web and liunked data.
 
 
-## Accessing Public Knowledge Graphs - a DBPedia Example
+## Accessing Public RDF Knowledge Graphs - a DBPedia Example
 
-In this Racket code snippet, the primary objective is to interact with DBpedia's SPARQL endpoint to query information regarding a person based on their name or URI. The code is structured into several functions, each encapsulating a specific aspect of the querying process, thereby promoting modular design and ease of maintenance.
+I will not cover RDF data and the SPARQL query language in great detail here. Rather, please reference the following link to read the RDF and SPARQL tutorial data in my Common Lisp book: [Loving Common Lisp, or the Savvy Programmer's Secret Weapon](https://leanpub.com/lovinglisp/read#leanpub-auto-semantic-web-and-linked-data).
+
+In the following Racket code example for accesing data on DBPedia using SPARQL, the primary objective is to interact with DBpedia's SPARQL endpoint to query information regarding a person based on their name or URI. The code is structured into several functions, each encapsulating a specific aspect of the querying process, thereby promoting modular design and ease of maintenance.
 
 **Function Definitions:**
 
@@ -133,6 +135,25 @@ The typical flow would be to call **sparql-dbpedia-person-uri** with a person's 
 
 ;; (sparql-dbpedia (sparql-dbpedia-person-uri "Steve Jobs"))
 ```
+
+Let's try an example in a Racket REPL:
+
+```racket
+'((("personuri" "http://dbpedia.org/resource/Steve_Jobs")
+   ("comment"
+    "Steven Paul Jobs (February 24, 1955 – October 5, 2011) was an American entrepreneur, industrial designer, media proprietor, and investor. He was the co-founder, chairman, and CEO of Apple; the chairman and majority shareholder of Pixar; a member of The Walt Disney Company's board of directors following its acquisition of Pixar; and the founder, chairman, and CEO of NeXT. He is widely recognized as a pioneer of the personal computer revolution of the 1970s and 1980s, along with his early business partner and fellow Apple co-founder Steve Wozniak."))
+  (("personuri" "http://dbpedia.org/resource/Steve_Jobs_(film)")
+   ("comment"
+    "Steve Jobs is a 2015 biographical drama film directed by Danny Boyle and written by Aaron Sorkin. A British-American co-production, it was adapted from the 2011 biography by Walter Isaacson and interviews conducted by Sorkin, and covers 14 years (1984–1998) in the life of Apple Inc. co-founder Steve Jobs. Jobs is portrayed by Michael Fassbender, with Kate Winslet as Joanna Hoffman and Seth Rogen, Katherine Waterston, Michael Stuhlbarg, and Jeff Daniels in supporting roles."))
+  (("personuri" "http://dbpedia.org/resource/Steve_Jobs_(book)")
+   ("comment"
+    "Steve Jobs is the authorized self-titled biography of American business magnate and Apple co-founder Steve Jobs. The book was written at the request of Jobs by Walter Isaacson, a former executive at CNN and TIME who has written best-selling biographies of Benjamin Franklin and Albert Einstein. The book was released on October 24, 2011, by Simon & Schuster in the United States, 19 days after Jobs's death. A film adaptation written by Aaron Sorkin and directed by Danny Boyle, with Michael Fassbender starring in the title role, was released on October 9, 2015.")))
+```
+
+In practice, I start exploring data on DBPedia using the SPARQL query web app [https://dbpedia.org/sparql](https://dbpedia.org/sparql). I experiment with different SPARQL queries for whatever application I am working on and then embed those quries in my Racket, Common Lisp, [Clojure](https://leanpub.com/clojureai/read#leanpub-auto-clojure-wrapper-for-the-jena-rdf-and-sparql-library) (link to read my Clojure AI book free online), and other programming languages I use.
+
+In addition to using DBPedia I often also use the WikiData public Knowledge Graph and local RDF data stores hosted on my laptop with Apache Jena. I might add examples for these two use cases in future versions of this *live eBook*.
+
 
 ## Sqlite
 

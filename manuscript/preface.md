@@ -8,13 +8,11 @@ I have been developing commercial Artificial Intelligence (AI) tools and applica
 
 ![Mark Watson](images/Mark.png)
 
-I wrote this book for both professional programmers and home hobbyists who already know how to program in Racket (or another Scheme dialect) and who want to learn practical AI programming and information processing techniques. I have tried to make this an enjoyable book to work through. In the style of a “cook book,” the chapters can be studied in any order. 
+I wrote this book for both professional programmers and home hobbyists who already know how to program in Racket (or another Scheme dialect) and who want to learn practical AI programming and information processing techniques. I have tried to make this an enjoyable book to work through. In the style of a “cook book,” the chapters can be read in any order. 
 
-This book uses two of the examples in my Java AI book that is also available for purchase at [Leanpub.com](https://leanpub.com/javaai) and as a free download from my personal web site. I replicate these two bits of Java code in the GitHub repository for this book:
+You can find the code examples in the following GitHub repository:
 
-TBD: fix the link after examples are a public repo:
-
-[https://github.com/mark-watson/Clojure-AI-Book-Code](https://github.com/mark-watson/Clojure-AI-Book-Code)
+[https://github.com/mark-watson/Racket-AI-book-code](https://github.com/mark-watson/Racket-AI-book-code)
 
 Git pull requests with code improvements will be appreciated by me and the readers of this book.
 

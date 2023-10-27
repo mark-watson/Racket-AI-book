@@ -137,10 +137,6 @@ The function **completion** is defined to provide a more specific use-case scena
     "Continue writing from the following text: "
     prompt)
    max-tokens))
-
-
-;; (displayln (question "Mary is 30 and Harry is 25. Who is older?" 20))
-;; (displayln (completion "Frank bought a new sports car. Frank drove" 200))
 ```
 
 We will try the same examples we used with OpenAI APIs in the previous section:
@@ -155,7 +151,8 @@ $ racket
 > 
 ```
 
-TBD
+While I usually use the OpenAPI APIs, I always like to have alternatives when I am using 3rd party infrastructure, even for personal research projects. The Anthropic LLMs definitely have a different "feel" than the OpenAPI APIs, and I enjoy using both.
+
 
 ## Using a Local Hugging Face Llama2-13b-orca Model with Llama.cpp Server
 
@@ -165,7 +162,7 @@ Diving into AI unveils many ways where modern language models play a pivotal rol
 
 ### Installing and Running Llama.cpp server with a Llama2-13b-orca Model
 
-The **llama.cpp** server acts as a conduit for translating REST API requests to the respective language model APIs. By setting up and running the **llama.cpp** server, a channel of communication is established, allowing Racket code to interact with these language models in a seamless manner. There is also a Python library to encapsulate running models inside a Python program (a subject I leave to my Python AI books).
+The **llama.cpp** server acts as a conduit for translating REST API requests to the respective language model APIs. By setting up and running the **llama.cpp** server, a channel of communication is established, allowing Racket code to interact with these language models in a seamless manner. There is also a Python library to encapsulate running models inside a Python program (a subject I leave to [my Python AI books](https://leanpub.com/u/markwatson)).
 
 I run the **llama.cpp** service easily on a M2 Mac with 16G of memory. Start by cloning the **llama.cpp** project and building it:
 
@@ -205,6 +202,9 @@ The important part of the output is:
 ```
 "content":"Answer: Mary is older than Sam by 5 years."
 ```
+
+In the next section we will write a simple library to extract data from Llama.cpp server responses.
+
 
 ### A Racket Library for Using a Local Llama.cpp server with a Llama2-13b-orca Model
 

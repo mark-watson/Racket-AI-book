@@ -2,6 +2,8 @@
 
 I have a Natural Language Processing (NLP) library that I wrote in Common Lisp. Here we will use code that I wrote in pure Scheme and converted to Racket for this book.
 
+The NLP library is still a work in progress so please check for future updates to this *live eBook*.
+
 Since we will use the example code in this chapter as a library we start by defining a **main.rkt** file:
 
 ```racket
@@ -408,14 +410,65 @@ Overall, the code is fairly optimized for its purpose, utilizing hash tables for
 
 #|
 (define nn (find-human-names '#("President" "George" "Bush" "went" "to" "San" "Diego" "to" "meet" "Ms" "." "Jones" "and" "Gen" "." "Pervez" "Musharraf" ".") '()))
-(define nn2 (find-human-names '#("xxx" "eee" "tt") '()))
-
 (display (find-place-names '#("George" "Bush" "went" "to" "San" "Diego" "and" "London") '()))
-
-(define xx (find-place-names '#("George" "Bush" "went" "to" "San" "Diego" "and" "London") '()))
-(define xx2 (find-place-names '#("qqqq" "eeee" "gggg") '()))
-(define xx3 (find-place-names '#("where" "is" "San" "Francisco") '()))
 |#
-
 ~~~~~~~~
 
+Let's try some examples in a Racker REPL:
+
+```
+> Racket-AI-book-code/nlp $ racket
+Welcome to Racket v8.10 [cs].
+> (require nlp)
+loading lex-hash......done.#f
+> (find-human-names '#("President" "George" "Bush" "went" "to" "San" "Diego" "to" "meet" "Ms" "." "Jones
+" "and" "Gen" "." "Pervez" "Musharraf" ".") '())
+
++ tagging:#(President George Bush went to San Diego to meet Ms . Jones and Gen . Pervez Musharraf .)
+tags: #(NNP NNP NNP VBD TO NNP NNP TO VB NNP CD NNP CC NNP CD NN NN CD)
+word: President
+word: George
+word: Bush
+word: went
+word: to
+word: San
+word: Diego
+word: to
+word: meet
+word: Ms
+word: .
+word: Jones
+word: and
+word: Gen
+word: .
+word: Pervez
+word: Musharraf
+word: .'("Gen. Pervez Musharraf" "Ms. Jones" "San" "President George Bush")
+> (find-place-names '#("George" "Bush" "went" "to" "San" "Diego" "and" "London") '())
+
++ tagging:#(George Bush went to San Diego and London)
+tags: #(NNP NNP VBD TO NNP NNP CC NNP)
+word: George
+
+word: Bush
+
+word: went
+
+word: to
+
+word: San
+
+word: Diego
+
+word: and
+
+word: London
+'("London" "San Diego")
+> 
+```
+
+## NLP Wrap Up
+
+The NLP library is still a work in progress so please check for updates to this *live eBook* and the GitHub repository for this book:
+
+[https://github.com/mark-watson/Racket-AI-book-code](https://github.com/mark-watson/Racket-AI-book-code)

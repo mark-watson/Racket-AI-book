@@ -2,6 +2,8 @@
 
 If you are an experienced Racket developer then feel free to skip this chapter! I wrote this tutorial to cover just the aspects of using Racket that you, dear reader, will need in the book example programs.
 
+I assume that you have read the section **Racket Essentials** in the [https://docs.racket-lang.org/guide/](The Racket Guide) written by Matthew Flatt, Robert Bruce Findler, and the PLT group. Here I just cover some basics of getting started so you can enjoy the later code examples without encountering "road blocks."
+
 ## Installing Packages
 
 The DrRacket IDE lets you interactively install packages. I prefer using the command line so, for example, I would install SQlite support using:
@@ -28,9 +30,7 @@ raco make *.rkt
 raco pkg install --scope user
 ```
 
-Then I can run the **racket** REPL (or DrRacket) on my laptop and use my NLP package:
-
-We can then require the code in this package in our Racket programs (shown in a REPL):
+Then I can run the **racket** REPL (or DrRacket) on my laptop and use my NLP package by requiring the code in this package in our Racket programs (shown in a REPL):
 
 ```racket
 > (require nlp)
@@ -48,25 +48,10 @@ loading lex-hash......done.
 > 
 ```
 
-## Testing for Equality
 
-TBD
+## Mapping Over Lists
 
-## Lists
-
-literal lists
-
-using: (range 10), for example
-
-etc.
-
-TBD
-
-## Defining Functions
-
-TBD
-
-We will be using functions that take other functions as arguments. The following examples will get you through the rest of this book:
+We will be using functions that take other functions as arguments:
 
 ```racket
 > (range 5)
@@ -78,10 +63,6 @@ We will be using functions that take other functions as arguments. The following
 '(100 102 104 106 108)
 > 
 ```
-TBD: explain the **map** functions ability to adjust its expected arguments to the arity of the function being mapped over data.
-
-## Mapping Over Lists
-
 
 ## Hash Tables
 
@@ -148,14 +129,10 @@ If you don't add **#:mutable** to a **struct** definition, then no **set-NAME-AT
 
 Racket also supports object oriented programming style classes with methods. I don't use classes in the book examples so you, dear reader, can read the official Racket [documentatiuon on classes](https://docs.racket-lang.org/guide/classes.html) if you want to use Racket in a non-functional way.
 
-## Input, Output, and Ports
-
-TBD
-
 
 ## Simple HTTP GET and POST Operations 
 
-TBD - we will need this later in the book
+We will be using HTTP GET and POST instructions in later chapters for web scraping and accessing remote APIs, such as those for OpenAI GPT-4, Hugging Face, etc. We will see more detail later but for now, you can try a simple example:
 
 ```racket
 #lang racket
@@ -217,3 +194,6 @@ LI text:
   "          ")
 ```
 
+## Tutorial Wrap Up
+
+The rest of this book is comprised of example Racket programs that I have written for my own enjoyment that I hope will also be useful to you, dear reader. Please refer to the [https://docs.racket-lang.org/guide/](The Racket Guide) for more technical detail on effectively using the Racket language and ecosystem.

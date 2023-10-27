@@ -1,6 +1,15 @@
 # Knowledge Graph Navigator {#kgn}
 
-The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for processing a set of entity names and automatically exploring the public Knowledge Graph [DBPedia](http://dbpedia.org) using SPARQL queries. I started to write KGN for my own use to automate some things I used to do manually when exploring Knowledge Graphs, and later thought that KGN might be also useful for educational purposes. KGN shows the user the auto-generated SPARQL queries so hopefully the user will learn by seeing examples. KGN uses the SPARQL queries. I cover SPARQL and linked data/knowledge Graphs is previous books I have written and while I give you a brief background here, I ask interested users to look at either for more details:
+The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for processing a set of entity names and automatically exploring the public Knowledge Graph [DBPedia](http://dbpedia.org) using SPARQL queries. I started to write KGN for my own use to automate some things I used to do manually when exploring Knowledge Graphs, and later thought that KGN might be also useful for educational purposes. KGN shows the user the auto-generated SPARQL queries so hopefully the user will learn by seeing examples. KGN uses the SPARQL queries.
+
+The KGN application is still a work in progress so please check for updates to this *live eBook*. The following screenshots show the current version of the application:
+
+![KGN finds multiple RDF subjects for "Steve Jobs" so a dialog is presented to choose one](images/kgn1.jpg)
+
+![KGN query results](images/kgn2.jpg)
+
+
+I cover SPARQL and linked data/knowledge Graphs is previous books I have written and while I give you a brief background here, I ask interested users to look at either for more details:
 
 - The chapter **Knowledge Graph Navigator** in my book **Loving Common Lisp, or the Savvy Programmer’s Secret Weapon**
 - The chapters **Background Material for the Semantic Web and Knowledge Graphs**, **Knowledge Graph Navigator** in my book **Practical Artificial Intelligence Programming With Clojure**
@@ -64,6 +73,9 @@ The following listing shows **Racket-AI-book-code/sparql/sparql.rkt** where we i
 Another function **sparql-query->hash** executes SPARQL queries against the DBPedia endpoint. It takes a SPARQL query string as an argument, sends an HTTP request to the DBpedia SPARQL endpoint, and expects a JSON response. The **call/input-url** function is used to send the request, with **uri-encode** ensuring the query string is URL-encoded. The response is read from the port, converted to a JSON expression using the function **string->jsexpr**, and is expected to be in a hash form which is returned by this function.
 
 Lastly, there are two functions **json->listvals** and **gd** for processing the JSON response from DBPedia. The function **json->listvals** extracts the variable bindings from the SPARQL result and organizes them into lists. The function **gd** further processes these lists based on the number of variables in the query result, creating lists of lists which represent the variable bindings in a structured way. The **sparql-dbpedia** function serves as an interface to these functionalities, taking a SPARQL query string, executing the query via **sparql-query->hash**, and processing the results through **gd** to provide a structured output. This arrangement encapsulates the process of querying DBPedia and formatting the results, making it convenient for further use within a Racket program.
+
+We already saw most of the following code listing in the previous chapter **Datastores**. The following listings in this chapter will be updated in future versions of this *live eBook* when I finish writing the KGN application.
+
 
 ```racket
 (provide sparql-dbpedia-person-uri)
@@ -169,12 +181,14 @@ Lastly, there are two functions **json->listvals** and **gd** for processing the
     (gd (sparql-query->hash sparql)))
 ```
 
+This code is a work in progress.
+
 
 ### NLP Library
 
 We implemented a library in the chapter **Natural Language Processing** that we use here.
 
-TBD - some examples ??
+Please make sure you have read that chapter before the following sections.
 
 
 ### Implementation of KGN Application Code

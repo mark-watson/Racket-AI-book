@@ -2,7 +2,6 @@ preface.md
 tutorial.md
 datastores.md
 visualization.md
-keras_models.md
 webscrape.md
 llm.md
 nlp.md
