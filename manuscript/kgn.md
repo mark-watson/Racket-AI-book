@@ -48,17 +48,12 @@ After looking at an interactive session using the example program for this chapt
 
 ## Entity Types Handled by KGN
 
-To keep this example simple we handle just three entity types:
+To keep this example simple we handle just two entity types:
 
 - People
-- Organizations
 - Places
  
-In addition to finding detailed information for people, organizations, and places we will also search for relationships between entities. This search process consists of generating a series of SPARQL queries and calling the DBPedia SPARQL endpoint.
-
-
-TBD
-
+The Common Lisp version of KGN also searches for relationships between entities. This search process consists of generating a series of SPARQL queries and calling the DBPedia SPARQL endpoint. I may add this feature to the Racket version of KGN in the future.
 
 ## KGN Implementation
 
@@ -70,7 +65,7 @@ We are using two libraries developed for this book that can be found in the dire
 
 We already looked at code examples for making simple SPARQL queries in the chapter **Datastores** and here we continue with more examples that we need to the KGN application.
 
-The following listing shows **Racket-AI-book-code/sparql/sparql.rkt** where we implement several functions for interacting with DBPedia's SPARQL endpoint. There are two functions **sparql-dbpedia-for-person** and **sparql-dbpedia-person-uri** crafted for constructing SPARQL queries. The function **sparql-dbpedia-for-person** takes a person URI and formulates a query to fetch associated website links and comments, limiting the results to four. On the other hand, the function **sparql-dbpedia-person-uri** takes a person name and builds a query to obtain the person's URI and comments from DBpedia. Both functions utilize string manipulation to embed the input parameters into the SPARQL query strings.
+The following listing shows **Racket-AI-book-code/sparql/sparql.rkt** where we implement several functions for interacting with DBPedia's SPARQL endpoint. There are two functions **sparql-dbpedia-for-person** and **sparql-dbpedia-person-uri** crafted for constructing SPARQL queries. The function **sparql-dbpedia-for-person** takes a person URI and formulates a query to fetch associated website links and comments, limiting the results to four. On the other hand, the function **sparql-dbpedia-person-uri** takes a person name and builds a query to obtain the person's URI and comments from DBpedia. Both functions utilize string manipulation to embed the input parameters into the SPARQL query strings. There are similar functions for places.
 
 Another function **sparql-query->hash** executes SPARQL queries against the DBPedia endpoint. It takes a SPARQL query string as an argument, sends an HTTP request to the DBpedia SPARQL endpoint, and expects a JSON response. The **call/input-url** function is used to send the request, with **uri-encode** ensuring the query string is URL-encoded. The response is read from the port, converted to a JSON expression using the function **string->jsexpr**, and is expected to be in a hash form which is returned by this function.
 
@@ -183,8 +178,6 @@ We already saw most of the following code listing in the previous chapter **Data
     (gd (sparql-query->hash sparql)))
 ```
 
-This code is a work in progress.
-
 
 ### NLP Library
 
@@ -195,7 +188,7 @@ Please make sure you have read that chapter before the following sections.
 
 ### Implementation of KGN Application Code
 
-The file **Racket-AI-book-code/kgn/main.rkt** contains the application code. The provided Racket scheme code is structured for interacting with the DBPedia SPARQL endpoint to retrieve information about persons or places based on a user's string query. The code is organized into several defined functions aimed at handling different steps of the process:
+The file **Racket-AI-book-code/kgn/main.rkt** contains library boilerplate and the file **Racket-AI-book-code/kgn/kgn.rkt** the application code. The provided Racket scheme code is structured for interacting with the DBPedia SPARQL endpoint to retrieve information about persons or places based on a user's string query. The code is organized into several defined functions aimed at handling different steps of the process:
 
 **Query Parsing and Entity Recognition**:
 
@@ -355,7 +348,6 @@ The local file **sparql-utils.rkt** contains additional utility functions for ac
                   FILTER  (lang(?comment) = 'en') .
 }})
 
-
 (define (sparql-query->hash query)
   (call/input-url (string->url (string-append "https://dbpedia.org/sparql?query=" (uri-encode query)))
                       get-pure-port
@@ -387,7 +379,7 @@ The local file **sparql-utils.rkt** contains additional utility functions for ac
 The local file **kgn.rkt** is the main program for this application.
 
 ```racket
-(require htdp/gui)            ;; note: when building executable, choose GRacket, not Racket to get *.app bundle
+(require htdp/gui)  ;; note: when building executable, choose GRacket, not Racket to get *.app bundle
 (require racket/gui/base)
 (require racket/match)
 (require racket/pretty)
@@ -395,7 +387,7 @@ The local file **kgn.rkt** is the main program for this application.
 
 ;; Sample queries:
 ;;   who is Bill Gates
-;;   where is San Francisco?
+;;   where is San Francisco
 ;; (only who/where queries are currently handled)
 
 ;;(require "utils.rkt")
@@ -403,11 +395,8 @@ The local file **kgn.rkt** is the main program for this application.
 (require "main.rkt")
 (require "dialog-utils.rkt")
 
-(display "\nCurrent path = ") (display (find-system-path 'run-file)) (display "\n")
-;;(my-log-info (path->string (path-to-data)) "path to data")
-;;(my-log-info (find-system-path 'run-file) "path of run file")
-
-;; NOTE: data subdirectory needs to be in kgn.app/Contents/Resources for code signing to work
+(define count-substring 
+  (compose length regexp-match*))
 
 (define (short-string s)
   (if (< (string-length s) 75)
@@ -479,7 +468,7 @@ The local file **kgn.rkt** is the main program for this application.
 ```
 
 
-TBD
+The two screen shot figures seen earlier show the GUI application running.
 
 ## Knowledge Graph Navigator Wrap Up
 
