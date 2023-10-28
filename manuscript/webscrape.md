@@ -95,4 +95,93 @@ Now we will extract HTML anchor links:
 
 ## Implementation of a Racket Web Scraping Library
 
-TBD
+The web scraping library listed below can be found in the directory **Racket-AI-book/manuscript**. The following listing of **webscrape.rkt** should look familiar after reading the code snippets in the last section.
+
+The provided Racket Scheme code defines three functions to interact with and process web resources: `web-uri->xexp`, `web-uri->text`, and `web-uri->links`.
+
+**`web-uri->xexp`**:
+   - Requires three libraries: `net/http-easy`, `html-parsing`, and `net/url xml xml/path`.
+   - Given a URI (`a-uri`), it creates a stream (`a-stream`) using the `get` function from the `net/http-easy` library to fetch the contents of the URI.
+   - Converts the HTML content of the URI to an S-expression (`xexp`) using the `html->xexp` function from the `html-parsing` library.
+   - Closes the response stream using `response-close!` and returns the `xexp`.
+
+**`web-uri->text`**:
+   - Calls `web-uri->xexp` to convert the URI content to an `xexp`.
+   - Utilizes `se-path*/list` from the `xml/path` library to extract all paragraph elements (`p`) from the `xexp`.
+   - Filters the paragraph elements to retain only strings (excluding nested tags or other structures).
+   - Joins these strings with a newline separator, normalizing spaces using `string-normalize-spaces` from the `srfi/13` library.
+
+**`web-uri->links`**:
+   - Similar to `web-uri->text`, it starts by converting URI content to an `xexp`.
+   - Utilizes `se-path*/list` to extract all `href` attributes from the `xexp`.
+   - Filters these `href` attributes to retain only those that are external links (those beginning with "http").
+
+In summary, these functions collectively enable the extraction and processing of HTML content from a specified URI, converting HTML to a more manageable S-expression format, and then extracting text and links as required.
+
+```racket
+#lang racket
+
+(require net/http-easy)
+(require html-parsing)
+(require net/url xml xml/path)
+(require srfi/13) ;; for strings
+
+(define (web-uri->xexp a-uri)
+  (let* ((a-stream
+          (get a-uri #:stream? #t))
+         (lst (html->xexp (response-output a-stream))))
+    (response-close! a-stream)
+    lst))
+
+(define (web-uri->text a-uri)
+  (let* ((a-xexp
+          (web-uri->xexp a-uri))
+         (p-elements (se-path*/list '(p) a-xexp))
+         (lst-strings
+          (filter
+           (lambda (s) (string? s))
+           p-elements)))
+    (string-normalize-spaces
+     (string-join lst-strings "\n"))))
+
+(define (web-uri->links a-uri)
+  (let* ((a-xexp
+          (web-uri->xexp a-uri)))
+    ;; we want only external links so filter out local links:
+    (filter
+     (lambda (s) (string-prefix? "http" s))
+     (se-path*/list '(href) a-xexp))))
+```
+
+Here are a few examples in a Racket REPL (most output omitted for brevity):
+
+```racket
+> (web-uri->xexp "https://knowledgebooks.com")
+'(*TOP*
+  (*DECL* DOCTYPE html)
+  "\n"
+  (html
+   "\n"
+   "\n"
+   (head
+    "\n"
+    "    "
+    (title "KnowledgeBooks.com - research on the Knowledge Management, and the Semantic Web ")
+    "\n"
+ ...
+
+> (web-uri->text "https://knowledgebooks.com")
+"With the experience of working on Machine Learning and Knowledge Graph applications
+ ...
+
+> (web-uri->links "https://knowledgebooks.com")
+'("http://markwatson.com"
+  "https://oceanprotocol.com/"
+  "https://commoncrawl.org/"
+  "http://markwatson.com/consulting/"
+  "http://kbsportal.com")
+```
+
+If you want to install this library on your laptop using linking (requiring the library access a link to the source code in the directory **Racket-AI-book-code/webscrape**) run the following in the library source directory **Racket-AI-book-code/webscrape**:
+
+   raco pkg install --scope user
