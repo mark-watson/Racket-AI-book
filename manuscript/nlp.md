@@ -30,8 +30,7 @@ The `parts-of-speech` function iterates over each word in the input vector, chec
 #lang racket
 
 (require srfi/13) ; the string SRFI
-
-;;(require "utils.rkt")
+(require racket/runtime-path)
 
 (provide parts-of-speech)
 
@@ -48,7 +47,7 @@ The `parts-of-speech` function iterates over each word in the input vector, chec
 (define lex-hash
   (let ((hash (make-hash)))
     (with-input-from-file
-        "data/tag.dat"
+        (string-append (path->string my-data-path) "/tag.dat")
       (lambda ()
         (let loop ()
           (let ((p (read)))
@@ -192,7 +191,7 @@ Overall, the code is fairly optimized for its purpose, utilizing hash tables for
 #lang racket
 
 (require "fasttag.rkt")
-
+(require racket/runtime-path)
 (provide find-human-names)
 (provide find-place-names)
 
@@ -205,20 +204,29 @@ Overall, the code is fairly optimized for its purpose, utilizing hash tables for
 		  (if (eof-object? l) #f (loop)))))))
 
 (define *last-name-hash* (make-hash))
-(process-one-word-per-line "data/human_names/names.last"
-                           (lambda (x) (hash-set! *last-name-hash* x #t)))
+(process-one-word-per-line 
+  (string-append
+    (path->string my-data-path)
+    "/human_names/names.last")
+  (lambda (x) (hash-set! *last-name-hash* x #t)))
 (define *first-name-hash* (make-hash))
-(process-one-word-per-line "data/human_names/names.male"
-                           (lambda (x) (hash-set! *first-name-hash* x #t)))
-(process-one-word-per-line "data/human_names/names.female"
-                           (lambda (x) (hash-set! *first-name-hash* x #t)))
+(process-one-word-per-line
+  (string-append
+    (path->string my-data-path)
+    "/human_names/names.male")
+  (lambda (x) (hash-set! *first-name-hash* x #t)))
+(process-one-word-per-line
+  (string-append
+    (path->string my-data-path)
+    "/human_names/names.female")
+  (lambda (x) (hash-set! *first-name-hash* x #t)))
 
 (define *place-name-hash* (make-hash))
-(process-one-word-per-line "data/placenames.txt"
-                           (lambda (x) (hash-set!  *place-name-hash* x #t)))
-
-(display (hash-ref *last-name-hash* "Bartlow" #f))
-
+(process-one-word-per-line
+  (string-append
+    (path->string my-data-path)
+    "/placenames.txt")
+  (lambda (x) (hash-set!  *place-name-hash* x #t)))
 (define *name-prefix-list*
   '("Mr" "Mrs" "Ms" "Gen" "General" "Maj" "Major" "Doctor" "Vice" "President" 
 	"Lt" "Premier" "Senator" "Congressman" "Prince" "King" "Representative"
