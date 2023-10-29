@@ -14,42 +14,48 @@ RAG enables the LLM to access and leverage external text data sources, which is 
 
 In the following short Racket example program (file **Racket-AI-book-code/embeddingsdb/embeddingsdb.rkt**) I implement some ideas of a RAG architecture. At file load time the text files in the subdirectory **data** are read, split into "chunks", and each chunk along with its parent file name and OpenAI text embedding is stored in a local SQLite database. When a user enters a query, the OpenAI embedding is calculated, and this embedding is matched against the embeddings of all chunks using the dot product of two 1536 element embedding vectors. The "best" chunks are concatenated together and this "context" text is passed to GPT-4 along with the user's original query. Here I describe the code in more detail:
 
-The provided Racket code uses a local SQLite database and OpenAI's APIs for calculating text embeddings and for text completions:
+The provided Racket code uses a local SQLite database and OpenAI's APIs for calculating text embeddings and for text completions.
 
 **Utility Functions:**
-    - `floats->string` and `string->floats` are utility functions for converting between a list of floats and its string representation.
-    - `read-file` reads a file’s content.
-    - `join-strings` joins a list of strings with a specified separator.
-    - `truncate-string` truncates a string to a specified length.
-    - `interleave` merges two lists by interleaving their elements.
-    - `break-into-chunks` breaks a text into chunks of a specified size.
-    - `string-to-list` and `decode-row` are utility functions for parsing and processing database rows.
+
+- `floats->string` and `string->floats` are utility functions for converting between a list of floats and its string representation.
+- `read-file` reads a file’s content.
+- `join-strings` joins a list of strings with a specified separator.
+- `truncate-string` truncates a string to a specified length.
+- `interleave` merges two lists by interleaving their elements.
+- `break-into-chunks` breaks a text into chunks of a specified size.
+- `string-to-list` and `decode-row` are utility functions for parsing and processing database rows.
 
 **Database Setup:**
-    - Database connection is established to "test.db" and a table named "documents" is created with columns for document_path, content, and embedding.
+
+- Database connection is established to "test.db" and a table named "documents" is created with columns for document_path, content, and embedding.
 
 **Document Management:**
-    - `insert-document` inserts a document and its associated information into the database.
-    - `get-document-by-document-path` and `all-documents` are utility functions for querying documents from the database.
-    - `create-document` reads a document from a file path, breaks it into chunks, computes embeddings for each chunk via a function `embeddings-openai`, and inserts these into the database.
+
+- `insert-document` inserts a document and its associated information into the database.
+- `get-document-by-document-path` and `all-documents` are utility functions for querying documents from the database.
+- `create-document` reads a document from a file path, breaks it into chunks, computes embeddings for each chunk via a function `embeddings-openai`, and inserts these into the database.
 
 **Semantic Matching and Interaction:**
-    - `execute-to-list` and `dot-product` are utility functions for database queries and vector operations.
-    - `semantic-match` performs a semantic search by calculating the dot product of embeddings of the query and documents in the database. It then aggregates contexts of documents with a similarity score above a certain threshold, and sends a new query constructed with these contexts to OpenAI for further processing.
-    - `QA` is a wrapper around `semantic-match` for querying.
-    - `CHAT` initiates a loop for user interaction where each user input is processed through `semantic-match` to generate a response, maintaining a context of the previous chat.
+
+- `execute-to-list` and `dot-product` are utility functions for database queries and vector operations.
+- `semantic-match` performs a semantic search by calculating the dot product of embeddings of the query and documents in the database. It then aggregates contexts of documents with a similarity score above a certain threshold, and sends a new query constructed with these contexts to OpenAI for further processing.
+- `QA` is a wrapper around `semantic-match` for querying.
+- `CHAT` initiates a loop for user interaction where each user input is processed through `semantic-match` to generate a response, maintaining a context of the previous chat.
 
 **Test Code:**
-    - `test` function creates documents by reading from specified file paths, and performs some queries using the `QA` function.
 
-The code uses a local SQLite database to store and manage document embeddings and the OpenAI API for generating embeddings and performing semantic searches based on user queries:
+- `test` function creates documents by reading from specified file paths, and performs some queries using the `QA` function.
+
+The code uses a local SQLite database to store and manage document embeddings and the OpenAI API for generating embeddings and performing semantic searches based on user queries. Two functions are exported incase you want to use this example as a library: **create-document** and **QA**.
 
 ```racket
 #lang racket
 
 (require db)
-;;(require sqlite-table)
 (require llmapis)
+
+(provide create-document QA)
 
 ; Function to convert list of floats to string representation
 (define (floats->string floats)
@@ -58,7 +64,6 @@ The code uses a local SQLite database to store and manage document embeddings an
 ; Function to convert string representation back to list of floats
 (define (string->floats str)
   (map string->number (string-split str)))
-
 
 (define (read-file infile)
   (with-input-from-file infile
@@ -95,14 +100,15 @@ The code uses a local SQLite database to store and manage document embeddings an
         (embedding (string-to-list (read-line (open-input-string (vector-ref row 2))))))
     (list id context embedding)))
 
-(define db (sqlite3-connect #:database "test.db" #:mode 'create #:use-place #t))
+(define
+  db
+  (sqlite3-connect #:database "test.db" #:mode 'create
+                   #:use-place #t))
 
 (with-handlers ([exn:fail? (lambda (ex) (void))])
   (query-exec
    db
    "CREATE TABLE documents (document_path TEXT, content TEXT, embedding TEXT);"))
-      
-;; ... database setup, error handling, and queries ...
 
 (define (insert-document document-path content embedding)
   (printf "~%insert-document:~%  content:~a~%~%" content)
@@ -113,9 +119,10 @@ The code uses a local SQLite database to store and manage document embeddings an
 
 (define (get-document-by-document-path document-path)
   (map decode-row
-       (query-rows db
-                    "SELECT * FROM documents WHERE document_path = ?;"
-                    document-path)))
+       (query-rows
+         db
+         "SELECT * FROM documents WHERE document_path = ?;"
+         document-path)))
 
 (define (all-documents)
   (map
@@ -124,8 +131,6 @@ The code uses a local SQLite database to store and manage document embeddings an
     db
     "SELECT * FROM documents;")))
    
-;; ... remaining database query functions ...
-
 (define (create-document fpath)
   (let ((contents (break-into-chunks (file->string fpath) 200)))
     (for-each
@@ -135,25 +140,24 @@ The code uses a local SQLite database to store and manage document embeddings an
            (insert-document fpath content embedding))))
      contents)))
 
-
 ;; Assuming a function to fetch documents from database
 (define (execute-to-list db query)
   (query-rows db query))
 
-(define (dot-product a b) ;; dot product of two lists of floating point numbers
+;; dot product of two lists of floating point numbers:
+(define (dot-product a b) 
   (cond
     [(or (null? a) (null? b)) 0]
     [else
      (+ (* (car a) (car b))
         (dot-product (cdr a) (cdr b)))]))
 
-
 (define (semantic-match query custom-context [cutoff 0.7])
   (let ((emb (embeddings-openai query))
         (ret '()))
     (for-each
      (lambda (doc)
-       (let* ((context (second doc)) ;; ignore fpath for now
+       (let* ((context (second doc))
               (embedding (third doc))
               (score (dot-product emb embedding)))
          (when (> score cutoff)
