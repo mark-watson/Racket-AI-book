@@ -197,9 +197,11 @@ The code uses a local SQLite database to store and manage document embeddings an
 ;; ... test code ...
 
 (define (test)
-  "Test code for Semantic Document Search Using OpenAI GPT APIs and local vector database"
-  (create-document "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/sports.txt")
-  (create-document "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/chemistry.txt")
+  "Test Semantic Document Search Using GPT APIs and local vector database"
+  (create-document
+    "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/sports.txt")
+  (create-document
+    "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/chemistry.txt")
   (QA "What is the history of the science of chemistry?")
   (QA "What are the advantages of engaging in sports?"))
 ```
@@ -233,7 +235,8 @@ In order to show that this example is also using data in the local "document" te
 GPT-4 was never trained on my made-up data so it has no idea what the non-existent compound ZorroOnian Alcohol is. The following answer is retrieved via RAG from the local document data (for brevity, most of the output for adding the local document files to the embedding index is not shown):
 
 ```
-> (create-document "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/chemistry.txt")
+> (create-document
+   "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/chemistry.txt")
 
 insert-document:
   content:Amyl alcohol is an organic compound with the formula C 5 H 12 O. ZorroOnian Alcohol is another organic compound with the formula C 6 H 10 O. All eight isomers of amyl alcohol are known.
