@@ -1,9 +1,1 @@
-preface.md
-tutorial.md
-datastores.md
-visualization.md
-webscrape.md
-llm.md
-nlp.md
-kgn.md
-conclusion.md
+embeddings.md

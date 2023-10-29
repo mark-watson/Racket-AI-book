@@ -4,6 +4,7 @@ datastores.md
 visualization.md
 webscrape.md
 llm.md
+embeddings.md
 nlp.md
 kgn.md
 conclusion.md
