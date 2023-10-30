@@ -47,7 +47,7 @@ The provided Racket code uses a local SQLite database and OpenAI's APIs for calc
 
 - `test` function creates documents by reading from specified file paths, and performs some queries using the `QA` function.
 
-The code uses a local SQLite database to store and manage document embeddings and the OpenAI API for generating embeddings and performing semantic searches based on user queries. Two functions are exported in case you want to use this example as a library: **create-document** and **QA**.
+The code uses a local SQLite database to store and manage document embeddings and the OpenAI API for generating embeddings and performing semantic searches based on user queries. Two functions are exported in case you want to use this example as a library: **create-document** and **QA**. Note: in the test code at the bottom of the listing, change the absolute path to reflect where you cloned the GitHub repository for this book.
 
 ```racket
 #lang racket
