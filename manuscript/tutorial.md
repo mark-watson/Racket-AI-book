@@ -194,6 +194,25 @@ LI text:
   "          ")
 ```
 
+## Using Racket ~/.racketrc Initialization File
+
+In my Racket workflow I don’t usually use **~/.racketrc** to define initial forms that are automatically loaded when starting the **racket** command line tool or the **DrRacket** application. That said I do like to use **~/.racketrc** for temporary initialization forms when working on a specific project to increase the velocity of interactive development.
+
+Here is an example use:
+
+```console
+$ cat ~/.racketrc
+(define (foo-list x)
+  (list x x x))
+$ racket
+Welcome to Racket v8.10 [cs].
+> (foo-list 3.14159)
+'(3.14159 3.14159 3.14159)
+> 
+```
+
+If you have local and public libraries you frequently load you can permanently keep **require** forms for them in **~/.racketrc** but that will slightly slow down the startup times of **racket** and **DrRacket**.
+
 ## Tutorial Wrap Up
 
 The rest of this book is comprised of example Racket programs that I have written for my own enjoyment that I hope will also be useful to you, dear reader. Please refer to the [https://docs.racket-lang.org/guide/](The Racket Guide) for more technical detail on effectively using the Racket language and ecosystem.
