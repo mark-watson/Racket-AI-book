@@ -1,6 +1,6 @@
 # Datastores
 
-For my personal research projects the only datastores that I often use are the embedded relational database and Resource Description Framework (RDF) datastores that might be local to my laptop or public Knowledge Graphs like DBPedia and WikiData. The use of RDF data and the SPARQL query language is part of the fields of the semantic web and liunked data.
+For my personal research projects the only datastores that I often use are the embedded relational database and Resource Description Framework (RDF) datastores that might be local to my laptop or public Knowledge Graphs like DBPedia and WikiData. The use of RDF data and the SPARQL query language is part of the fields of the semantic web and linked data.
 
 
 ## Accessing Public RDF Knowledge Graphs - a DBPedia Example
