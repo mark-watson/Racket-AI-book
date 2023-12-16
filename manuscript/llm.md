@@ -306,7 +306,7 @@ When you run the **ollama** command line tool, it also runs a REST API serve whi
 ```bash
 $ ollama run mistral
 >>> ^D
-(base) Marks-Mac-mini:~ $ ollama run mistral
+$ ollama run mistral
 >>> If I am driving between Sedona Arizona and San Diego, what sites should I visit as a tourist?
     
 There are many great sites to visit when driving from Sedona, Arizona to San Diego. Here are some 
@@ -356,17 +356,36 @@ The example code in the file **ollama_ai_local.rkt** is very similar to the exam
          (r (response-json p)))
     (hash-ref r 'response)))
 
-(define (question question)
+(define (question-ollama-ai-local question)
   (helper (string-append "Answer: " question)))
 
-(define (completion prompt)
+(define (completion-ollama-ai-local prompt)
   (helper
    (string-append
     "Continue writing from the following text: "
     prompt)))
+
+;; EMBEDDINGS:
+
+(define (embeddings-ollama text)
+    (let* ((prompt-data
+            (string-join
+             (list
+              (string-append
+               "{\"prompt\": \"" text "\","
+               " \"model\": \"mistral\"}"))))
+           (p
+            (post
+             "http://localhost:11434/api/embeddings"
+             #:data prompt-data))
+           (r (response-json p)))
+      (hash-ref r 'embedding)))
+
+
+;; (embeddings-ollama "Here is an article about llamas...")
 ```
 
-We will run the same examples we used in the last section for comparison:
+The function **embeddings-ollama** can be used to create embedding vectors from text input. Embeddings are used for chat with local documents, web sites, etc. We will run the same examples we used in the last section for comparison:
 
 ```
 > (question "Mary is 30 and Harry is 25. Who is older and by how much?")
@@ -377,3 +396,5 @@ We will run the same examples we used in the last section for comparison:
 "Frank drove his new sports car around town, enjoying the sleek design and powerful engine. The car was a bright red, which caught the attention of everyone on the road. Frank couldn't help but smile as he cruised down the highway, feeling the wind in his hair and the sun on his face.\n\nAs he drove, Frank couldn't resist the urge to test out the car's speed and agility. He weaved through traffic, expertly maneuvering the car around curves and turns. The car handled perfectly, and Frank felt a rush of adrenaline as he pushed it to its limits.\n\nEventually, Frank found himself at a local track where he could put his new sports car to the test. He revved up the engine and took off down the straightaway, hitting top speeds in no time. The car handled like a dream, and Frank couldn't help but feel a sense of pride as he crossed the finish line.\n\nAfterwards, Frank parked his sports car and walked over to a nearby café to grab a cup of coffee. As he sat outside, sipping his drink and watching the other cars drive by, he couldn't help but think about how much he loved his new ride. It was the perfect addition to his collection of cars, and he knew he would be driving it for years to come."
 > 
 ```
+
+While I often use larger and more capable proprietary LLMs like Claude 2.1 and GPT-4, smaller open models from Mistral are very capable and sufficient for most of my experiments embedding LLMs in application code. As I write this, you can run Mistral models locally and through commercially hosted APIs.
