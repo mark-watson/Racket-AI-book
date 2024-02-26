@@ -73,6 +73,24 @@ Lastly, there are two functions **json->listvals** and **gd** for processing the
 
 We already saw most of the following code listing in the previous chapter **Datastores**. The following listings in this chapter will be updated in future versions of this *live eBook* when I finish writing the KGN application.
 
+Part of solving this problem is constructing SPARQL queries as strings. We will look in some detail at one utility function `sparql-dbpedia-for-person` that constructs a SPARQL query string for fetching data from DBpedia about a specific person. The function takes one parameter, `person-uri`, which is expected to be the URI of a person in the DBpedia dataset. The query string is built by appending strings, including the dynamic insertion of the `person-uri` parameter value. Here’s a breakdown of how the code works:
+
+1. **Function Definition**: The function `sparql-dbpedia-for-person` is defined with one parameter, `person-uri`. This parameter is used to dynamically insert the person’s URI into the SPARQL query.
+
+2. **String Appending (`@string-append`)**: The `@string-append` construct (which seems like a custom or pseudo-syntax, as the standard Scheme function for string concatenation is `string-append` without the `@`) is used to concatenate multiple strings to form the complete SPARQL query. This includes static parts of the query as well as dynamic parts where the `person-uri` is inserted.
+
+3. **SPARQL Query Construction**: The function constructs a SPARQL query with the following key components:
+   - **SELECT Clause**: This part of the query specifies what information to return. It uses `GROUP_CONCAT` to aggregate multiple `?website` values into a single string, separated by `”  |  “`, and also selects the `?comment` variable.
+   - **OPTIONAL Clauses**: Two OPTIONAL blocks are included:
+     - The first block attempts to fetch English comments (`?comment`) associated with the person, filtering to ensure the language of the comment is English (`lang(?comment) = ‘en’`).
+     - The second block fetches external links (`?website`) associated with the person but filters out any URLs containing “dbpedia” (case-insensitive), to likely avoid self-references within DBpedia.
+   - **Dynamic URI Insertion**: The `@person-uri` placeholder is replaced with the actual `person-uri` passed to the function. This dynamically targets the SPARQL query at a specific DBpedia resource.
+   - **LIMIT Clause**: The query is limited to return at most 4 results with `LIMIT 4`.
+
+4. **Usage of `@person-uri` Placeholder**: The code shows `@person-uri` placeholders within the query string, indicating where the `person-uri` parameter’s value should be inserted. However, the mechanism for replacing these placeholders with the actual URI value is not explicitly shown in the snippet. Typically, this would involve string replacement functionality, ensuring the final query string includes the specific URI of the person of interest.
+
+In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SPARQL query to fetch English comments and external links (excluding DBpedia links) for a given person from DBpedia, with the results limited to a maximum of 4 entries. The use of string concatenation (or a pseudo-syntax resembling `@string-append`) allows for the dynamic insertion of the person’s URI into the query.
+
 
 ```racket
 (provide sparql-dbpedia-person-uri)
@@ -178,6 +196,7 @@ We already saw most of the following code listing in the previous chapter **Data
     (gd (sparql-query->hash sparql)))
 ```
 
+The function **gd** converts JSON data to Scheme nested lists and then extracts the values for up to four variables.
 
 ### NLP Library
 
