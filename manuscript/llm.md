@@ -28,24 +28,28 @@ Our goal is straightforward interaction with OpenAI's APIs. The communication be
 
 The Racket code listed below defines two functions, **question** and **completion**, aimed at interacting with the OpenAI API to leverage the GPT-3.5 Turbo model for text generation. The function **question** accepts a **prompt** argument and constructs a JSON payload following the OpenAI's chat models schema. It constructs a value for **prompt-data** string containing a user message that instructs the model to "Answer the question" followed by the provided prompt. The **auth** lambda function within **question** is utilized to set necessary headers for the HTTP request, including the authorization header populated with the OpenAI API key obtained from the environment variable **OPENAI_API_KEY**. The function **post** from the **net/http-easy** library is employed to issue a POST request to the OpenAI API endpoint "https://api.openai.com/v1/chat/completions" with the crafted JSON payload and authentication headers. The response from the API is then parsed as JSON, and the content of the message from the first choice is extracted and returned.
 
-The function **completion**, on the other hand, serves a specific use case of continuing text from a given **prompt**. It reformats the prompt to prepend the phrase "Continue writing from the following text: " to the provided text, and then calls the function **question** with this modified prompt. This setup encapsulates the task of text continuation in a separate function, making it straightforward for developers to request text extensions from the OpenAI API by merely providing the initial text to the function **completion**. Through these functions, the code provides a structured mechanism to generate responses or text continuations from the GPT-3.5 Turbo model using a Racket Scheme programming environment.
+The function **completion**, on the other hand, serves a specific use case of continuing text from a given **prompt**. It reformats the prompt to prepend the phrase "Continue writing from the following text: " to the provided text, and then calls the function **question** with this modified prompt. This setup encapsulates the task of text continuation in a separate function, making it straightforward for developers to request text extensions from the OpenAI API by merely providing the initial text to the function **completion**. Through these functions, the code provides a structured mechanism to generate responses or text continuations.
+
+*This example was updated May 13, 2024 when OpenAI released the new GPT-4o model.*
 
 ```racket
 #lang racket
 
 (require net/http-easy)
 (require racket/set)
-(require pprint)
+ (require racket/pretty)
 
-(define (question prompt)
+(provide question-openai completion-openai embeddings-openai)
+
+(define (helper-openai prefix prompt)
   (let* ((prompt-data
           (string-join
            (list
             (string-append
              "{\"messages\": [ {\"role\": \"user\","
-             " \"content\": \"Answer the question: "
+             " \"content\": \"" prefix ": "
              prompt
-             "\"}], \"model\": \"gpt-3.5-turbo\"}"))))
+             "\"}], \"model\": \"gpt-4o\"}"))))
          (auth (lambda (uri headers params)
                  (values
                   (hash-set*
@@ -63,15 +67,46 @@ The function **completion**, on the other hand, serves a specific use case of co
            #:auth auth
            #:data prompt-data))
          (r (response-json p)))
+    ;;(pretty-print r)
     (hash-ref
      (hash-ref (first (hash-ref r 'choices)) 'message)
      'content)))
 
-(define (completion prompt)
-  (question
-   (string-append
-    "Continue writing from the following text: "
-    prompt)))
+
+(define (question-openai prompt)
+  (helper-openai "Answer the question: " prompt))
+
+(define (completion-openai prompt)
+  (helper-openai "Continue writing from the following text: "
+    prompt))
+
+(define (embeddings-openai text)
+    (let* ((prompt-data
+            (string-join
+             (list
+              (string-append
+               "{\"input\": \"" text "\","
+               " \"model\": \"text-embedding-ada-002\"}"))))
+           (auth (lambda (uri headers params)
+                 (values
+                  (hash-set*
+                   headers
+                   'authorization
+                   (string-join
+                    (list
+                     "Bearer "
+                     (getenv "OPENAI_API_KEY")))
+                   'content-type "application/json")
+                  params)))
+         (p
+          (post
+           "https://api.openai.com/v1/embeddings"
+           #:auth auth
+           #:data prompt-data))
+         (r (response-json p)))
+     (hash-ref
+       (first (hash-ref r 'data))
+       'embedding)))
 ```
 
 The output looks like (output from the second example shortened for brevity):
