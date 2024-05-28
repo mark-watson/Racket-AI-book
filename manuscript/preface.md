@@ -16,7 +16,7 @@ I wrote this book for both professional programmers and home hobbyists who alrea
 
 You can find the code examples and the files for the manuscript for this book in the following GitHub repository:
 
-[https://github.com/mark-watson/Racket-AI-book](https://github.com/mark-watson/Racket-AI-book
+[https://github.com/mark-watson/Racket-AI-book](https://github.com/mark-watson/Racket-AI-book)
 
 Git pull requests with code improvements for either the source code or manuscript markdown files will be appreciated by me and the readers of this book.
 
