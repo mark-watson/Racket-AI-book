@@ -1,0 +1,17 @@
+*.ss~
+*.ss#*
+.#*.ss
+
+*.rkt~
+
+racket_log.txt
+
+*.scm~
+*.scm#*
+.#*.scm
+
+compiled
+compiled/*
+
+.DS_Store
+

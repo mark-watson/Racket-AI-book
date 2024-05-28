@@ -12,9 +12,9 @@ Read this book in the manuscript subdirectory: [manuscript/TOC.md](manuscript/TO
 
 ## Example code for "Practical Artificial Intelligence Development With Racket"
 
-The code is contained in the same repository as the manuscript, but in the subdirectory **source**:
+The code is contained in the same repository as the manuscript, but in the subdirectory **source-code**:
 
-    [Source code](source)
+    [Source code](source-code)
 
 ### License for Book Manuscript: Creative Commons
 
