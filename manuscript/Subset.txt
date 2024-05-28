@@ -1,7 +1,6 @@
 preface.md
 tutorial.md
 datastores.md
-visualization.md
 webscrape.md
 llm.md
 embeddings.md
