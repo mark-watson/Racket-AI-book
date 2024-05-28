@@ -14,11 +14,17 @@ I have been developing commercial Artificial Intelligence (AI) tools and applica
 
 I wrote this book for both professional programmers and home hobbyists who already know how to program in Racket (or another Scheme dialect) and who want to learn practical AI programming and information processing techniques. I have tried to make this an enjoyable book to work through. In the style of a “cook book,” the chapters can be read in any order. 
 
-You can find the code examples in the following GitHub repository:
+You can find the code examples and the files for the manuscript for this book in the following GitHub repository:
 
-[https://github.com/mark-watson/Racket-AI-book-code](https://github.com/mark-watson/Racket-AI-book-code)
+[https://github.com/mark-watson/Racket-AI-book](https://github.com/mark-watson/Racket-AI-book
 
-Git pull requests with code improvements will be appreciated by me and the readers of this book.
+Git pull requests with code improvements for either the source code or manuscript markdown files will be appreciated by me and the readers of this book.
+
+## License for Book Manuscript: Creative Commons
+
+Copyright 2022-2024 Mark Watson. All rights reserved.
+
+This book may be shared using the Creative Commons "share and share alike, no modifications, no commercial reuse" license.
 
 ## Book Example Programs
 
