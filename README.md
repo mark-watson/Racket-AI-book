@@ -8,13 +8,13 @@ Link to book on LeanPub:
 
 [https://leanpub.com/racket-ai](https://leanpub.com/racket-ai)
 
-Read this book in the manuscript subdirectory: [manuscript/TOC.md](manuscript/TOC.md)
+Read this book in the manuscript subdirectory: [manuscript/TOC.md](./manuscript/TOC.md)
 
 ## Example code for "Practical Artificial Intelligence Development With Racket"
 
 The code is contained in the same repository as the manuscript, but in the subdirectory **source-code**:
 
-    [Source code](source-code)
+    [Source code](./source-code/README.md)
 
 ### License for Book Manuscript: Creative Commons
 
