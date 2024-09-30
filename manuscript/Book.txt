@@ -1,6 +1,7 @@
 preface.md
 tutorial.md
 datastores.md
+RDF_Datastore_SPARQL_Implementation.md
 webscrape.md
 llm.md
 embeddings.md
