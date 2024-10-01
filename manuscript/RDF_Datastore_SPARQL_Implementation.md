@@ -2,10 +2,10 @@
 
 This chapter explains a Racket implementation of a simple RDF (Resource Description Framework) datastore with partial SPARQL (SPARQL Protocol and RDF Query Language) support. We'll cover the core RDF data structures, query parsing and execution, helper functions, and the main function with example queries. The file **rdf_sparql.rkt** can be found online at [https://github.com/mark-watson/Racket-AI-book/source-code/simple_RDF_SPARQL](https://github.com/mark-watson/Racket-AI-book/tree/main/source-code/simple_RDF_SPARQL).
 
-Before looking at the code we look at sample use and output. The  function **test**:
+Before looking at the code we look at sample use and output. The  function **test** function demonstrates the usage of the RDF datastore and SPARQL query execution:
 
 ```racket
-(define (main)
+(define (test)
   (set! rdf-store '())
 
   (add-triple "John" "age" "30")
@@ -37,7 +37,17 @@ Before looking at the code we look at sample use and output. The  function **tes
   (print-query-results "select * where { ?name age ?age . ?name likes pizza }"))
   ```
 
-Generate the output:
+This function **test**:
+
+1. Initializes the RDF store with sample data.
+2. Prints all triples in the datastore.
+3. Defines a `print-query-results` function to execute and display query results.
+4. Executes three example SPARQL queries:
+   - Query all name-age-food combinations.
+   - Query all subject-object pairs for the "likes" predicate.
+   - Query all people who like pizza and their ages.
+
+Function **test** generates this output:
 
 ```text
 All triples in the datastore:
@@ -68,7 +78,7 @@ Final Results:
 
 ## 1. Core RDF Data Structures and Basic Operations
 
-There are two parts to this example: a simple unindexed RDF datastore and a partial SPARQL query implementation that supports compound where clause matches like: **select * where { ?name age ?age . ?name likes pizza }**.
+There are two parts to this example in file **rdf_sparql.rkt**: a simple unindexed RDF datastore and a partial SPARQL query implementation that supports compound where clause matches like: **select * where { ?name age ?age . ?name likes pizza }**.
 
 ### 1.1 RDF Triple Structure
 
@@ -165,53 +175,6 @@ Several helper functions are implemented to support query execution:
 4. `apply-bindings`: Applies bindings to a pattern.
 5. `merge-bindings`: Merges two sets of bindings.
 6. `project-results`: Projects the final results based on the SELECT variables.
-
-## 4. Main Function and Example Queries
-
-The `main` function demonstrates the usage of the RDF datastore and SPARQL query execution:
-
-```racket
-(define (main)
-  (set! rdf-store '())
-
-  (add-triple "John" "age" "30")
-  (add-triple "John" "likes" "pizza")
-  (add-triple "Mary" "age" "25")
-  (add-triple "Mary" "likes" "sushi")
-  (add-triple "Bob" "age" "35")
-  (add-triple "Bob" "likes" "burger")
-
-  (print-all-triples)
-
-  (define (print-query-results query-string)
-    (printf "Query: ~a\n" query-string)
-    (let ([results (execute-sparql-query query-string)])
-      (printf "Final Results:\n")
-      (if (null? results)
-          (printf "  No results\n")
-          (for ([result results])
-            (printf "  ~a\n"
-                    (string-join
-                     (map (lambda (pair)
-                            (format "~a: ~a" (car pair) (cdr pair)))
-                          result)
-                     ", "))))
-      (printf "\n")))
-
-  (print-query-results "select * where { ?name age ?age . ?name likes ?food }")
-  (print-query-results "select ?s ?o where { ?s likes ?o }")
-  (print-query-results "select * where { ?name age ?age . ?name likes pizza }"))
-```
-
-This function:
-
-1. Initializes the RDF store with sample data.
-2. Prints all triples in the datastore.
-3. Defines a `print-query-results` function to execute and display query results.
-4. Executes three example SPARQL queries:
-   - Query all name-age-food combinations.
-   - Query all subject-object pairs for the "likes" predicate.
-   - Query all people who like pizza and their ages.
 
 ## Conclusion
 
