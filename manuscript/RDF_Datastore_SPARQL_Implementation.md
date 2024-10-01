@@ -176,6 +176,49 @@ Several helper functions are implemented to support query execution:
 5. `merge-bindings`: Merges two sets of bindings.
 6. `project-results`: Projects the final results based on the SELECT variables.
 
+```racket
+(define (variable? str)
+  (and (string? str) (> (string-length str) 0) (char=? (string-ref str 0) #\?)))
+
+(define (triple-to-binding t [pattern #f])
+  (define binding '())
+  (when (and pattern (variable? (first pattern)))
+    (set! binding (cons (cons (first pattern) (triple-subject t)) binding)))
+  (when (and pattern (variable? (second pattern)))
+    (set! binding (cons (cons (second pattern) (triple-predicate t)) binding)))
+  (when (and pattern (variable? (third pattern)))
+    (set! binding (cons (cons (third pattern) (triple-object t)) binding)))
+  binding)
+
+(define (query-triples subject predicate object)
+  (filter (lambda (t)
+            (and (or (not subject) (variable? subject) (equal? (triple-subject t) subject))
+                 (or (not predicate) (variable? predicate) (equal? (triple-predicate t) predicate))
+                 (or (not object) (variable? object) (equal? (triple-object t) object))))
+          rdf-store))
+
+(define (apply-bindings pattern bindings)
+  (map (lambda (item)
+         (if (variable? item)
+             (or (dict-ref bindings item #f) item)
+             item))
+       pattern))
+
+(define (merge-bindings binding1 binding2)
+  (append binding1 binding2))
+
+(define (project-results results select-vars)
+  (if (equal? select-vars '("*"))
+      (map remove-duplicate-bindings results)
+      (map (lambda (result)
+             (remove-duplicate-bindings
+              (map (lambda (var)
+                     (cons var (dict-ref result var #f)))
+                   select-vars)))
+           results)))
+```
+
+
 ## Conclusion
 
 This implementation provides a basic framework for an RDF datastore with partial SPARQL support in Racket. While it lacks many features of a full-fledged RDF database and SPARQL engine, it demonstrates the core concepts and can serve as a starting point for more complex implementations. The code is simple and can be fun experimenting with.
