@@ -1,4 +1,4 @@
-# Implementing a Simple RDF Datastore with Partial SPARQL Support in Racket
+# Implementing a Simple RDF Datastore With Partial SPARQL Support in Racket
 
 This chapter explains a Racket implementation of a simple RDF (Resource Description Framework) datastore with partial SPARQL (SPARQL Protocol and RDF Query Language) support. We'll cover the core RDF data structures, query parsing and execution, helper functions, and the main function with example queries. The file **rdf_sparql.rkt** can be found online at [https://github.com/mark-watson/Racket-AI-book/source-code/simple_RDF_SPARQL](https://github.com/mark-watson/Racket-AI-book/tree/main/source-code/simple_RDF_SPARQL).
 
@@ -178,4 +178,4 @@ Several helper functions are implemented to support query execution:
 
 ## Conclusion
 
-This implementation provides a basic framework for an RDF datastore with partial SPARQL support in Racket. While it lacks many features of a full-fledged RDF database and SPARQL engine, it demonstrates the core concepts and can serve as a starting point for more complex implementations and the code is simple enough to be fun experimenting with.
+This implementation provides a basic framework for an RDF datastore with partial SPARQL support in Racket. While it lacks many features of a full-fledged RDF database and SPARQL engine, it demonstrates the core concepts and can serve as a starting point for more complex implementations. The code is simple and can be fun experimenting with.
