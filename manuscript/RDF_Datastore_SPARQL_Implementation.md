@@ -191,11 +191,13 @@ Several helper functions are implemented to support query execution:
   binding)
 
 (define (query-triples subject predicate object)
-  (filter (lambda (t)
-            (and (or (not subject) (variable? subject) (equal? (triple-subject t) subject))
-                 (or (not predicate) (variable? predicate) (equal? (triple-predicate t) predicate))
-                 (or (not object) (variable? object) (equal? (triple-object t) object))))
-          rdf-store))
+  (filter
+   (lambda (t)
+    (and
+      (or (not subject) (variable? subject) (equal? (triple-subject t) subject))
+      (or (not predicate) (variable? predicate) (equal? (triple-predicate t) predicate))
+      (or (not object) (variable? object) (equal? (triple-object t) object))))
+   rdf-store))
 
 (define (apply-bindings pattern bindings)
   (map (lambda (item)
