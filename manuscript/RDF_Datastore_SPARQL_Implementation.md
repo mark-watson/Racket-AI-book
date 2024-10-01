@@ -195,7 +195,8 @@ Several helper functions are implemented to support query execution:
    (lambda (t)
     (and
       (or (not subject) (variable? subject) (equal? (triple-subject t) subject))
-      (or (not predicate) (variable? predicate) (equal? (triple-predicate t) predicate))
+      (or (not predicate) (variable? predicate)
+          (equal? (triple-predicate t) predicate))
       (or (not object) (variable? object) (equal? (triple-object t) object))))
    rdf-store))
 
