@@ -1,8 +1,74 @@
 # Implementing a Simple RDF Datastore with Partial SPARQL Support in Racket
 
-This chapter explains a Racket implementation of a simple RDF (Resource Description Framework) datastore with partial SPARQL (SPARQL Protocol and RDF Query Language) support. We'll cover the core RDF data structures, query parsing and execution, helper functions, and the main function with example queries.
+This chapter explains a Racket implementation of a simple RDF (Resource Description Framework) datastore with partial SPARQL (SPARQL Protocol and RDF Query Language) support. We'll cover the core RDF data structures, query parsing and execution, helper functions, and the main function with example queries. The file **rdf_sparql.rkt** can be found online at [https://github.com/mark-watson/Racket-AI-book/source-code/simple_RDF_SPARQL](https://github.com/mark-watson/Racket-AI-book/tree/main/source-code/simple_RDF_SPARQL).
+
+Before looking at the code we look at sample use and output. The  function **test**:
+
+```racket
+(define (main)
+  (set! rdf-store '())
+
+  (add-triple "John" "age" "30")
+  (add-triple "John" "likes" "pizza")
+  (add-triple "Mary" "age" "25")
+  (add-triple "Mary" "likes" "sushi")
+  (add-triple "Bob" "age" "35")
+  (add-triple "Bob" "likes" "burger")
+
+  (print-all-triples)
+
+  (define (print-query-results query-string)
+    (printf "Query: ~a\n" query-string)
+    (let ([results (execute-sparql-query query-string)])
+      (printf "Final Results:\n")
+      (if (null? results)
+          (printf "  No results\n")
+          (for ([result results])
+            (printf "  ~a\n"
+                    (string-join
+                     (map (lambda (pair)
+                            (format "~a: ~a" (car pair) (cdr pair)))
+                          result)
+                     ", "))))
+      (printf "\n")))
+
+  (print-query-results "select * where { ?name age ?age . ?name likes ?food }")
+  (print-query-results "select ?s ?o where { ?s likes ?o }")
+  (print-query-results "select * where { ?name age ?age . ?name likes pizza }"))
+  ```
+
+Generate the output:
+
+```text
+All triples in the datastore:
+Bob likes burger
+Bob age 35
+Mary likes sushi
+Mary age 25
+John likes pizza
+John age 30
+
+Query: select * where { ?name age ?age . ?name likes ?food }
+Final Results:
+  ?age: 35, ?name: Bob, ?food: burger
+  ?age: 25, ?name: Mary, ?food: sushi
+  ?age: 30, ?name: John, ?food: pizza
+
+Query: select ?s ?o where { ?s likes ?o }
+Final Results:
+  ?s: Bob, ?o: burger
+  ?s: Mary, ?o: sushi
+  ?s: John, ?o: pizza
+
+Query: select * where { ?name age ?age . ?name likes pizza }
+Final Results:
+  ?age: 30, ?name: John
+```
+
 
 ## 1. Core RDF Data Structures and Basic Operations
+
+There are two parts to this example: a simple unindexed RDF datastore and a partial SPARQL query implementation that supports compound where clause matches like: **select * where { ?name age ?age . ?name likes pizza }**.
 
 ### 1.1 RDF Triple Structure
 
@@ -149,4 +215,4 @@ This function:
 
 ## Conclusion
 
-This implementation provides a basic framework for an RDF datastore with partial SPARQL support in Racket. While it lacks many features of a full-fledged RDF database and SPARQL engine, it demonstrates the core concepts and can serve as a starting point for more complex implementations.
+This implementation provides a basic framework for an RDF datastore with partial SPARQL support in Racket. While it lacks many features of a full-fledged RDF database and SPARQL engine, it demonstrates the core concepts and can serve as a starting point for more complex implementations and the code is simple enough to be fun experimenting with.
