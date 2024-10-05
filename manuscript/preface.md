@@ -28,6 +28,19 @@ This book may be shared using the Creative Commons "share and share alike, no mo
 
 ## Book Example Programs
 
+Here are the projects for this book:
+
+
+- embeddingsdb - Vector database for embeddings. This project implements a vector database for storing and querying embeddings. It provides functionality for creating, storing, and retrieving vector representations of text or other data, which is crucial for many modern AI applications, especially those involving semantic search or similarity comparisons.
+- kgn - Knowledge Graph Navigator. The Knowledge Graph Navigator is a tool for exploring and querying knowledge graphs. It includes utilities querying graph structures, executing queries, and visualizing relationships between entities. This can be particularly useful for working with semantic web technologies or large-scale knowledge bases.
+- llmapis - Interfaces to various LLM APIs. This module provides interfaces to various Large Language Model APIs, including OpenAI, Anthropic, Mistral, and others. It offers for interact ing with different LLM providers, allowing users to easily switch between models or compare outputs from different services. This can be valuable for developers looking to integrate state-of-the-art language models into their applications.
+- misc_code - Miscellaneous utility code. This directory contains various utility functions and examples for common programming tasks in Racket. It includes code for working with hash tables, parsing HTML, handling HTTP requests, and interacting with SQLite databases. These utilities can serve as building blocks for larger AI projects or as reference implementations for common tasks.
+- nlp - Natural Language Processing utilities. The NLP module provides tools for natural language processing tasks. It includes implementations for part-of-speech tagging and named entity recognition. These fundamental NLP tasks are essential for many text analysis and understanding applications, making this module a valuable resource for developers working with textual data.
+- pdf_chat - PDF text extraction. This project focuses on extracting text from PDF documents. It provides utilities for parsing PDF files and converting their content into plain text format. This can be particularly useful for applications that need to process or analyze information contained in PDF documents, such as document summarization or information retrieval systems.
+- search_brave - Brave Search API wrapper. The Brave Search API wrapper provides an interface for interacting with the Brave search engine programmatically. It offers functions for sending queries and processing search results, making it easier to integrate Brave's search capabilities into Racket applications.
+- sparql - SPARQL querying utilities for DBpedia. This module focuses on SPARQL querying, particularly for interacting with DBpedia. It includes utilities for constructing SPARQL queries, executing them against DBpedia's endpoint, and processing the results. This can be valuable for applications that need to extract structured information from large knowledge bases.
+- webscrape - Web scraping utilities. The web scraping module provides tools for extracting information from websites. It includes functions for fetching web pages, parsing HTML content, and extracting specific data elements. These utilities can be useful for a wide range of applications, from data collection to automated information gathering and analysis.
+
 The following diagram showing Racket software examples configured for your local laptop. There are several combined examples that build both to a Racket package that get installed locally, as well as command line programs that get built and deployed to **~/bin**. Other examples are either a command line tool or a Racket package.
 
 ![Example programs are packages and/or command line tools](images/software.png)
