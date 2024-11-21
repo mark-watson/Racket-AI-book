@@ -440,7 +440,9 @@ While I often use larger and more capable proprietary LLMs like Claude 2.1 and G
 
 I implemented the code in this chapter using REST API interfaces for LLM providers like OpenAI and Anthropic and also for running local models using Ollama.
 
-Since I wrote my LLM client libraries, William J. Bowman wrote a very interesting new Racket language for LLMs that can be used with DrRacket’s language support for interactively experimenting with LLMs and alternatively used in Racket programs using the standard Racket language. I added three examples to the directory ** Racket-AI-book-code/racket_llm_language**:
+Since I wrote my LLM client libraries, William J. Bowman wrote a very interesting new Racket language for LLMs that can be used with DrRacket’s language support for interactively experimenting with LLMs and alternatively used in Racket programs using the standard Racket language. I added three examples to the directory **Racket-AI-book-code/racket_llm_language**:
+
+
 
 - test_lang_mode_llm_openai.rkt - uses **#lang llm**
 - test_llm_openai.rkt - uses **#lang racket**
