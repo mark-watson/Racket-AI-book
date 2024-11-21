@@ -440,7 +440,7 @@ While I often use larger and more capable proprietary LLMs like Claude 2.1 and G
 
 I implemented the code in this chapter using REST API interfaces for LLM providers like OpenAI and Anthropic and also for running local models using Ollama.
 
-Since I wrote my LLM client libraries, William J. Bowman wrote a very interesting new Racket language for LLMs that can be used with DrRacket’s language support for interactively experimenting with LLMs and alternatively used in Rack programs using the standard Racket language. I added three examples to the directory ** Racket-AI-book-code/racket_llm_language**:
+Since I wrote my LLM client libraries, William J. Bowman wrote a very interesting new Racket language for LLMs that can be used with DrRacket’s language support for interactively experimenting with LLMs and alternatively used in Racket programs using the standard Racket language. I added three examples to the directory ** Racket-AI-book-code/racket_llm_language**:
 
 - test_lang_mode_llm_openai.rkt - uses **#lang llm**
 - test_llm_openai.rkt - uses **#lang racket**
@@ -452,7 +452,7 @@ The documentation for the LLM language can be found here: [ https://docs.racket-
 
 ### LLM Language Example
 
-In the listing of file ** test_lang_mode_llm_openai.rkt** notice  Racket statements are escaped using **@** and plain text is treated as a prompt to send to a LLM:
+In the listing of file **test_lang_mode_llm_openai.rkt** notice  that Racket statements are escaped using **@** and plain text is treated as a prompt to send to a LLM:
 
 ```racket
 #lang llm
@@ -468,10 +468,14 @@ Evaluating this in a DrRacket buffer produces output like this:
 Welcome to DrRacket, version 8.12 [cs].
 Language: llm, with debugging; memory limit: 128 MB.
 13 + 7 equals 20.
->
+> What is 66 + 2?
+66 + 2 equals 68.
+> What is the radius of the moon?
+The average radius of the Moon is approximately 1,737.4 kilometers (about 1,079.6 miles).
+> 
 ```
 
-This makes a DrRacket edit buffer a convenient way to experiment with models.
+This makes a DrRacket edit buffer a convenient way to experiment with models. Also, once the example buffer is loaded, the DrRacket REPL can be used to enter LLM prompts since the REPL is also using **#lang llm**.
 
 ### Using the LLM Language as a Library Using the Standard Racket Language Mode
 
@@ -529,4 +533,4 @@ Language: racket, with debugging; memory limit: 128 MB.
 
 Here I entered more examples in the DrRacket REPL.
 
-For general work and experimentation with LLMs I like the flexibility of using my own Racket LLM client code, but for the LLM package makes it simple to experiment with prompts and if you only need to generate text from a prompt the LLM package lets generate text using just two lines of Racket code.
+For general work and experimentation with LLMs I like the flexibility of using my own Racket LLM client code, but for the LLM package makes it simple to experiment with prompts and if you only need to generate text from a prompt the LLM package lets generate text using just two lines of Racket code that is using the standard **#language racket** language..
