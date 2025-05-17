@@ -20,13 +20,13 @@ The code is contained in the same repository as the manuscript, but in the subdi
 
 ### License for Book Manuscript: Creative Commons
 
-Copyright 2022-2024 Mark Watson. All rights reserved.
+Copyright 2022-2025 Mark Watson. All rights reserved.
 
 This book may be shared using the Creative Commons "share and share alike, no modifications, no commercial reuse" license.
 
 ### License for Book Example Source Code: Apache 2
 
-Copyright 2022-2024 Mark Watson. All rights reserved.
+Copyright 2022-2025 Mark Watson. All rights reserved.
 
 Find the text to the Apace 2 license here: [https://www.apache.org/licenses/LICENSE-2.0.txt](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
