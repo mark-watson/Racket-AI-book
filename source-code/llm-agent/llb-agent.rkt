@@ -74,7 +74,7 @@
   #:instructions: Initial instructions for the agent (string).
   #:process-fn: A function that defines the agent's processing logic.
                 Defaults to `agent-default-process-fn`."
-  (struct agent (name instructions process-fn))
+  ;;;;(struct agent (name instructions process-fn))
   (agent name instructions process-fn))
 
 (struct agent (name instructions process-fn) #:transparent)
@@ -84,6 +84,9 @@
   "Processes a prompt with the agent in the given context.
   Applies the agent's `process-fn` to handle the interaction.
   Returns a list: (values response updated-context)."
+  (printf "agent: ~a\n" agent)
+  (printf "prompt: ~a\n" prompt)
+  (printf "context: ~a\n" context)
   ((agent-process-fn agent) agent prompt context))
 
 
@@ -183,11 +186,19 @@
 
 (define (test)
     (define ctx (make-context))
+
+  (define (agent-default-process-fn agent prompt context)
+  (values (string-append "Echo: " prompt)
+          (hash-set context 'response "updated")))
+  
     (context-set! ctx 'name "test-context")
     (println (context-get ctx 'name #:default "not found"))
 
-    (define agent (make-agent #:name "TestAgent" #:instructions "You are a test agent."))
-    (define-values (response updated-ctx) (agent-process agent "Say hello." ctx))
+    (define agent2 (make-agent #:name "TestAgent"
+                              #:instructions "You are a test agent."
+                              #:process-fn agent-default-process-fn))
+    (printf "In functiopn test, agent: ~a\n" agent2)
+    (define-values (response updated-ctx) (agent-process agent2 "Say hello." ctx))
     (println response)
 )
 
