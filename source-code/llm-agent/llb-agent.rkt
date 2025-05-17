@@ -188,8 +188,8 @@
     (define ctx (make-context))
 
   (define (agent-default-process-fn agent prompt context)
-  (values (string-append "Echo: " prompt)
-          (hash-set context 'response "updated")))
+    (hash-set! context 'response "updated")
+    (values (string-append "Echo: " prompt) context))
   
     (context-set! ctx 'name "test-context")
     (println (context-get ctx 'name #:default "not found"))
