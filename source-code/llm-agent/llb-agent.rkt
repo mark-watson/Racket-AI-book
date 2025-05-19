@@ -227,6 +227,8 @@
     (printf "In functiopn test, agent: ~a\n" agent2)
     (define-values (response updated-ctx) (agent-process agent2 "Say hello." ctx))
     (println response)
+    (define-values (response2 updated-ctx2) (agent-process agent2 "How many words in this sentance 'the cat ran away.'" ctx))
+    (println response2)
 )
 
 (test)
