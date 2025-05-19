@@ -53,16 +53,16 @@
 ;; Tool Management
 
 (define (register-tool context tool-name tool-function)
-  "Registers a tool (Racket function) in the context for use by agents.
-  `tool-name`: A symbol representing the tool's name (used in LLM prompts).
-  `tool-function`: A Racket function that implements the tool."
-  (context-set! context 'tools (hash-set (context-get context 'tools (make-hash))
-                                          tool-name tool-function)))
+  "Registers a tool (Racket function) in the context for use by agents."
+  (let ([tools (or (context-get context 'tools #:default #f) (make-hash))])
+    (hash-set! tools tool-name tool-function)
+    (context-set! context 'tools tools)))
 
 (define (get-tool context tool-name)
-  "Retrieves a tool function from the context by its name.
-  Returns #f if the tool is not registered."
-  (hash-ref (context-get context 'tools (make-hash)) tool-name #f))
+  "Retrieves a tool function from the context by its name."
+  (hash-ref (context-get context 'tools #:default (make-hash))
+            tool-name
+            #f))
 
 
 ;; -----------------------------------------------------------------------------
@@ -157,6 +157,12 @@
      "(call-tool racket-eval \"(+ 2 2)\")"] ; Request racket-eval tool
     [(string-contains? prompt "tell me a joke")
      "Why don't scientists trust atoms? Because they make up everything!"]
+    [(string-contains? prompt "count words")
+     "(call-tool word-count \"This is an example text to count words.\")"]
+    [(string-contains? prompt "reverse this")
+     "(call-tool reverse-text \"stressed\")"]
+    [(string-contains? prompt "what time is it")
+     "(call-tool current-time)"]
     [else
      "Default response: I received your prompt and processed it."]))
 
@@ -182,10 +188,31 @@
 
 
 ;; -----------------------------------------------------------------------------
+;; Additional Example Tools
+
+(define (tool-word-count text)
+  "Counts the number of words in the given text."
+  (define words (string-split text #rx"\\s+"))
+  (length words))
+
+(define (tool-reverse-text text)
+  "Reverses the given text."
+  (list->string (reverse (string->list text))))
+
+(define (tool-current-time)
+  "Returns the current date and time as seconds since the epoch."
+  (current-seconds))
+
+
+;; -----------------------------------------------------------------------------
 ;; Example Usage
 
 (define (test)
     (define ctx (make-context))
+
+  (register-tool ctx 'word-count tool-word-count)
+  (register-tool ctx 'reverse-text tool-reverse-text)
+  (register-tool ctx 'current-time tool-current-time)
 
   (define (agent-default-process-fn agent prompt context)
     (hash-set! context 'response "updated")
@@ -213,4 +240,3 @@
   #:export (all-from-out llm-agent)
   #:import (racket/base racket/hash racket/contract racket/sequence)
   (require/provide "llm-agent.rkt"))
-
