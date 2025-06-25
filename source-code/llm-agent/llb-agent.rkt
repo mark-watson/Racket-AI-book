@@ -90,30 +90,31 @@
   ((agent-process-fn agent) agent prompt context))
 
 
-(define (agent-default-process-fn agent)
+(define (agent-default-process-fn agent prompt context)
   "The default agent processing function.
   This function simulates a basic agent that:
   1. Sends a prompt to the LLM (simulated `openai-api-call`).
   2. Checks for tool calls in the LLM response (very basic parsing).
   3. Executes tools if requested and updates the context.
   4. Returns the LLM response and updated context."
-  (lambda (agent prompt context)
-    (define full-prompt (string-append (agent-instructions agent) "\n" prompt))
-    (define llm-response (simulated-openai-api-call full-prompt context)) ; Call simulated LLM
+  (define full-prompt (string-append (agent-instructions agent) "\n"
+ prompt))
+  (define llm-response (simulated-openai-api-call full-prompt context)) ; Call simulated LLM
 
-    (define tool-call-request (parse-tool-call-request llm-response)) ; Check for tool call request
+  (define tool-call-request (parse-tool-call-request llm-response)) ; Check for tool call request
 
-    (if tool-call-request
-        (let* ([tool-name (car tool-call-request)]
-               [tool-args (cdr tool-call-request)]
-               [tool-function (get-tool context tool-name)])
-          (if tool-function
-              (let* ([tool-result (apply tool-function tool-args)] ; Execute the tool
-                     [updated-context (context-copy context)]) ; Create a new context for potential updates
-                (context-set! updated-context 'tool-result tool-result) ; Store tool result in context
-                (values (string-append "Tool '" (symbol->string tool-name) "' called. Result in context under 'tool-result'.") updated-context))
-              (values (string-append "Error: Tool '" (symbol->string tool-name) "' not found.") context)))
-        (values llm-response context)))) ; Return LLM response if no tool call
+  (if tool-call-request
+      (let* ([tool-name (car tool-call-request)]
+             [tool-args (cdr tool-call-request)]
+             [tool-function (get-tool context tool-name)])
+        (if tool-function
+            (let* ([tool-result (apply tool-function tool-args)] ; Execute the tool
+                   [updated-context (context-copy context)]) ; Create a new context for potential updates
+              (context-set! updated-context 'tool-result tool-result) ; Store tool result in context
+              (values (string-append "Tool '" (symbol->string tool-name) "' called. Result in context under 'tool-result'.") updated-context))
+            (values (string-append "Error: Tool '" (symbol->string tool-name) "' not found.") context)))
+      (values llm-response context))) ; Return LLM response if no tool call
+
 
 
 ;; -----------------------------------------------------------------------------
@@ -207,31 +208,31 @@
 ;; -----------------------------------------------------------------------------
 ;; Example Usage
 
-(define (test)
-    (define ctx (make-context))
-
-  (register-tool ctx 'word-count tool-word-count)
-  (register-tool ctx 'reverse-text tool-reverse-text)
-  (register-tool ctx 'current-time tool-current-time)
-
-  (define (agent-default-process-fn agent prompt context)
-    (hash-set! context 'response "updated")
-    (values (string-append "Echo: " prompt) context))
+(define (run-calculator-agent-example)
+  (displayln "--- Running Calculator Agent Example ---")
+  (define ctx (make-context))
   
-    (context-set! ctx 'name "test-context")
-    (println (context-get ctx 'name #:default "not found"))
+  ;; Register the racket-eval tool for calculations
+  (register-tool ctx 'racket-eval racket-eval)
 
-    (define agent2 (make-agent #:name "TestAgent"
-                              #:instructions "You are a test agent."
-                              #:process-fn agent-default-process-fn))
-    (printf "In functiopn test, agent: ~a\n" agent2)
-    (define-values (response updated-ctx) (agent-process agent2 "Say hello." ctx))
-    (println response)
-    (define-values (response2 updated-ctx2) (agent-process agent2 "How many words in this sentance 'the cat ran away.'" ctx))
-    (println response2)
-)
+  ;; Create an agent that knows how to use the calculator
+  (define calculator-agent
+    (make-agent #:name "CalculatorAgent"
+                #:instructions "You are a calculator agent. Use the racket-eval tool to compute mathematical expressions."
+                #:process-fn agent-default-process-fn))
 
-(test)
+  ;; Define the prompt that requires calculation
+  (define prompt "calculate 2 + 2")
+
+  ;; Process the prompt
+  (define-values (response updated-ctx)
+    (agent-process calculator-agent prompt ctx))
+
+  ;; Display the results
+  (displayln (string-append "Agent Response: " response))
+  (displayln (string-append "Result from context: " (number->string (context-get updated-ctx 'tool-result  #:default 0)))))
+
+(run-calculator-agent-example)
 
 ;; -----------------------------------------------------------------------------
 ;; Info file for library
