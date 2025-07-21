@@ -1,6 +1,8 @@
 # Using the OpenAI, Anthropic, Mistral, and Local Hugging Face Large Language Model APIs in Racket
 
-As I write this chapter in October 2023, Peter Norvig and Blaise Agüera y Arcas just wrote an article [Artificial General Intelligence Is Already Here](https://www.noemamag.com/artificial-general-intelligence-is-already-here/) making the case that we might already have Artificial General Intelligence (AGI) because of the capabilities of Large Language Models (LLMs) to solve new tasks.
+*Note: November 21, 2024 change: added examples using William J. Bowman’s Racket language **llm** to the end of this chapter.*
+
+As I write the first version of this chapter in October 2023, Peter Norvig and Blaise Agüera y Arcas just wrote an article [Artificial General Intelligence Is Already Here](https://www.noemamag.com/artificial-general-intelligence-is-already-here/) making the case that we might already have Artificial General Intelligence (AGI) because of the capabilities of Large Language Models (LLMs) to solve new tasks.
 
 In the development of practical AI systems, LLMs like those provided by OpenAI, Anthropic, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here.
 
@@ -434,3 +436,104 @@ The function **embeddings-ollama** can be used to create embedding vectors from 
 
 While I often use larger and more capable proprietary LLMs like Claude 2.1 and GPT-4, smaller open models from Mistral are very capable and sufficient for most of my experiments embedding LLMs in application code. As I write this, you can run Mistral models locally and through commercially hosted APIs.
 
+
+## Examples Using William J. Bowman’s Racket Language LLM
+
+I implemented the code in this chapter using REST API interfaces for LLM providers like OpenAI and Anthropic and also for running local models using Ollama.
+
+Since I wrote my LLM client libraries, William J. Bowman wrote a very interesting new Racket language for LLMs that can be used with DrRacket’s language support for interactively experimenting with LLMs and alternatively used in Racket programs using the standard Racket language. I added three examples to the directory **Racket-AI-book-code/racket_llm_language**:
+
+
+
+- test_lang_mode_llm_openai.rkt - uses **#lang llm**
+- test_llm_openai.rkt - uses **#lang racket**
+- test_llm_ollama.rkt - uses **#lang racket**
+
+For the Ollama example, make sure you have Ollama installed and the **phi3:latest** model downloaded.
+
+The documentation for the LLM language can be found here: [ https://docs.racket-lang.org/llm/index.html](https://docs.racket-lang.org/llm/index.html) and the GitHub repository for the project can be found here: [ https://github.com/wilbowma/llm-lang]( https://github.com/wilbowma/llm-lang).
+
+### LLM Language Example
+
+In the listing of file **test_lang_mode_llm_openai.rkt** notice  that Racket statements are escaped using **@** and plain text is treated as a prompt to send to a LLM:
+
+```racket
+#lang llm
+
+@(require llm/openai/gpt4o-mini)
+
+What is 13 + 7?
+```
+
+Evaluating this in a DrRacket buffer produces output like this:
+
+```
+Welcome to DrRacket, version 8.12 [cs].
+Language: llm, with debugging; memory limit: 128 MB.
+13 + 7 equals 20.
+> What is 66 + 2?
+66 + 2 equals 68.
+> What is the radius of the moon?
+The average radius of the Moon is approximately 1,737.4 kilometers (about 1,079.6 miles).
+> 
+```
+
+This makes a DrRacket edit buffer a convenient way to experiment with models. Also, once the example buffer is loaded, the DrRacket REPL can be used to enter LLM prompts since the REPL is also using **#lang llm**.
+
+### Using the LLM Language as a Library Using the Standard Racket Language Mode
+
+Here we look at examples for accessing the OpenAI **gpt4o-mini** model and the **phi3** model running locally on your laptop using Ollama.
+
+Install the llm package:
+
+    raco pkg install llm
+
+Here is the example file **test_llm_openai.rkt**:
+
+```racket
+#lang racket
+
+(require llm/openai/gpt4o-mini)
+
+(gpt4o-mini-send-prompt! "What is 13 + 7?" '())
+```
+
+The output looks like this:
+
+```
+Welcome to DrRacket, version 8.12 [cs].
+Language: racket, with debugging; memory limit: 128 MB.
+"13 + 7 equals 20."
+> 
+```
+
+This is a simple way to use the OpenAI **gpt4o-mini** model in your Racket programs. A similar example supports local models running on Ollama; here is the example file **test_llm_ollama.rkt**:
+
+```racket
+#lang racket
+
+(require llm/ollama/phi3)
+
+(phi3-send-prompt! "What is 13 + 7? Be concise." '())
+```
+
+That generates the output text:
+
+```
+Welcome to DrRacket, version 8.12 [cs].
+Language: racket, with debugging; memory limit: 128 MB.
+"20."
+> (phi3-send-prompt! "Mary is 37 years old, Bill is 28, and Sam is 52. List the pairwise age differences. Be concise." '())
+"- Mary vs Bill: 9 years (37 - 28)\n\n- Mary vs Sam: 15 years (37 - 52)\n\n- Bill vs Sam: 24 years (52 - 28)"
+> (display  (phi3-send-prompt! "Mary is 37 years old, Bill is 28, and Sam is 52. List the pairwise age differences. Be concise." '()))
+- Mary vs Bill: 9 years (37 - 28)
+
+- Mary vs Sam: 15 years (37 - 52)
+
+- Bill vs Sam: 24 years (52 - 28)
+> 
+```
+
+Here I entered more examples in the DrRacket REPL.
+
+For general work and experimentation with LLMs I like the flexibility of using my own Racket LLM client code, but for the LLM package makes it simple to experiment with prompts and if you only need to generate text from a prompt the LLM package lets generate text using just two lines of Racket code that is using the standard **#language racket** language..

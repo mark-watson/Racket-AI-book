@@ -1,1 +1,9 @@
+<<<<<<< HEAD
+=======
+preface.md
+tutorial.md
+datastores.md
+RDF_Datastore_SPARQL_Implementation.md
+webscrape.md
+>>>>>>> bb3bd79f9743b65ca4ad7d60cacd5ca8ad2b6d7c
 llm.md
