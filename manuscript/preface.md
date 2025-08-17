@@ -1,6 +1,10 @@
 # Preface
 
-I have been using Lisp languages since the 1970s. In 1982 my company bought a Lisp Machine for my use. A Lisp Machine provided an "all batteries included" working environment, but now no one seriously uses Lisp Machines. In this book I try to lead you, dear reader, through a process of creating a "batteries included" working environment using Racket Scheme.
+Racket is a Lisp language. I have been using Lisp languages since the 1970s.
+
+Dear reader, I love developing code in Lisp languages and my hope is that you will too. Racket is a "batteries included" language that includes a nice IDE, a great *standard library*, and many open source projects in the *Racket universe*.
+
+In 1982 my company bought a Lisp Machine for my use. A Lisp Machine provided an "all batteries included" working environment, but now no one seriously uses Lisp Machines. In this book I try to lead you, dear reader, through a process of creating a "batteries included" working environment using Racket Scheme.
 
 The latest edition is always available for purchase at [https://leanpub.com/racket-ai](https://leanpub.com/racket-ai).  You can also read free online at [https://leanpub.com/racket-ai/read](https://leanpub.com/racket-ai/read). I offer the purchase option for readers who wish to directly support my work.
 

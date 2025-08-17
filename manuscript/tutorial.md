@@ -1,6 +1,6 @@
 # A Quick Racket Tutorial
 
-If you are an experienced Racket developer then feel free to skip this chapter! I wrote this tutorial to cover just the aspects of using Racket that you, dear reader, will need in the book example programs.
+If you are an experienced Racket developer then feel free to skip this chapter! I wrote this tutorial to cover just the aspects of using Racket that you, dear reader, will need to understand, modify, and generally reuse the example programs in this book.
 
 I assume that you have read the section **Racket Essentials** in the [The Racket Guide](https://docs.racket-lang.org/guide/) written by Matthew Flatt, Robert Bruce Findler, and the PLT group. Here I just cover some basics of getting started so you can enjoy the later code examples without encountering "road blocks."
 
