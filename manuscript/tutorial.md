@@ -51,7 +51,7 @@ loading lex-hash......done.
 
 ## Mapping Over Lists
 
-We will be using functions that take other functions as arguments:
+We will be using functions that take other functions as arguments. Here we define a function **1+** that has one function argument **n** and returns **n + 1** as the value for a function call:
 
 ```racket
 > (range 5)
@@ -63,6 +63,22 @@ We will be using functions that take other functions as arguments:
 '(100 102 104 106 108)
 > 
 ```
+
+Does the evaluation of the last expression confuse you? Let's take a closer look:
+
+- The function **map** is a higher-order function that takes a procedure (in this case, +) and one or more lists as arguments. It applies the procedure to the corresponding elements of the lists and returns a new list containing the results.
+- First list argument: (range 5) is evaluated first. The range function generates a sequence of numbers starting from 0 up to (but not including) the given number. So, (range 5) produces the list '(0 1 2 3 4).
+- Second list argument: '(100 101 102 103 104) is a quoted list, meaning it is treated as data and evaluates to itself.
+- Element-wise Application: map then applies the + function to the elements of the two lists in a pairwise fashion:
+-
+- (+ 0 100) evaluates to 100
+- (+ 1 101) evaluates to 102
+- (+ 2 102) evaluates to 104
+- (+ 3 103) evaluates to 106
+- (+ 4 104) evaluates to 108
+-
+- Final Result: The results of each addition are collected into a new list, producing the final output: '(100 102 104 106 108).
+
 
 ## Hash Tables
 
@@ -88,6 +104,8 @@ The following listing shows the file **misc_code/hash_tests.rkt**:
 (for ([(k v) h3]) (println '("key:" k "value:" v)))
 ```
 
+This Racket code demonstrates the creation and manipulation of hash tables which are data structures that map keys to values. It first shows an immutable hash table **h1**, created with built-in function **hash**, where values are retrieved using **hash-ref**. It then introduces mutable hash tables **h2** and **h3** we created with **make-hash**, which can be modified after creation using the built-in function **hash-set!**. Th* function **hash-set!** can either add a new key-value pair or overwrite the value of an existing key. Finally, the code uses a **for** loop to iterate through the key-value pairs of a mutable hash table, printing each one to the console, illustrating a common way to process all entries in the collection.
+
 Here is a lising of the output window after running this file and then manually evaluating *h1*, *h2*, and *h3* in the REPL (like all listings in this book, I manually edit the output to fit page width):
 
 ```
@@ -109,7 +127,7 @@ Language: racket, with debugging; memory limit: 128 MB.
 
 ## Racket Structure Types
 
-A structurer type is like a list that has named list elements. When you define a structure the Racket system writes getter and setter methods to access and change structure attribute values. Racket also generates a constructor function with the structure name. Let's look at a simple example in a Racket REPL of creating a structure with mutable elements:
+A structure type is like a list that has named list elements. When you define a structure the Racket system writes getter and setter methods to access and change structure attribute values. Racket also generates a constructor function with the structure name. Let's look at a simple example in a Racket REPL of creating a structure with mutable elements:
 
 ```racket
 > (struct person (name age email) #:mutable)
@@ -125,7 +143,7 @@ A structurer type is like a list that has named list elements. When you define a
 > 
 ```
 
-If you don't add **#:mutable** to a **struct** definition, then no **set-NAME-ATTRIBUTE!** methods are generated.
+If you don't add **#:mutable** to a **struct** definition, then no **set-NAME-ATTRIBUTE!** methods are generated. For mutable or immutable **struct** definitions, accessor functions like **person-age** and **person-email** are written for you from a **struct** definition and take the form **NAME-OF-STRUCT**-**FIELD-NAME**.
 
 Racket also supports object oriented programming style classes with methods. I don't use classes in the book examples so you, dear reader, can read the official Racket [documentation on classes](https://docs.racket-lang.org/guide/classes.html) if you want to use Racket in a non-functional way.
 
@@ -159,7 +177,9 @@ We will be using HTTP GET and POST instructions in later chapters for web scrapi
 (pretty-print (take (se-path*/list '(li) lst) 8))
 ```
 
-The output is:
+This Racket script is a web scraper that fetches the HTML content from markwatson.com. It then parses the raw HTML into a structured S-expression format, which is a data representation native to Lisp-like languages. Using this structured data, the script queries for all paragraph (<p>) and list item (<li>) tags. Finally, it uses pretty-print to display the first eight instances of each tag type it finds, effectively extracting and showing specific content from the web page.
+
+The output is with most of the output removed for brevity):
 
 ```
 
