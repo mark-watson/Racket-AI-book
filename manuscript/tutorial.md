@@ -179,7 +179,7 @@ We will be using HTTP GET and POST instructions in later chapters for web scrapi
 
 This Racket script is a web scraper that fetches the HTML content from markwatson.com. It then parses the raw HTML into a structured S-expression format, which is a data representation native to Lisp-like languages. Using this structured data, the script queries for all paragraph (<p>) and list item (<li>) tags. Finally, it uses pretty-print to display the first eight instances of each tag type it finds, effectively extracting and showing specific content from the web page.
 
-The output is with most of the output removed for brevity):
+The output is (with most of the output removed for brevity):
 
 ```
 
