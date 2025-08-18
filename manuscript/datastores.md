@@ -155,9 +155,9 @@ In practice, I start exploring data on DBPedia using the SPARQL query web app [h
 In addition to using DBPedia I often also use the WikiData public Knowledge Graph and local RDF data stores hosted on my laptop with Apache Jena. I might add examples for these two use cases in future versions of this *live eBook*.
 
 
-## Sqlite
+## SQlite
 
-Using SQlite in Racket is simple so we will just look at a simple example. We will be using the Racket source file **sqlite.rkt** in the directory **Racket-AI-book-code/misc_code** for the code snippets in this REPL:
+Using SQlite in Racket is simple so we will just look at a single example. We will be using the Racket source file **sqlite.rkt** in the directory **Racket-AI-book-code/misc_code** for the code snippets in this REPL:
 
 ```racket
 $ racket
