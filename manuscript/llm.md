@@ -45,11 +45,11 @@ We will now have some fun using Racket Scheme and OpenAI's APIs. The combination
 
 Our goal is straightforward interaction with OpenAI's APIs. The communication between your Racket code and OpenAI's models is orchestrated through well-defined API requests and responses, allowing for a seamless exchange of data. The following sections will show the technical aspects of interfacing Racket with OpenAI's APIs, showcasing how requests are formulated, transmitted, and how the JSON responses are handled. Whether your goal is to automate content generation, perform semantic analysis on text data, or build intelligent systems capable of engaging in natural language interactions, the code snippets and explanations provided will serve as a valuable resource in understanding and leveraging the power of AI through Racket and OpenAI's APIs.
 
-The Racket code listed below defines two functions, **question** and **completion**, aimed at interacting with the OpenAI API to leverage the GPT-3.5 Turbo model for text generation. The function **question** accepts a **prompt** argument and constructs a JSON payload following the OpenAI's chat models schema. It constructs a value for **prompt-data** string containing a user message that instructs the model to "Answer the question" followed by the provided prompt. The **auth** lambda function within **question** is utilized to set necessary headers for the HTTP request, including the authorization header populated with the OpenAI API key obtained from the environment variable **OPENAI_API_KEY**. The function **post** from the **net/http-easy** library is employed to issue a POST request to the OpenAI API endpoint "https://api.openai.com/v1/chat/completions" with the crafted JSON payload and authentication headers. The response from the API is then parsed as JSON, and the content of the message from the first choice is extracted and returned.
+The Racket code listed below defines two functions, **question** and **completion**, aimed at interacting with the OpenAI API to leverage the GPT-5 Turbo model for text generation. The function **question** accepts a **prompt** argument and constructs a JSON payload following the OpenAI's chat models schema. It constructs a value for **prompt-data** string containing a user message that instructs the model to "Answer the question" followed by the provided prompt. The **auth** lambda function within **question** is utilized to set necessary headers for the HTTP request, including the authorization header populated with the OpenAI API key obtained from the environment variable **OPENAI_API_KEY**. The function **post** from the **net/http-easy** library is employed to issue a POST request to the OpenAI API endpoint "https://api.openai.com/v1/chat/completions" with the crafted JSON payload and authentication headers. The response from the API is then parsed as JSON, and the content of the message from the first choice is extracted and returned.
 
 The function **completion**, on the other hand, serves a specific use case of continuing text from a given **prompt**. It reformats the prompt to prepend the phrase "Continue writing from the following text: " to the provided text, and then calls the function **question** with this modified prompt. This setup encapsulates the task of text continuation in a separate function, making it straightforward for developers to request text extensions from the OpenAI API by merely providing the initial text to the function **completion**. Through these functions, the code provides a structured mechanism to generate responses or text continuations.
 
-*This example was updated May 13, 2024 when OpenAI released the new GPT-4o model.*
+*This example was updated August 2024 when OpenAI released the new GPT-5 model.*
 
 ```racket
 #lang racket
@@ -68,7 +68,7 @@ The function **completion**, on the other hand, serves a specific use case of co
              "{\"messages\": [ {\"role\": \"user\","
              " \"content\": \"" prefix ": "
              prompt
-             "\"}], \"model\": \"gpt-4o\"}"))))
+             "\"}], \"model\": \"gpt-5\"}"))))
          (auth (lambda (uri headers params)
                  (values
                   (hash-set*
@@ -133,9 +133,7 @@ The output looks like (output from the second example shortened for brevity):
 ```
 > (question "Mary is 30 and Harry is 25. Who is older?")
 "Mary is older than Harry."
-> (displayln
-    (completion
-      "Frank bought a new sports car. Frank drove"))
+> (completion "Frank bought a new sports car. Frank drove")
 Frank bought a new sports car. Frank drove it out of the dealership with a wide grin on his face. The sleek, aerodynamic design of the car hugged the road as he accelerated, feeling the power under his hands. The adrenaline surged through his veins, and he couldn't help but let out a triumphant shout as he merged onto the highway.
 
 As he cruised down the open road, the wind whipping through his hair, Frank couldn't help but reflect on how far he had come. It had been a lifelong dream of his to own a sports car, a symbol of success and freedom in his eyes. He had worked tirelessly, saving every penny, making sacrifices along the way to finally make this dream a reality.
@@ -143,7 +141,26 @@ As he cruised down the open road, the wind whipping through his hair, Frank coul
 > 
 ```
 
+Here is more sample output sowing embeddings for a sentence (we will use embeddings in the next chapter). The OpenAI embedding model text-embedding-ada-002 produces a vector of length 1536 floats, only the first few are shown here:
+
+```
+> (embeddings-openai "Frank bought a new sports car. Frank drove")
+(-0.0067744367 0.020329757 0.021399744 ...
+```
+
+We can also use "one shot prompting" to describe precisly how we want output formatted:
+
+```
+> (completion-openai "CONTEXT ONE SHOT EXAMPLE return function names and arguments as a Lisp list no commas separating the arguments. for example: 'Please sum the numbers 4 1 2 7' should produce (sum 4 1 2 7). Identify tool names in the following text, returning only the tool names with arguments separated by commas. List of available tools is (ADD, SUM) PROMPT Please add the numbers 5, 8 and 12, and also sum the numbers 3, 44, and 88.")
+(ADD 5 8 12)
+(SUM 3 44 88)
+```
+
+
+
 ## Using the Anthropic APIs in Racket
+
+*Note: I stopped using Anthropic models in 2024 so this example is out of date.*
 
 The Racket code listed below defines two functions, **question** and **completion**, which facilitate interaction with the Anthropic API to access a language model named **claude-instant-1** for text generation purposes. The function **question** takes two arguments: a **prompt** and a **max-tokens** value, which are used to construct a JSON payload that will be sent to the Anthropic API. Inside the function, several Racket libraries are utilized for handling HTTP requests and processing data. A POST request is initiated to the Anthropic API endpoint "https://api.anthropic.com/v1/complete" with the crafted JSON payload. This payload includes the prompt text, maximum tokens to sample, and specifies the model to be used. The **auth** lambda function is used to inject necessary headers for authentication and specifying the API version. Upon receiving the response from the API, it extracts the **completion** field from the JSON response, trims any leading or trailing whitespace, and returns it.
 
@@ -458,7 +475,7 @@ While I often use larger and more capable proprietary LLMs like Claude 2.1 and G
 
 I implemented the code in this chapter using REST API interfaces for LLM providers like OpenAI and Anthropic and also for running local models using Ollama.
 
-Since I wrote my LLM client libraries, William J. Bowman wrote a very interesting new Racket language for LLMs that can be used with DrRacket’s language support for interactively experimenting with LLMs and alternatively used in Racket programs using the standard Racket language. I added three examples to the directory **Racket-AI-book-code/racket_llm_language**:
+Since I wrote my LLM client libraries, William J. Bowman wrote a very interesting new Racket language for LLMs that can be used with DrRacket’s language support for interactively experimenting with LLMs and alternatively used in Racket programs using the standard Racket language. I added three examples to the directory **Racket-AI-book/source-code/racket_llm_language**:
 
 
 

@@ -4,11 +4,11 @@ I often write software to automatically collect and use data from the web and ot
 
 Before we start a technical discussion about web scraping I want to point out that much of the information on the web is copyright, so first you should read the terms of service for web sites to insure that your use of "scraped" or "spidered" data conforms with the wishes of the persons or organizations who own the content and pay to run scraped web sites.
 
-We start with low-level Racket code examples in the GitHub repository for this book in the directory **Racket-AI-book-code/misc_code**. We will then implement a standalone library in the directory **Racket-AI-book-code/webscrape**.
+We start with low-level Racket code examples in the GitHub repository for this book in the directory **Racket-AI-book/source-code/misc_code**. We will then implement a standalone library in the directory **Racket-AI-book/source-code/webscrape**.
 
 ## Getting Started Web Scraping
 
-All of the examples in the section can be found in the Racket code snippet files in the directory **Racket-AI-book-code/misc_code**.
+All of the examples in the section can be found in the Racket code snippet files in the directory **Racket-AI-book/source-code/misc_code**.
 
 I have edited the output for brevity in the following REPL outoput:
 
@@ -182,6 +182,6 @@ Here are a few examples in a Racket REPL (most output omitted for brevity):
   "http://kbsportal.com")
 ```
 
-If you want to install this library on your laptop using linking (requiring the library access a link to the source code in the directory **Racket-AI-book-code/webscrape**) run the following in the library source directory **Racket-AI-book-code/webscrape**:
+If you want to install this library on your laptop using linking (requiring the library access a link to the source code in the directory **Racket-AI-book/source-code/webscrape**) run the following in the library source directory **Racket-AI-book/source-code/webscrape**:
 
    raco pkg install --scope user

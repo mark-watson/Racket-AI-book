@@ -59,13 +59,13 @@ The Common Lisp version of KGN also searches for relationships between entities.
 
 The example application works processing a list or Person, Place, and Organization names. We generate SPARQL queries to DBPedia to find information about the entities and relationships between them.
 
-We are using two libraries developed for this book that can be found in the directories **Racket-AI-book-code/sparql** and **Racket-AI-book-code/nlp** to supply support for SPARQL queries and natural language processing.
+We are using two libraries developed for this book that can be found in the directories **Racket-AI-book/source-code/sparql** and **Racket-AI-book/source-code/nlp** to supply support for SPARQL queries and natural language processing.
 
 ### SPARQL Client Library
 
 We already looked at code examples for making simple SPARQL queries in the chapter **Datastores** and here we continue with more examples that we need to the KGN application.
 
-The following listing shows **Racket-AI-book-code/sparql/sparql.rkt** where we implement several functions for interacting with DBPedia's SPARQL endpoint. There are two functions **sparql-dbpedia-for-person** and **sparql-dbpedia-person-uri** crafted for constructing SPARQL queries. The function **sparql-dbpedia-for-person** takes a person URI and formulates a query to fetch associated website links and comments, limiting the results to four. On the other hand, the function **sparql-dbpedia-person-uri** takes a person name and builds a query to obtain the person's URI and comments from DBpedia. Both functions utilize string manipulation to embed the input parameters into the SPARQL query strings. There are similar functions for places.
+The following listing shows **Racket-AI-book/source-code/sparql/sparql.rkt** where we implement several functions for interacting with DBPedia's SPARQL endpoint. There are two functions **sparql-dbpedia-for-person** and **sparql-dbpedia-person-uri** crafted for constructing SPARQL queries. The function **sparql-dbpedia-for-person** takes a person URI and formulates a query to fetch associated website links and comments, limiting the results to four. On the other hand, the function **sparql-dbpedia-person-uri** takes a person name and builds a query to obtain the person's URI and comments from DBpedia. Both functions utilize string manipulation to embed the input parameters into the SPARQL query strings. There are similar functions for places.
 
 Another function **sparql-query->hash** executes SPARQL queries against the DBPedia endpoint. It takes a SPARQL query string as an argument, sends an HTTP request to the DBpedia SPARQL endpoint, and expects a JSON response. The **call/input-url** function is used to send the request, with **uri-encode** ensuring the query string is URL-encoded. The response is read from the port, converted to a JSON expression using the function **string->jsexpr**, and is expected to be in a hash form which is returned by this function.
 
@@ -207,7 +207,7 @@ Please make sure you have read that chapter before the following sections.
 
 ### Implementation of KGN Application Code
 
-The file **Racket-AI-book-code/kgn/main.rkt** contains library boilerplate and the file **Racket-AI-book-code/kgn/kgn.rkt** the application code. The provided Racket scheme code is structured for interacting with the DBPedia SPARQL endpoint to retrieve information about persons or places based on a user's string query. The code is organized into several defined functions aimed at handling different steps of the process:
+The file **Racket-AI-book/source-code/kgn/main.rkt** contains library boilerplate and the file **Racket-AI-book/source-code/kgn/kgn.rkt** the application code. The provided Racket scheme code is structured for interacting with the DBPedia SPARQL endpoint to retrieve information about persons or places based on a user's string query. The code is organized into several defined functions aimed at handling different steps of the process:
 
 **Query Parsing and Entity Recognition**:
 
@@ -288,7 +288,7 @@ This code structure facilitates the breakdown of a user's natural language query
             #f))))
 ```
 
-The file **Racket-AI-book-code/kgn/dialog-utils.rkt** contains the user interface specific code for implementing a dialog box.
+The file **Racket-AI-book/source-code/kgn/dialog-utils.rkt** contains the user interface specific code for implementing a dialog box.
 
 ```racket
 (require htdp/gui)

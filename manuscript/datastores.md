@@ -157,7 +157,7 @@ In addition to using DBPedia I often also use the WikiData public Knowledge Grap
 
 ## SQlite
 
-Using SQlite in Racket is simple so we will just look at a single example. We will be using the Racket source file **sqlite.rkt** in the directory **Racket-AI-book-code/misc_code** for the code snippets in this REPL:
+Using SQlite in Racket is simple so we will just look at a single example. We will be using the Racket source file **sqlite.rkt** in the directory **Racket-AI-book/source-code/misc_code** for the code snippets in this REPL:
 
 ```racket
 $ racket

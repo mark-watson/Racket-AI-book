@@ -425,7 +425,7 @@ Overall, the code is fairly optimized for its purpose, utilizing hash tables for
 Let's try some examples in a Racket REPL:
 
 ```
-> Racket-AI-book-code/nlp $ racket
+> Racket-AI-book/source-code/nlp $ racket
 Welcome to Racket v8.10 [cs].
 > (require nlp)
 loading lex-hash......done.#f
@@ -479,4 +479,4 @@ word: London
 
 The NLP library is still a work in progress so please check for updates to this *live eBook* and the GitHub repository for this book:
 
-[https://github.com/mark-watson/Racket-AI-book-code](https://github.com/mark-watson/Racket-AI-book-code)
+[https://github.com/mark-watson/Racket-AI-book/source-code](https://github.com/mark-watson/Racket-AI-book/source-code)

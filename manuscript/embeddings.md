@@ -12,7 +12,8 @@ RAG enables the LLM to access and leverage external text data sources, which is 
 
 ## Example Implementation
 
-In the following short Racket example program (file **Racket-AI-book-code/embeddingsdb/embeddingsdb.rkt**) I implement some ideas of a RAG architecture. At file load time the text files in the subdirectory **data** are read, split into "chunks", and each chunk along with its parent file name and OpenAI text embedding is stored in a local SQLite database. When a user enters a query, the OpenAI embedding is calculated, and this embedding is matched against the embeddings of all chunks using the dot product of two 1536 element embedding vectors. The "best" chunks are concatenated together and this "context" text is passed to GPT-4 along with the user's original query. Here I describe the code in more detail:
+In the following short Racket example program (file **Racket-AI-book/source-code/embeddingsdb
+/embeddingsdb.rkt**) I implement some ideas of a RAG architecture. At file load time the text files in the subdirectory **data** are read, split into "chunks", and each chunk along with its parent file name and OpenAI text embedding is stored in a local SQLite database. When a user enters a query, the OpenAI embedding is calculated, and this embedding is matched against the embeddings of all chunks using the dot product of two 1536 element embedding vectors. The "best" chunks are concatenated together and this "context" text is passed to GPT-4 along with the user's original query. Here I describe the code in more detail:
 
 The provided Racket code uses a local SQLite database and OpenAI's APIs for calculating text embeddings and for text completions.
 
@@ -199,9 +200,9 @@ The code uses a local SQLite database to store and manage document embeddings an
 (define (test)
   "Test Semantic Document Search Using GPT APIs and local vector database"
   (create-document
-    "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/sports.txt")
+    "/Users/markw/GITHUB/Racket-AI-book/source-code/embeddingsdb/data/sports.txt")
   (create-document
-    "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/chemistry.txt")
+    "/Users/markw/GITHUB/Racket-AI-book/source-code/embeddingsdb/data/chemistry.txt")
   (QA "What is the history of the science of chemistry?")
   (QA "What are the advantages of engaging in sports?"))
 ```
@@ -226,7 +227,7 @@ Today, chemistry is an interdisciplinary science that encompasses various fields
 In summary, the history of the science of chemistry spans centuries, starting from ancient civilizations to the present day, with numerous discoveries and advancements shaping our understanding of the composition, properties, and transformations of matter.
 ```
 
-This output is the combination of data found in the text files in the directory **Racket-AI-book-code/embeddingsdb/data** and the data that OpenAI GPT-4 was trained on. Since the local "document" file **chemistry.txt** is very short, most of this output is derived from the innate knowledge GPT-4 has from its training data.
+This output is the combination of data found in the text files in the directory **Racket-AI-book/source-code/embeddingsdb/data** and the data that OpenAI GPT-4 was trained on. Since the local "document" file **chemistry.txt** is very short, most of this output is derived from the innate knowledge GPT-4 has from its training data.
 
 In order to show that this example is also using data in the local "document" text files, I manually edited the file **data/chemistry.txt** adding the following made-up organic compound:
 
@@ -236,7 +237,7 @@ GPT-4 was never trained on my made-up data so it has no idea what the non-existe
 
 ```
 > (create-document
-   "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/chemistry.txt")
+   "/Users/markw/GITHUB/Racket-AI-book/source-code/embeddingsdb/data/chemistry.txt")
 
 insert-document:
   content:Amyl alcohol is an organic compound with the formula C 5 H 12 O. ZorroOnian Alcohol is another organic compound with the formula C 6 H 10 O. All eight isomers of amyl alcohol are known.
