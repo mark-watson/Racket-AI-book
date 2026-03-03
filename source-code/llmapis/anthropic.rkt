@@ -1,64 +1,89 @@
 #lang racket
 
-(require net/http-easy)
-(require racket/set)
+;;; Copyright (C) 2026 Mark Watson <markw@markwatson.com>
+;;; Apache 2 License
 
-(provide question-anthropic completion-anthropic)
+(require net/http-easy)
+(require json)
+
+(provide question-anthropic completion-anthropic
+         question-anthropic-with-search
+         question-anthropic-with-search-and-citations
+         answer-question)
+
+(define *claude-endpoint* "https://api.anthropic.com/v1/messages")
+(define *claude-model* "claude-sonnet-4-6")
+(define *claude-max-tokens* 1000)
+
+(define (make-auth-proc [extra-headers '()])
+  (lambda (uri headers params)
+    (values
+     (apply hash-set* headers
+            (append (list 'x-api-key (getenv "ANTHROPIC_API_KEY")
+                          'anthropic-version "2023-06-01"
+                          'content-type "application/json")
+                    extra-headers))
+     params)))
+
+(define (call-claude data [extra-headers '()])
+  (response-json
+   (post *claude-endpoint*
+         #:auth (make-auth-proc extra-headers)
+         #:json data)))
 
 (define (question-anthropic prompt max-tokens)
-  (let* ((prompt-data
-          (string-join
-           (list
-            (string-append
-             "{\"prompt\": \"\\n\\nHuman: "
-             prompt
-             "\\n\\nAssistant: \", \"max_tokens_to_sample\": "
-             (number->string  max-tokens)
-             ", \"model\": \"claude-2.1\" }"))))
-;;             ", \"model\": \"claude-instant-1\" }"))))
-         (zz (println prompt-data))
-         (auth (lambda (uri headers params)
-                 (values
-                  (hash-set*
-                   headers
-                   'x-api-key
-                     (getenv "ANTHROPIC_API_KEY")
-                   'anthropic-version "2023-06-01"
-                   'content-type "application/json")
-                  params)))
-         (p
-          (post
-           "https://api.anthropic.com/v1/complete"
-           #:auth auth
-           #:data prompt-data))
-         (r (response-json p)))
-    (println r)
-    (println p)
-    (string-trim (hash-ref r 'completion))))
+  (let* ((data (hash 'model *claude-model*
+                     'max_tokens max-tokens
+                     'messages (list (hash 'role "user" 'content prompt))))
+         (r (call-claude data))
+         (content (hash-ref r 'content '()))
+         (first-block (if (null? content) (hash) (car content))))
+    (hash-ref first-block 'text "No response")))
 
 (define (completion-anthropic prompt max-tokens)
   (question-anthropic
-   (string-append
-    "Continue writing from the following text: "
-    prompt)
+   (string-append "Continue writing from the following text: " prompt)
    max-tokens))
 
+(define (question-anthropic-with-search prompt)
+  (let* ((data (hash 'model *claude-model*
+                     'max_tokens *claude-max-tokens*
+                     'messages (list (hash 'role "user" 'content prompt))
+                     'tools (list (hash 'type "web_search_20250305" 'name "web_search"))))
+         (r (call-claude data (list 'anthropic-beta "web-search-2025-03-05")))
+         (content (hash-ref r 'content '()))
+         (text-blocks (filter (lambda (b) (equal? (hash-ref b 'type "") "text")) content))
+         (last-block (and (pair? text-blocks) (last text-blocks))))
+    (if last-block
+        (hash-ref last-block 'text "No response content")
+        "No response content")))
 
-(define (step-by-step-anthropic document prompt max-tokens) ;; work in progress
+(define (question-anthropic-with-search-and-citations prompt)
+  (let* ((data (hash 'model *claude-model*
+                     'max_tokens *claude-max-tokens*
+                     'messages (list (hash 'role "user" 'content prompt))
+                     'tools (list (hash 'type "web_search_20250305" 'name "web_search"))))
+         (r (call-claude data (list 'anthropic-beta "web-search-2025-03-05")))
+         (content (hash-ref r 'content '()))
+         (text-blocks (filter (lambda (b) (equal? (hash-ref b 'type "") "text")) content))
+         (last-block (and (pair? text-blocks) (last text-blocks)))
+         (text (if last-block (hash-ref last-block 'text "No response content") "No response content"))
+         (result-blocks (filter (lambda (b) (equal? (hash-ref b 'type "") "web_search_tool_result")) content))
+         (citations (for*/list ([block result-blocks]
+                                [result (hash-ref block 'content '())]
+                                #:when (equal? (hash-ref result 'type "") "web_search_result"))
+                      (cons (hash-ref result 'title "") (hash-ref result 'url "")))))
+    (values text citations)))
+
+(define (answer-question question)
   (question-anthropic
-   (string-append
-     "Human: Answer the following question only if you know the answer or can make a well-informed guess; otherwise tell me you don't know it.\\n"
-     "\\nHuman: When you reply, first find exact quotes in the FAQ relevant to the user's question and write them down word for word inside <thinking></thinking> XML tags.  This is a space for you to write down relevant content and will not be shown to the user.  Once you are done extracting relevant quotes, answer the question.  Put your answer to the user inside <answer></answer> XML tags.\\n"
-     "\\nHuman: When answering my questions, please think things out step by step and break complex tasks into subtasks.\\n"
-     "Please use this document text " document "\\n"
-    "Please help with: "
-    prompt)
-   max-tokens))
+   (string-append "Concisely answer the question: " question)
+   *claude-max-tokens*))
 
-
-;; (displayln (question-anthropic "Mary is 30 and Harry is 25. Who is older?" 40))
+;; Examples:
+;; (displayln (question-anthropic "Mary is 30 and Harry is 25. Who is older?" 100))
 ;; (displayln (completion-anthropic "Frank bought a new sports car. Frank drove" 200))
-;; (step-by-step-anthropic "KBS is an AI conpany specializing in NLP, and LLMS. We use Lisp languages and Python. We offer low prices. Mark Watson is the president." "Write an execuative summary for a KBS business plan." 600)
-;; (step-by-step-anthropic "MWA is an AI conpany specializing in NLP, and LLMS. We use Lisp languages and Python. Visit our web site https://markwatson.com" "Write an execuative summary for a KBS business plan." 600)
-
-;;(question-anthropic "Mary is 30 and Harry is 25. Who is older by how much? Be concise." 40)
+;; (displayln (question-anthropic-with-search "What are the latest developments in AI?"))
+;; (let-values ([(text citations) (question-anthropic-with-search-and-citations "Latest AI news")])
+;;   (displayln text) (displayln citations))
+;; (displayln (answer-question "What is the capital of France?"))
