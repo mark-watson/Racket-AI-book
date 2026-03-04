@@ -160,54 +160,81 @@ We can also use "one shot prompting" to describe precisly how we want output for
 
 ## Using the Anthropic APIs in Racket
 
-*Note: I stopped using Anthropic models in 2024 so this example is out of date.*
-
 The Racket code listed below defines two functions, **question** and **completion**, which facilitate interaction with the Anthropic API to access a language model named **claude-instant-1** for text generation purposes. The function **question** takes two arguments: a **prompt** and a **max-tokens** value, which are used to construct a JSON payload that will be sent to the Anthropic API. Inside the function, several Racket libraries are utilized for handling HTTP requests and processing data. A POST request is initiated to the Anthropic API endpoint "https://api.anthropic.com/v1/complete" with the crafted JSON payload. This payload includes the prompt text, maximum tokens to sample, and specifies the model to be used. The **auth** lambda function is used to inject necessary headers for authentication and specifying the API version. Upon receiving the response from the API, it extracts the **completion** field from the JSON response, trims any leading or trailing whitespace, and returns it.
 
-The function **completion** is defined to provide a more specific use-case scenario, where it is intended to continue text from a given **prompt**. It also accepts a **max-tokens** argument to limit the length of the generated text. This function internally calls the function **question** with a modified prompt that instructs the model to continue writing from the provided text. By doing so, it encapsulates the common task of text continuation, making it easy to request text extensions by simply providing the initial text and desired maximum token count. Through these defined functions, the code offers a structured way to interact with the Anthropic API for generating text responses or completions in a Racket Scheme environment.
+The function **completion** is defined to provide a more specific use-case scenario, where it is intended to continue text from a given **prompt**. It also accepts a **max-tokens** argument to limit the length of the generated text. The functions ** question-anthropic-with-search* and **question-anthropic-with-search-and-citations** use web search to enhance the context for prompts or queries.
 
 ```racket
 #lang racket
 
+;;; Copyright (C) 2026 Mark Watson <markw@markwatson.com>
+;;; Apache 2 License
+
 (require net/http-easy)
-(require racket/set)
-(require pprint)
+(require json)
 
-(provide question completion)
+(provide generate
+         question-anthropic-with-search
+         question-anthropic-with-search-and-citations)
 
-(define (question prompt max-tokens)
-  (let* ((prompt-data
-          (string-join
-           (list
-            (string-append
-             "{\"prompt\": \"\\n\\nHuman: "
-             prompt
-             "\\n\\nAssistant: \", \"max_tokens_to_sample\": "
-             (number->string  max-tokens)
-             ", \"model\": \"claude-instant-1\" }"))))
-         (auth (lambda (uri headers params)
-                 (values
-                  (hash-set*
-                   headers
-                   'x-api-key
-                     (getenv "ANTHROPIC_API_KEY")
-                   'anthropic-version "2023-06-01"
-                   'content-type "application/json")
-                  params)))
-         (p
-          (post
-           "https://api.anthropic.com/v1/complete"
-           #:auth auth
-           #:data prompt-data))
-         (r (response-json p)))
-    (string-trim (hash-ref r 'completion))))
+(define *claude-endpoint* "https://api.anthropic.com/v1/messages")
+(define *claude-model* "claude-sonnet-4-6")
+(define *claude-max-tokens* 1000)
 
-(define (completion prompt max-tokens)
-  (question
-   (string-append
-    "Continue writing from the following text: "
-    prompt)
-   max-tokens))
+(define (make-auth-proc [extra-headers '()])
+  (lambda (uri headers params)
+    (values
+     (apply hash-set* headers
+            (append (list 'x-api-key (getenv "ANTHROPIC_API_KEY")
+                          'anthropic-version "2023-06-01"
+                          'content-type "application/json")
+                    extra-headers))
+     params)))
+
+(define (call-claude data [extra-headers '()])
+  (response-json
+   (post *claude-endpoint*
+         #:auth (make-auth-proc extra-headers)
+         #:json data)))
+
+(define (generate prompt max-tokens)
+  (let* ((data (hash 'model *claude-model*
+                     'max_tokens max-tokens
+                     'messages (list (hash 'role "user" 'content prompt))))
+         (r (call-claude data))
+         (content (hash-ref r 'content '()))
+         (first-block (if (null? content) (hash) (car content))))
+    (hash-ref first-block 'text "No response")))
+
+(define (question-anthropic-with-search prompt)
+  (let* ((data (hash 'model *claude-model*
+                     'max_tokens *claude-max-tokens*
+                     'messages (list (hash 'role "user" 'content prompt))
+                     'tools (list (hash 'type "web_search_20250305" 'name "web_search"))))
+         (r (call-claude data (list 'anthropic-beta "web-search-2025-03-05")))
+         (content (hash-ref r 'content '()))
+         (text-blocks (filter (lambda (b) (equal? (hash-ref b 'type "") "text")) content))
+         (last-block (and (pair? text-blocks) (last text-blocks))))
+    (if last-block
+        (hash-ref last-block 'text "No response content")
+        "No response content")))
+
+(define (question-anthropic-with-search-and-citations prompt)
+  (let* ((data (hash 'model *claude-model*
+                     'max_tokens *claude-max-tokens*
+                     'messages (list (hash 'role "user" 'content prompt))
+                     'tools (list (hash 'type "web_search_20250305" 'name "web_search"))))
+         (r (call-claude data (list 'anthropic-beta "web-search-2025-03-05")))
+         (content (hash-ref r 'content '()))
+         (text-blocks (filter (lambda (b) (equal? (hash-ref b 'type "") "text")) content))
+         (last-block (and (pair? text-blocks) (last text-blocks)))
+         (text (if last-block (hash-ref last-block 'text "No response content") "No response content"))
+         (result-blocks (filter (lambda (b) (equal? (hash-ref b 'type "") "web_search_tool_result")) content))
+         (citations (for*/list ([block result-blocks]
+                                [result (hash-ref block 'content '())]
+                                #:when (equal? (hash-ref result 'type "") "web_search_result"))
+                      (cons (hash-ref result 'title "") (hash-ref result 'url "")))))
+    (values text citations)))
 ```
 
 We will try the same examples we used with OpenAI APIs in the previous section:
@@ -215,11 +242,14 @@ We will try the same examples we used with OpenAI APIs in the previous section:
 ```racket
 $ racket
 > (require "anthropic.rkt")
-> (question "Mary is 30 and Harry is 25. Who is older?" 20)
-"Mary is older than Harry. Mary is 30 years old and Harry is 25 years old."
-> (completion "Frank bought a new sports car. Frank drove" 200)
-"Here is a possible continuation of the story:\n\nFrank bought a new sports car. Frank drove excitedly to show off his new purchase. The sleek red convertible turned heads as he cruised down the street with the top down. While stopping at a red light, Frank saw his neighbor Jane walking down the sidewalk. He pulled over and called out to her, \"Hey Jane, check out my new ride! Want to go for a spin?\" Jane smiled and said \"Wow that is one nice car! I'd love to go for a spin.\" She hopped in and they sped off down the road, the wind in their hair. Frank was thrilled to show off his new sports car and even more thrilled to share it with his beautiful neighbor Jane. Little did he know this joyride would be the beginning of something more between them."
-> 
+> (let-values
+    ([(text citations)
+      (question-anthropic-with-search-and-citations "Latest AI news")])
+   (displayln text) (displayln citations))
+The integration of AI with defense agencies is generating heated discussions. Over 100 employees from both OpenAI and Google have signed a petition
+((New AI Model Releases News | March, 2026 (STARTUP EDITION) . https://blog.mean.ceo/new-ai-model-releases-news-march-2026/) (AI News | March, 2026 (STARTUP EDITION) . https://blog.mean.ceo/ai-news-march-2026/) (Open AI News | March, 2026 (STARTUP EDITION) . https://blog.mean.ceo/open-ai-news-march-2026/) (LLM News Today (March 2026) – Open Source LLM Updates & AI Model Releases . https://llm-stats.com/ai-news) (AI Updates Today (March 2026) – Latest AI Model Releases . https://llm-stats.com/llm-updates) (Latest AI News and AI Breakthroughs that Matter Most: 2026 & 2025 | News . https://www.crescendo.ai/news/latest-ai-news-and-updates) (In 2026, AI will move from hype to pragmatism | TechCrunch . https://techcrunch.com/2026/01/02/in-2026-ai-will-move-from-hype-to-pragmatism/) (AI News & Trends March 2026: Complete Monthly Digest . https://www.humai.blog/ai-news-trends-march-2026-complete-monthly-digest/) (Lenovo Scales Trusted AI-Powered Business Computing Through Modular Innovation and Enterprise Platforms - Lenovo StoryHub . https://news.lenovo.com/pressroom/press-releases/trusted-ai-powered-business-computing-modular-enterprise-mwc/) (Open Source AI News | March, 2026 (STARTUP EDITION) . https://blog.mean.ceo/open-source-ai-news-march-2026/))
+> (generate "What is the capital of France?" 50)
+The capital of France is **Paris**.
 ```
 
 While I usually use the OpenAPI APIs, I always like to have alternatives when I am using 3rd party infrastructure, even for personal research projects. The Anthropic LLMs definitely have a different "feel" than the OpenAPI APIs, and I enjoy using both.

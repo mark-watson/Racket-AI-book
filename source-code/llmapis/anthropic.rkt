@@ -6,10 +6,9 @@
 (require net/http-easy)
 (require json)
 
-(provide question-anthropic completion-anthropic
+(provide generate
          question-anthropic-with-search
-         question-anthropic-with-search-and-citations
-         answer-question)
+         question-anthropic-with-search-and-citations)
 
 (define *claude-endpoint* "https://api.anthropic.com/v1/messages")
 (define *claude-model* "claude-sonnet-4-6")
@@ -31,7 +30,7 @@
          #:auth (make-auth-proc extra-headers)
          #:json data)))
 
-(define (question-anthropic prompt max-tokens)
+(define (generate prompt max-tokens)
   (let* ((data (hash 'model *claude-model*
                      'max_tokens max-tokens
                      'messages (list (hash 'role "user" 'content prompt))))
@@ -39,11 +38,6 @@
          (content (hash-ref r 'content '()))
          (first-block (if (null? content) (hash) (car content))))
     (hash-ref first-block 'text "No response")))
-
-(define (completion-anthropic prompt max-tokens)
-  (question-anthropic
-   (string-append "Continue writing from the following text: " prompt)
-   max-tokens))
 
 (define (question-anthropic-with-search prompt)
   (let* ((data (hash 'model *claude-model*
@@ -75,15 +69,10 @@
                       (cons (hash-ref result 'title "") (hash-ref result 'url "")))))
     (values text citations)))
 
-(define (answer-question question)
-  (question-anthropic
-   (string-append "Concisely answer the question: " question)
-   *claude-max-tokens*))
-
 ;; Examples:
-;; (displayln (question-anthropic "Mary is 30 and Harry is 25. Who is older?" 100))
-;; (displayln (completion-anthropic "Frank bought a new sports car. Frank drove" 200))
+;; (displayln (generate "Mary is 30 and Harry is 25. Who is older?" 100))
+;; (displayln (generate "Finish this story: Frank bought a new sports car. Frank drove" 200))
 ;; (displayln (question-anthropic-with-search "What are the latest developments in AI?"))
-;; (let-values ([(text citations) (question-anthropic-with-search-and-citations "Latest AI news")])
-;;   (displayln text) (displayln citations))
-;; (displayln (answer-question "What is the capital of France?"))
+;;(let-values ([(text citations) (question-anthropic-with-search-and-citations "Latest AI news")])
+;;  (displayln text) (displayln citations))
+;; (displayln (generate "What is the capital of France?" 50))
