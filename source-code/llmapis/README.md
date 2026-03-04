@@ -8,3 +8,7 @@
 If I change the source code, run the following to update the linked (installed in place) package **llmapis**:
 
     raco make main.rkt
+
+## Notes
+
+- As of March 1, 2026 I no longer have an OpenAI account so I won't be updating the OpenAI API code.
