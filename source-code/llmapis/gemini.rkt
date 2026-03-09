@@ -11,7 +11,7 @@
          generate-with-search-and-citations)
 
 (define *gemini-model* "gemini-3-flash-preview")
-(define *gemini-max-tokens* 1000)
+(define *gemini-max-tokens* 8192)
 
 (define *google-api-key*
   (or (getenv "GOOGLE_API_KEY")
@@ -50,7 +50,7 @@
 
 (define (make-search-request prompt)
   (hash 'contents (list (hash 'parts (list (hash 'text prompt))))
-        'tools (list (hash 'google_search (hash)))))
+        'tools (list (hash 'googleSearch (hash)))))
 
 (define (generate prompt [model *gemini-model*])
   (let* ((data (hash 'contents (list (hash 'parts (list (hash 'text prompt))))))
@@ -74,10 +74,11 @@
                               (hash-ref web 'uri ""))))))
     (values text citations)))
 
-;; Examples:
-;;(displayln (generate "What is the capital of France?"))
-;; (displayln (generate "Mary is 30 and Harry is 25. Who is older?"))
-;; (displayln (generate-with-search "What are the latest developments in AI?"))
-;; (let-values ([(text citations) (generate-with-search-and-citations "Latest AI news")])
-;;   (displayln text) (displayln citations))
-;; (let-values ([(text citations) (generate-with-search-and-citations "Sci-fi movies playing in Flagstaff Arizona today?")]) (displayln text) (displayln citations))
+#| Examples:
+(displayln (generate "What is the capital of France?"))
+(displayln (generate "Mary is 30 and Harry is 25. Who is older?"))
+(displayln (generate-with-search "What are the latest developments in AI?"))
+(let-values ([(text citations) (generate-with-search-and-citations "Latest AI news")])
+  (displayln text) (displayln citations))
+(let-values ([(text citations) (generate-with-search-and-citations "Sci-fi movies playing in Flagstaff Arizona today?")]) (displayln text) (displayln citations))
+|#
