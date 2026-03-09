@@ -1,4 +1,4 @@
-# Using the OpenAI, Anthropic, Mistral, and Local Hugging Face Large Language Model APIs in Racket
+# Using the Google Gemini, OpenAI, Anthropic, Mistral, and Local Hugging Face Large Language Model APIs in Racket
 
 Large Language Models (LLMs) have supercharged AI capabilities, affected the job market for many *knowledge work* careers, and placed huge demands on electrical power infrastructure.
 
@@ -156,6 +156,135 @@ We can also use "one shot prompting" to describe precisly how we want output for
 (SUM 3 44 88)
 ```
 
+## Using Google Gemini APIs in Racket
+
+This code provides a lightweight client that doesn't just generate text; it also leverages Gemini's ability to "ground" its answers using Google Search. This is particularly useful when you need your AI to have access to up-to-date information rather than just relying on its training data. We will use the **gemini-3-flash-preview** model here, which I’ve found to be incredibly fast and cost-effective for these kinds of experiments.
+
+```racket
+#lang racket
+
+;;; Copyright (C) 2026 Mark Watson <markw@markwatson.com>
+;;; Apache 2 License
+
+(require net/http-easy)
+(require json)
+
+(provide generate
+         generate-with-search
+         generate-with-search-and-citations)
+
+(define *gemini-model* "gemini-3-flash-preview")
+(define *gemini-max-tokens* 8192)
+
+(define *google-api-key*
+  (or (getenv "GOOGLE_API_KEY")
+      (error "GOOGLE_API_KEY environment variable is not set")))
+
+(define (gemini-endpoint [model *gemini-model*])
+  (string-append
+   "https://generativelanguage.googleapis.com/v1beta/models/"
+   model ":generateContent"))
+
+(define (auth-proc uri headers params)
+  (values
+   (hash-set* headers
+              'x-goog-api-key *google-api-key*
+              'content-type "application/json")
+   params))
+
+(define (make-generation-config)
+  (hash 'maxOutputTokens *gemini-max-tokens*))
+
+(define (call-gemini data [model *gemini-model*])
+  (response-json
+   (post (gemini-endpoint model)
+         #:auth auth-proc
+         #:json (hash-set data 'generationConfig (make-generation-config)))))
+
+(define (extract-text response)
+  (when (hash-has-key? response 'error)
+    (error "Gemini API error" (hash-ref response 'error)))
+  (let* ((candidates (hash-ref response 'candidates '()))
+         (candidate (if (null? candidates) (hash) (car candidates)))
+         (content (hash-ref candidate 'content (hash)))
+         (parts (hash-ref content 'parts '()))
+         (first-part (if (null? parts) (hash) (car parts))))
+    (hash-ref first-part 'text "No response")))
+
+(define (make-search-request prompt)
+  (hash 'contents (list (hash 'parts (list (hash 'text prompt))))
+        'tools (list (hash 'googleSearch (hash)))))
+
+(define (generate prompt [model *gemini-model*])
+  (let* ((data (hash 'contents (list (hash 'parts (list (hash 'text prompt))))))
+         (r (call-gemini data model)))
+    (extract-text r)))
+
+(define (generate-with-search prompt [model *gemini-model*])
+  (extract-text (call-gemini (make-search-request prompt) model)))
+
+(define (generate-with-search-and-citations prompt [model *gemini-model*])
+  (let* ((r (call-gemini (make-search-request prompt) model))
+         (text (extract-text r))
+         (candidates (hash-ref r 'candidates '()))
+         (candidate (if (null? candidates) (hash) (car candidates)))
+         (metadata (hash-ref candidate 'groundingMetadata (hash)))
+         (chunks (hash-ref metadata 'groundingChunks '()))
+         (citations (for*/list ([chunk chunks]
+                                #:when (hash-has-key? chunk 'web))
+                      (let ((web (hash-ref chunk 'web (hash))))
+                        (cons (hash-ref web 'title "")
+                              (hash-ref web 'uri ""))))))
+    (values text citations)))
+
+#| Examples:
+(displayln (generate "What is the capital of France?"))
+(displayln (generate "Mary is 30 and Harry is 25. Who is older?"))
+(displayln (generate-with-search "What are the latest developments in AI?"))
+(let-values ([(text citations) (generate-with-search-and-citations "Latest AI news")])
+  (displayln text) (displayln citations))
+(let-values ([(text citations) (generate-with-search-and-citations "Sci-fi movies playing in Flagstaff Arizona today?")]) (displayln text) (displayln citations))
+|#
+```
+
+Here we use the **net/http-easy** library for handling our web requests and the standard json library to parse the results. You will notice that I am pulling the GOOGLE_API_KEY from the system environment variables because it is always best practice to keep secrets out of your source code. The core workhorse here is the **call-gemini** function. Since the Gemini API expects a specific JSON structure where prompts are nested inside contents and parts, I wrote a few helper functions to construct these payloads automatically. This keeps the main logic clean and lets us focus on the data we want to send, rather than the formatting requirements of the REST API.
+
+The most interesting part of this module is how we handle search grounding. In the generate-with-search-and-citations function, we pass a googleSearch tool definition in our request. This instructs the model to browse the web before formulating an answer. Parsing the response is a bit like peeling an onion because the JSON is deeply nested, but we drill down into the groundingMetadata to extract specific web chunks. This allows us to return not just the generated text, but also a list of citations and URLs, which is essential if you are building a research assistant or any tool where verifying the source of information is important.
+
+Here is an example of using Gemini with grounding search with annotations (output is heavily edited for conciseness):
+
+```
+> (let-values ([(text citations) (generate-with-search-and-citations "Latest AI news")])
+  (displayln text) (displayln citations))
+
+Here is a summary of the most significant AI news as of today, **March 9, 2026**, a day marked by major product launches, high-stakes legal battles, and massive infrastructure shifts.
+
+### **1. OpenAI: GPT-5.4 Launch and "Stargate" Turbulence**
+OpenAI has dominated the headlines this week with the official release of the **GPT-5.4 model series** (Standard, Thinking, and Pro variants).
+*   **"Digital Colleague" Features:** The new model introduces **native computer use**, allowing the AI to control mouse and keyboard inputs directly to navigate software. It also features a **1.05-million-token context window** and a reported 33% reduction in hallucinations compared to previous versions.
+*   **Backlash and Resignations:** Despite the technical success, OpenAI is facing internal and external turmoil over a **Pentagon deal** announced in late February. High-profile hardware lead **Caitlin Kalinowski** (formerly of Meta) resigned this weekend in protest, citing concerns over the lack of deliberation on lethal autonomy and domestic surveillance.
+*   **Infrastructure:** Reports emerged today that the ambitious **$500 billion "Stargate" data center** expansion in Texas with Oracle has stalled due to financing disagreements, though Meta and NVIDIA are reportedly stepping in to fill the capacity gap.
+
+### **3. Anthropic: Lawsuit Against the Trump Administration**
+Anthropic is currently in a "legal war" with the federal government.
+*   **Supply Chain Risk:** Following a refusal to remove ethical guardrails against autonomous weapons, the Pentagon designated Anthropic a **"supply chain risk."** 
+*   **The Lawsuit:** Anthropic filed two lawsuits today (March 9) against the Department of Defense and President Trump, calling the designation "arbitrary, capricious, and an abuse of power."
+*   **Product Update:** Amidst the legal drama, Anthropic’s **Claude Cowork** is gaining massive traction as a desktop agent for non-technical users, powered by the recently released **Sonnet 4.6** (1M context window).
+
+### **4. Meta: News Corp Deal and Privacy Scandals**
+Meta made a major dual-announcement today regarding content and compute.
+*   **News Corp Agreement:** Meta signed a multi-year licensing deal with **News Corp** to use premium US and UK news for training its next-generation Llama models.
+*   **Smart Glasses Lawsuit:** On the negative side, a class-action lawsuit was filed today following reports that human contractors in Kenya were reviewing **intimate first-person footage** (including private home life) captured by Ray-Ban Meta glasses to train vision AI systems.
+
+### **5. Hardware & Robotics: NVIDIA and GTC 2026**
+*   **NVIDIA & ABB:** NVIDIA announced a partnership with **ABB Robotics** to deploy "industrial-grade physical AI" using the Omniverse platform. 
+
+### **6. Regulation & Society**
+*   **EU AI Act Enforcement:** European MEPs are meeting this week to finalize measures protecting the creative sector from AI exploitation, specifically calling for mandatory remuneration for artists whose work is used in training data.
+
+((cbsnews.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEbLyiS8MiC2NtPtMDnfInqKRMzsjyo52qtS0-lMuAf3YdJh78LiR3lgcmlRNDLPLqSYaZij-9D9cw_Him2KtvqC6J-p70iPzMLkT4UdR8eHIaZXLOMh3VM4NVyLR4enYbL1n_SE_lbrNKAUnK9c102GCb6ZjwIyhQgjXt7pzU9erTNQDR4) (citynews.ca . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEoP2nQt9xDssAKQPCLObge0fVxVuNaZ2ei8Ywqhz9chtSGEkLgmvpaXbVDs8ANBa2fNk_Du-32rUHogciGtexI8ZmI74SopLgqghk0znPm7ZFQIyCCk-zPVzRPdPOut8wUIYvErNVyFuAiamjmdUcetHYTF0xSwua-CM0C6_a24ztX2B1UCTt1MO3okYgP31sKVdQYJQN6tc0_M52nljsVWWivRkZfRRWG7F9l3ZdIovGC2xo=) (ksat.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHLANhJ_bLjacJ7I2nht8Awd0UD_dNOaBOC1F-6wnDQP0I44DkWS4lQzmSilAIUUElNK0BVx8_BEMIcrQXkvW_kxJHhnhACBDi8hLttFr4HYVb0iuL45FSQwyuBS0JHeCHOWP2ejr0MkHbQBZezgC2gBodvs-cxlvhlVd87KLnhD7HsAF8RZWdKRLtM18TknbGmKrxQJHdNJ7_G6sqgcsUZBzTrfbpI3IFK865exx2XdCKTkbtsrA==) (petapixel.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGwo7X43lLUpS_LDnMeuDNxWlmgaKAO18XnVrUtKEXh3LvI6jiucRrD_G5TaO30QZGZZb_c35u5a7CCP7sQNwqnwIJOuNUciUTHVtirGYG8KwGCmuLba_nSS-63JOOdIsFvAA_ksNIAWyspRl9mdC8aHiLR98w8Ij59eKFTCg2A1YRm2S9BiHd0Xg3OwlPquS-zsEEpbXzBHSx8ntUwIYEadlVsEPt58G3_) (indianexpress.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFHKeqS01rew3SZFl1YGHiIDzHYxweks5oe0xQ5P0zF_YS3nShq6AZ31GUcRh0I9SjUkQtkxwO8jeMg76CXV48Ocn30wALicS49KqYg_ASRYn0ZUt991XpgY_kcQ4xbIvdTIBSCxIiwFpyf7duuBp7I_sJgl01wnAYToFLFdNr4B7lSYxwiRoWAGxaC4iPY6QtjzcbP4q-ZOUTkYcYlE5hTsLtNjj-rUS03D1Kp_7J2XTIvgWJJMlo=) (thestreet.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFCW6G9bDwcKLRzUTVwqHbIg264ibasILG8TeeIvsrYNplWLlIDywlUQWtj18qrDpH2XpUY3H5fTOkXb6Azyf_yEnf3PP6ZZJ5gugzD-xaB_aE9gqXNwgyciP1ScS2mjfRlSy3sTxAouJFUj6ruG2Cqixh43W2ELyNSS9z1s8wtVzaGF_cMY4pcUBQWZkJoU1mU5s6GauQLt7gnVBwklQ==) (nasa.gov . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF9EzEVmarS1I7ieeSlqxgjaZ6EryOWG-LuStz-rEd2_-OHnHrhbBGJafYPh9DmAREKX7yzX_s6-OXD2qLBpB5Qxyu1yAazgFj0_Hiw5Kd4_DFI_S-8JMqHSTmOKL1sYqt7ToQZtQvESTknCShqDXvOnzvcYHX6_SHJLN_8W1b8r6fj4m-749ZQW8okx-hB_KU2cAySf23hNLee6yuVYTeDSd7z))
+> 
+```
 
 
 ## Using the Anthropic APIs in Racket
