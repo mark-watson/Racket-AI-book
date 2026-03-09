@@ -10,27 +10,37 @@
          generate-with-search
          generate-with-search-and-citations)
 
-(define *gemini-model* "gemini-2.0-flash")
+(define *gemini-model* "gemini-3-flash-preview")
 (define *gemini-max-tokens* 1000)
 
-(define (gemini-endpoint [model *gemini-model*])
-  (string-append "https://generativelanguage.googleapis.com/v1beta/models/" model ":generateContent"))
+(define *google-api-key*
+  (or (getenv "GOOGLE_API_KEY")
+      (error "GOOGLE_API_KEY environment variable is not set")))
 
-(define (make-auth-proc)
-  (lambda (uri headers params)
-    (values
-     (hash-set* headers
-                'x-goog-api-key (getenv "GOOGLE_API_KEY")
-                'content-type "application/json")
-     params)))
+(define (gemini-endpoint [model *gemini-model*])
+  (string-append
+   "https://generativelanguage.googleapis.com/v1beta/models/"
+   model ":generateContent"))
+
+(define (auth-proc uri headers params)
+  (values
+   (hash-set* headers
+              'x-goog-api-key *google-api-key*
+              'content-type "application/json")
+   params))
+
+(define (make-generation-config)
+  (hash 'maxOutputTokens *gemini-max-tokens*))
 
 (define (call-gemini data [model *gemini-model*])
   (response-json
    (post (gemini-endpoint model)
-         #:auth (make-auth-proc)
-         #:json data)))
+         #:auth auth-proc
+         #:json (hash-set data 'generationConfig (make-generation-config)))))
 
 (define (extract-text response)
+  (when (hash-has-key? response 'error)
+    (error "Gemini API error" (hash-ref response 'error)))
   (let* ((candidates (hash-ref response 'candidates '()))
          (candidate (if (null? candidates) (hash) (car candidates)))
          (content (hash-ref candidate 'content (hash)))
@@ -38,21 +48,20 @@
          (first-part (if (null? parts) (hash) (car parts))))
     (hash-ref first-part 'text "No response")))
 
-(define (generate prompt)
+(define (make-search-request prompt)
+  (hash 'contents (list (hash 'parts (list (hash 'text prompt))))
+        'tools (list (hash 'google_search (hash)))))
+
+(define (generate prompt [model *gemini-model*])
   (let* ((data (hash 'contents (list (hash 'parts (list (hash 'text prompt))))))
-         (r (call-gemini data)))
+         (r (call-gemini data model)))
     (extract-text r)))
 
-(define (generate-with-search prompt)
-  (let* ((data (hash 'contents (list (hash 'parts (list (hash 'text prompt))))
-                     'tools (list (hash 'google_search (hash)))))
-         (r (call-gemini data)))
-    (extract-text r)))
+(define (generate-with-search prompt [model *gemini-model*])
+  (extract-text (call-gemini (make-search-request prompt) model)))
 
-(define (generate-with-search-and-citations prompt)
-  (let* ((data (hash 'contents (list (hash 'parts (list (hash 'text prompt))))
-                     'tools (list (hash 'google_search (hash)))))
-         (r (call-gemini data))
+(define (generate-with-search-and-citations prompt [model *gemini-model*])
+  (let* ((r (call-gemini (make-search-request prompt) model))
          (text (extract-text r))
          (candidates (hash-ref r 'candidates '()))
          (candidate (if (null? candidates) (hash) (car candidates)))
@@ -71,3 +80,4 @@
 ;; (displayln (generate-with-search "What are the latest developments in AI?"))
 ;; (let-values ([(text citations) (generate-with-search-and-citations "Latest AI news")])
 ;;   (displayln text) (displayln citations))
+;; (let-values ([(text citations) (generate-with-search-and-citations "Sci-fi movies playing in Flagstaff Arizona today?")]) (displayln text) (displayln citations))
