@@ -396,6 +396,74 @@ The file `main.rkt` in the `ollama_tools` directory provides an interactive menu
 (run-demo)
 ```
 
+Here is some example output:
+
+```
+$ racket main.rkt
+Using model: qwen3:1.7b
+Ollama host: http://localhost:11434
+Make sure Ollama is running and the model is pulled.
+
+
+=== Ollama Tools Demo ===
+1. Get current date and time
+2. Get weather for a location
+3. List files in current directory
+4. Read a file
+5. Search Wikipedia
+6. Custom prompt (all tools available)
+7. Exit
+Select option: 1
+
+>>> Calling get_current_datetime...
+The current date and time is **Wednesday, April 8th, 2026 11:28:40am**.
+
+=== Ollama Tools Demo ===
+1. Get current date and time
+2. Get weather for a location
+3. List files in current directory
+4. Read a file
+5. Search Wikipedia
+6. Custom prompt (all tools available)
+7. Exit
+Select option: 3
+
+>>> Listing directory...
+The current directory contains the following files:
+
+- `README.md`
+- `compiled`
+- `main.rkt`
+- `main.rkt~` (modified)
+- `tools.rkt`
+- `tools.rkt~` (modified)
+
+These files are located in the directory `/Users/markwatson/GITHUB/Racket-AI-book/source-code/ollama_tools/`. The ~ symbols indicate modified files.
+
+=== Ollama Tools Demo ===
+1. Get current date and time
+2. Get weather for a location
+3. List files in current directory
+4. Read a file
+5. Search Wikipedia
+6. Custom prompt (all tools available)
+7. Exit
+Select option: 5
+Enter search query: Flagstaff Arizona
+
+>>> Searching Wikipedia for Flagstaff Arizona...
+Flagstaff, Arizona, is a city located in the Phoenix metropolitan area, known for its scenic beauty, historical landmarks, and outdoor activities. It is part of the Grand Canyon Railway system and is home to the Grand Canyon Railway Museum. The city also features the historic Flagstaff Historical Society and the Flagstaff Art Center. Flagstaff is situated near the Colorado River and is a popular destination for outdoor recreation, including hiking, camping, and visiting the Grand Canyon. While specific Wikipedia summaries may not be available, Flagstaff is recognized for its natural beauty, cultural heritage, and community spirit.
+
+=== Ollama Tools Demo ===
+1. Get current date and time
+2. Get weather for a location
+3. List files in current directory
+4. Read a file
+5. Search Wikipedia
+6. Custom prompt (all tools available)
+7. Exit
+Select option: 
+```
 
 ## Summary
 
