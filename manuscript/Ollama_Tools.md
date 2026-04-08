@@ -1,7 +1,5 @@
 # Ollama Tools/Function Calling in Racket
 
-*Note: as of April 7, 2026 this chapter is still being written.*
-
 One of the most powerful features of modern LLMs is their ability to call external functions (tools) during a conversation. This allows the model to perform actions beyond just generating text — it can fetch live data, interact with files, call APIs, and more.
 
 Ollama supports tool/function calling through its chat API. When you provide a list of available tools with their schemas, the model can decide to call one or more tools, and your code executes them and returns the results back to the model.
@@ -20,7 +18,7 @@ The flow is:
 5. **Return result** — add the tool result to the message history
 6. **Model responds** — uses the tool output to generate its final answer
 
-This creates a conversation loop where the LLM can request information it doesn't have.
+This creates a conversation loop where the LLM can request information it doesn't have intrinsically from its training data.
 
 ## A Racket Tools Library
 
@@ -30,6 +28,10 @@ The following code defines a reusable library for Ollama tool calling. It provid
 - **Built-in tools** for common operations (weather, files, Wikipedia)
 - **API communication** to call Ollama and handle tool responses
 
+This example demonstrates how to bridge the gap between Large Language Models and local system capabilities by implementing a tool-calling framework in Racket. The code provides a structured way to register Racket functions as "tools" that Ollama-hosted models can invoke to perform real-world tasks such as fetching live weather data, searching Wikipedia, or interacting with the local file system. By defining a clear registry system and using JSON schema for parameter validation, the module automates the complex loop of sending prompts to the LLM, parsing its request for a function call, executing the corresponding Racket code, and returning the results back to the model for a final synthesis. This pattern is essential for building "agentic" applications where the AI is not just a chatbot, but a functional interface capable of executing logic and retrieving dynamic data.
+
+The following file **tools.rkt** contains both the library code for creating and using tools and also example tool implementations:
+
 ```racket
 #lang racket
 
@@ -37,6 +39,10 @@ The following code defines a reusable library for Ollama tool calling. It provid
 ;;; Apache 2 License
 ;;;
 ;;; Ollama Tools/Function Calling Example for Racket
+;;;
+;;; This module demonstrates how to use Ollama's tool/function calling
+;;; capability from Racket. It defines tools (functions) that the LLM
+;;; can call, registers them, and handles the tool call flow.
 
 (require net/http-easy)
 (require json)
@@ -50,13 +56,14 @@ The following code defines a reusable library for Ollama tool calling. It provid
          list-directory
          read-file-contents
          *available-tools*
+         *ollama-host*
          *default-model*)
 
 ;;; -----------------------------------------------------------------------------
 ;;; Configuration
 
-(define *default-model* (or (getenv "OLLAMA_MODEL") "qwen3:1.7b"))
-(define *ollama-host* (or (getenv "OLLAMA_HOST") "http://localhost:11434"))
+(define *default-model* (make-parameter (or (getenv "OLLAMA_MODEL") "qwen3:1.7b")))
+(define *ollama-host* (make-parameter (or (getenv "OLLAMA_HOST") "http://localhost:11434")))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Tool Registry
@@ -99,7 +106,8 @@ The following code defines a reusable library for Ollama tool calling. It provid
         (string-trim (bytes->string/utf-8 body))))))
 
 (define (list-directory args)
-  "Lists files in the current directory."
+  "Lists files in the current directory.
+   ARGS: empty hash (no parameters needed)"
   (let ([files (directory-list (current-directory))])
     (format "Files in ~a: ~a"
             (current-directory)
@@ -191,13 +199,15 @@ The following code defines a reusable library for Ollama tool calling. It provid
           (error (format "Unknown tool: ~a" name))))))
 
 (define (call-ollama-api messages tools)
-  "Call the Ollama chat API with tools."
-  (let* ([data (hash 'model *default-model*
+  "Call the Ollama chat API with tools.
+   MESSAGES: list of message hashes with 'role and 'content
+   TOOLS: list of tool schemas"
+  (let* ([data (hash 'model (*default-model*)
                      'messages messages
                      'tools tools
                      'stream #f)]
          [json-data (jsexpr->string data)]
-         [response (post (string-append *ollama-host* "/api/chat")
+         [response (post (string-append (*ollama-host*) "/api/chat")
                         #:data json-data
                         #:headers (hash 'content-type "application/json"))]
          [result (response-json response)])
@@ -223,7 +233,7 @@ The following code defines a reusable library for Ollama tool calling. It provid
         (hash 'role "tool"
               'content (format "Unknown tool: ~a" func-name)))))
 
-(define (call-ollama-with-tools prompt tool-names #:model [model *default-model*])
+(define (call-ollama-with-tools prompt tool-names #:model [model (*default-model*)])
   "Call Ollama with tools and handle the tool calling loop.
    PROMPT: the user's prompt
    TOOL-NAMES: list of tool names to make available
@@ -252,92 +262,54 @@ The following code defines a reusable library for Ollama tool calling. It provid
                     (loop new-msgs (- max-iterations 1)))
                   ;; No tool calls, return the content
                   (hash-ref message 'content "No response"))))))))
+
+;;; -----------------------------------------------------------------------------
+;;; Example Usage (commented out for library use)
+
+#|
+(require "tools.rkt")
+
+;; Example 1: Get current date/time
+(displayln (call-ollama-with-tools
+            "What is the current date and time?"
+            '("get_current_datetime")))
+
+;; Example 2: Get weather
+(displayln (call-ollama-with-tools
+            "What is the weather in Phoenix Arizona?"
+            '("get_weather")))
+
+;; Example 3: Multiple tools available
+(displayln (call-ollama-with-tools
+            "Tell me about the Eiffel Tower"
+            '("get_weather" "search_wikipedia" "get_current_datetime")))
+
+;; Example 4: List files
+(displayln (call-ollama-with-tools
+            "What files are in the current directory?"
+            '("list_directory")))
+|#
 ```
 
-## Using the Tools
+This tool use implementation relies on a central registry, **available-tools** which stores tool metadata and their associated handler functions. When a user sends a prompt, the `call-ollama-with-tools` function packages the available tool definitions into the format expected by the Ollama API. The model then decides whether to answer the query directly or request a tool execution. If the model provides a tool_calls object, the Racket handler dynamically dispatches the request to the local function, processes the output, and feeds it back into the conversation history.
 
-Once the library is loaded, using it is straightforward. You pass a prompt and a list of available tool names:
+A key technical highlight is the use of the `net/http-easy` and `json` libraries to manage the RESTful communication with the Ollama service. The recursive loop within `call-ollama-with-tools` ensures that the system can handle multi-step reasoning where a model might need to call one tool to get a piece of information before calling another to complete the task. This robust structure allows developers to expand the LLM's capabilities indefinitely by simply registering new Racket functions to the registry.
 
-```racket
-> (require "tools.rkt")
-> (call-ollama-with-tools
-    "What is the weather in Phoenix Arizona?"
-    '("get_weather"))
-"It's currently sunny and 95°F in Phoenix, Arizona."
-```
+## Complete Example Using the Tools Library and Example Tools
 
-The model decided it needed the `get_weather` tool, called it with `location: "Phoenix Arizona"`, and used the result to answer.
-
-Here's an example with multiple tools available:
-
-```racket
-> (call-ollama-with-tools
-    "What day is it today and what's the weather in London?"
-    '("get_current_datetime" "get_weather"))
-"Today is Tuesday, April 7th, 2026. The weather in London is partly cloudy with temperatures around 15°C (59°F)."
-```
-
-The model called both tools to fully answer the question.
-
-## Creating Custom Tools
-
-You can register your own tools using `register-tool`. The pattern is:
-
-1. Define a handler function that takes an `args` hash
-2. Call `register-tool` with the name, description, JSON schema, and handler
-
-```racket
-;; Define a custom tool
-(define (calculate-sum args)
-  (let ([numbers (hash-ref args 'numbers '())])
-    (format "The sum is: ~a" (apply + numbers))))
-
-;; Register it
-(register-tool
- "calculate_sum"
- "Calculate the sum of a list of numbers"
- (hash 'type "object"
-       'properties (hash 'numbers (hash 'type "array"
-                                        'items (hash 'type "number")
-                                        'description "List of numbers to sum"))
-       'required '("numbers"))
- calculate-sum)
-
-;; Use it
-(call-ollama-with-tools
- "What is 23 + 45 + 67?"
- '("calculate_sum"))
-```
-
-## Model Selection
-
-Tool calling works best with models specifically trained for it. Ollama models that support tool calling include:
-
-- `llama3.2` (recommended)
-- `qwen2.5` series
-- `mistral` and `mixtral`
-
-Set the model via environment variable:
-
-```bash
-export OLLAMA_MODEL=llama3.2
-```
-
-Or pass it directly:
-
-```racket
-(call-ollama-with-tools
- "Get the weather in Tokyo"
- '("get_weather")
- #:model "llama3.2")
-```
-
-## Complete Example: Interactive Demo
+Here we use the example tool that we previously saw implemented in the file **tools.rkt**.
 
 The file `main.rkt` in the `ollama_tools` directory provides an interactive menu for testing the tools:
 
 ```racket
 #lang racket
+
+;;; Copyright (C) 2026 Mark Watson <markw@markwatson.com>
+;;; Apache 2 License
+;;;
+;;; Ollama Tools Example - Interactive Demo
+;;;
+;;; Run with: racket main.rkt
 
 (require "tools.rkt")
 
@@ -349,45 +321,81 @@ The file `main.rkt` in the `ollama_tools` directory provides an interactive menu
   (displayln "4. Read a file")
   (displayln "5. Search Wikipedia")
   (displayln "6. Custom prompt (all tools available)")
-  (displayln "7. Exit"))
+  (displayln "7. Exit")
+  (display "Select option: "))
 
 (define (run-demo)
-  (displayln (format "Using model: ~a" *default-model*))
+  (displayln (format "Using model: ~a" (*default-model*)))
+  (displayln (format "Ollama host: ~a" (*ollama-host*)))
+  (displayln "Make sure Ollama is running and the model is pulled.")
   (newline)
+
   (let loop ()
     (display-menu)
     (let ([choice (read-line)])
       (cond
         [(string=? choice "1")
+         (displayln "\n>>> Calling get_current_datetime...")
          (displayln (call-ollama-with-tools
-                      "What is the current date and time?"
-                      '("get_current_datetime")))
+                     "What is the current date and time?"
+                     '("get_current_datetime")))
          (loop)]
+
         [(string=? choice "2")
          (display "Enter location: ")
          (let ([location (read-line)])
+           (displayln (format "\n>>> Getting weather for ~a..." location))
            (displayln (call-ollama-with-tools
-                        (format "What is the weather in ~a?" location)
-                        '("get_weather"))))
+                       (format "What is the weather in ~a?" location)
+                       '("get_weather"))))
          (loop)]
-        ;; ... other options ...
-        [(string=? choice "7") (displayln "Goodbye!")]
-        [else (loop)]))))
+
+        [(string=? choice "3")
+         (displayln "\n>>> Listing directory...")
+         (displayln (call-ollama-with-tools
+                     "What files are in the current directory?"
+                     '("list_directory")))
+         (loop)]
+
+        [(string=? choice "4")
+         (display "Enter file path: ")
+         (let ([filepath (read-line)])
+           (displayln (format "\n>>> Reading ~a..." filepath))
+           (displayln (call-ollama-with-tools
+                       (format "Read the contents of ~a and summarize it" filepath)
+                       '("read_file_contents"))))
+         (loop)]
+
+        [(string=? choice "5")
+         (display "Enter search query: ")
+         (let ([query (read-line)])
+           (displayln (format "\n>>> Searching Wikipedia for ~a..." query))
+           (displayln (call-ollama-with-tools
+                       (format "Tell me about ~a" query)
+                       '("search_wikipedia"))))
+         (loop)]
+
+        [(string=? choice "6")
+         (display "Enter your prompt: ")
+         (let ([prompt (read-line)])
+           (displayln "\n>>> Processing with all tools...")
+           (displayln (call-ollama-with-tools
+                       prompt
+                       '("get_current_datetime" "get_weather" 
+                         "list_directory" "read_file_contents" 
+                         "search_wikipedia"))))
+         (loop)]
+
+        [(string=? choice "7")
+         (displayln "Goodbye!")]
+
+        [else
+         (displayln "Invalid choice, try again.")
+         (loop)]))))
 
 (run-demo)
 ```
 
-## Comparison with Other Languages
-
-This Racket implementation follows the same pattern as the Hy and Common Lisp examples in my other books:
-
-| Language | File | Key Features |
-|----------|------|--------------|
-| **Racket** | `ollama_tools/tools.rkt` | Tool registry, handlers, API loop |
-| **Hy** | `ollama_examples/ollama_tools_examples.hy` | Uses `ollama` Python library |
-| **Common Lisp** | `ollama/ollama-tools.lisp` | CLOS structures for tools |
-
-The Racket version is concise thanks to Racket's hash tables and functional style. The `for/list` form makes processing tool calls clean, and `with-handlers` provides elegant error handling for tool execution.
 
 ## Summary
 
