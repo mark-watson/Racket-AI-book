@@ -21,13 +21,14 @@
          list-directory
          read-file-contents
          *available-tools*
+         *ollama-host*
          *default-model*)
 
 ;;; -----------------------------------------------------------------------------
 ;;; Configuration
 
-(define *default-model* (or (getenv "OLLAMA_MODEL") "qwen3:1.7b"))
-(define *ollama-host* (or (getenv "OLLAMA_HOST") "http://localhost:11434"))
+(define *default-model* (make-parameter (or (getenv "OLLAMA_MODEL") "qwen3:1.7b")))
+(define *ollama-host* (make-parameter (or (getenv "OLLAMA_HOST") "http://localhost:11434")))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Tool Registry
@@ -166,12 +167,12 @@
   "Call the Ollama chat API with tools.
    MESSAGES: list of message hashes with 'role and 'content
    TOOLS: list of tool schemas"
-  (let* ([data (hash 'model *default-model*
+  (let* ([data (hash 'model (*default-model*)
                      'messages messages
                      'tools tools
                      'stream #f)]
          [json-data (jsexpr->string data)]
-         [response (post (string-append *ollama-host* "/api/chat")
+         [response (post (string-append (*ollama-host*) "/api/chat")
                         #:data json-data
                         #:headers (hash 'content-type "application/json"))]
          [result (response-json response)])
@@ -197,7 +198,7 @@
         (hash 'role "tool"
               'content (format "Unknown tool: ~a" func-name)))))
 
-(define (call-ollama-with-tools prompt tool-names #:model [model *default-model*])
+(define (call-ollama-with-tools prompt tool-names #:model [model (*default-model*)])
   "Call Ollama with tools and handle the tool calling loop.
    PROMPT: the user's prompt
    TOOL-NAMES: list of tool names to make available

@@ -21,8 +21,8 @@
   (display "Select option: "))
 
 (define (run-demo)
-  (displayln (format "Using model: ~a" *default-model*))
-  (displayln (format "Ollama host: ~a" *ollama-host*))
+  (displayln (format "Using model: ~a" (*default-model*)))
+  (displayln (format "Ollama host: ~a" (*ollama-host*)))
   (displayln "Make sure Ollama is running and the model is pulled.")
   (newline)
 
@@ -46,7 +46,7 @@
                        '("get_weather"))))
          (loop)]
 
-        [(string=: choice "3")
+        [(string=? choice "3")
          (displayln "\n>>> Listing directory...")
          (displayln (call-ollama-with-tools
                      "What files are in the current directory?"

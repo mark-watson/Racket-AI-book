@@ -4,6 +4,9 @@ One of the most powerful features of modern LLMs is their ability to call extern
 
 Ollama supports tool/function calling through its chat API. When you provide a list of available tools with their schemas, the model can decide to call one or more tools, and your code executes them and returns the results back to the model.
 
+The examples for this chapter are in the directory **Racket-AI-book/source-code/ollama_tools**.
+
+
 ## How Tool Calling Works
 
 The flow is:
