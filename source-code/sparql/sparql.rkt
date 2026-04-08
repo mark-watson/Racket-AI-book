@@ -17,7 +17,7 @@
                                    AS ?website) ?comment {
       OPTIONAL {
        @person-uri
-       <http://www.w3.org/2000/01/rdf-schema#comment>
+       <http://dbpedia.org/ontology/description>
        ?comment . FILTER (lang(?comment) = 'en')
       } .
       OPTIONAL {
@@ -35,7 +35,7 @@
         <http://xmlns.com/foaf/0.1/name>
         "@person-name"@"@"en .
       ?personuri
-        <http://www.w3.org/2000/01/rdf-schema#comment>
+        <http://dbpedia.org/ontology/description>
         ?comment .
              FILTER  (lang(?comment) = 'en') .
 }})
@@ -102,4 +102,6 @@
   (lambda (sparql)
     (gd (sparql-query->hash sparql))))
 
-;; (sparql-dbpedia (sparql-dbpedia-person-uri "Steve Jobs"))
+(sparql-dbpedia (sparql-dbpedia-person-uri "Steve Jobs"))
+(sparql-dbpedia (sparql-dbpedia-for-person "<http://dbpedia.org/resource/Steve_Jobs>"))
+  
