@@ -1,5 +1,7 @@
 # Ollama Tools/Function Calling in Racket
 
+*Note: as of April 7, 2026 this chapter is still being written.*
+
 One of the most powerful features of modern LLMs is their ability to call external functions (tools) during a conversation. This allows the model to perform actions beyond just generating text — it can fetch live data, interact with files, call APIs, and more.
 
 Ollama supports tool/function calling through its chat API. When you provide a list of available tools with their schemas, the model can decide to call one or more tools, and your code executes them and returns the results back to the model.
