@@ -1,5 +1,7 @@
 # Mark Watson's Knowledge Graph Navigator ported to Racket
 
+**Book Chapter:** [Knowledge Graph Navigator](https://leanpub.com/read/racket-ai/kgn) — *Practical Artificial Intelligence Programming With Racket* (free to read online).
+
 Test queries: who is Bill Gates?
               where is California?
 

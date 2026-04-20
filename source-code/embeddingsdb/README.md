@@ -1,5 +1,7 @@
 # WORK IN PROGRESS - IGNORE FOR NOW!!
 
+**Book Chapter:** [Retrieval Augmented Generation of Text Using Embeddings](https://leanpub.com/read/racket-ai/leanpub-auto-retrieval-augmented-generation-of-text-using-embeddings) — *Practical Artificial Intelligence Programming With Racket* (free to read online).
+
 ## install as a local package
 
     raco pkg remove

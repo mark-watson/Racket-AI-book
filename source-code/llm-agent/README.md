@@ -1,13 +1,3 @@
-# LLM Language for Racket
+# LLM Agents
 
 **Book Chapter:** [Using the Google Gemini, OpenAI, Anthropic, Mistral, and Local LLM APIs](https://leanpub.com/read/racket-ai/leanpub-auto-using-the-google-gemini-openai-anthropic-mistral-and-local-hugging-face-large-language-model-apis-in-racket) — *Practical Artificial Intelligence Programming With Racket* (free to read online).
-
-William J. Bowman create a Racket language #llm that we experiment with here.
-
-Documentation: https://docs.racket-lang.org/llm/index.html
-
-GitHub: https://github.com/wilbowma/llm-lang
-
-## Install package
-
-    raco pkg install llm
