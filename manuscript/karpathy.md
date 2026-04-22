@@ -1,6 +1,6 @@
 # Building a MicroGPT in Racket
 
-In the next several chapters we will use production-grade Large Language Models like GPT-5, Gemini, Claude, etc. Here we look at optional material: Karpathy’s MicroGPT re-implemented in Racket.
+In the next chapters we will use production-grade Large Language Models like GPT-5, Gemini, Claude, etc. Here we look at optional material: Karpathy’s MicroGPT re-implemented in Racket. Dear reader, this chapter has the practical value of introducing you to the low level ideas for implementing LLMs. Feel free to skip this chapter for now and proceed to the following LLM application-oriented chapters.
 
 ## Introduction
 
