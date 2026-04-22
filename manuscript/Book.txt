@@ -3,6 +3,7 @@ tutorial.md
 datastores.md
 RDF_Datastore_SPARQL_Implementation.md
 webscrape.md
+karpathy.md
 llm.md
 Ollama_Tools.md
 embeddings.md
