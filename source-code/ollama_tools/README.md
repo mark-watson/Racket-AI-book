@@ -1,6 +1,6 @@
-# Ollama Tools/Function Calling Example
+# Ollama Tools / Function Calling Example
 
-**Book Chapter:** [Ollama Tools/Function Calling in Racket](https://leanpub.com/read/racket-ai/leanpub-auto-ollama-toolsfunction-calling-in-racket) — *Practical Artificial Intelligence Programming With Racket* (free to read online).
+**Book Chapter:** [Ollama Tools/Function Calling in Racket](https://leanpub.com/racket-ai/read) — *Practical Artificial Intelligence Development With Racket* (free to read online).
 
 This directory contains a Racket implementation of Ollama's tool/function calling feature.
 
@@ -86,6 +86,7 @@ Or use the library programmatically:
  my-custom-tool)
 ```
 
-## License
+## License and Copyright
 
-Apache 2.0 - Copyright 2026 Mark Watson
+This example is released using the Apache 2 license.
+Copyright 2022-2026 Mark Watson. All rights reserved.
