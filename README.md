@@ -8,6 +8,8 @@ Link to book on LeanPub:
 
 [https://leanpub.com/racket-ai](https://leanpub.com/racket-ai)
 
+![Book Cover](manuscript/images/title_page.jpg)
+
 Read this book in the manuscript subdirectory:
 
 [manuscript/TOC.md](./manuscript/TOC.md)
