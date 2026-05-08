@@ -17,61 +17,62 @@
   (or (getenv "GOOGLE_API_KEY")
       (error "GOOGLE_API_KEY environment variable is not set")))
 
-(define (gemini-endpoint [model *gemini-model*])
-  (string-append
-   "https://generativelanguage.googleapis.com/v1beta/models/"
-   model ":generateContent"))
+(define *interactions-url*
+  "https://generativelanguage.googleapis.com/v1beta/interactions")
 
 (define (auth-proc uri headers params)
   (values
    (hash-set* headers
               'x-goog-api-key *google-api-key*
-              'content-type "application/json")
+              'content-type "application/json"
+              'Api-Revision "2026-05-20")
    params))
 
-(define (make-generation-config)
-  (hash 'maxOutputTokens *gemini-max-tokens*))
-
-(define (call-gemini data [model *gemini-model*])
+(define (call-interactions data)
   (response-json
-   (post (gemini-endpoint model)
+   (post *interactions-url*
          #:auth auth-proc
-         #:json (hash-set data 'generationConfig (make-generation-config)))))
+         #:json data)))
 
-(define (extract-text response)
+(define (extract-text-from-steps response)
+  "Extract text from the last model_output step in an Interactions API response."
   (when (hash-has-key? response 'error)
-    (error "Gemini API error" (hash-ref response 'error)))
-  (let* ((candidates (hash-ref response 'candidates '()))
-         (candidate (if (null? candidates) (hash) (car candidates)))
-         (content (hash-ref candidate 'content (hash)))
-         (parts (hash-ref content 'parts '()))
-         (first-part (if (null? parts) (hash) (car parts))))
-    (hash-ref first-part 'text "No response")))
-
-(define (make-search-request prompt)
-  (hash 'contents (list (hash 'parts (list (hash 'text prompt))))
-        'tools (list (hash 'googleSearch (hash)))))
+    (error "Gemini Interactions API error" (hash-ref response 'error)))
+  (let* ((steps (hash-ref response 'steps '())))
+    (for/last ([step steps]
+               #:when (equal? (hash-ref step 'type "") "model_output"))
+      (let* ((content (hash-ref step 'content '()))
+             (first-content (if (null? content) (hash) (car content))))
+        (hash-ref first-content 'text "No response")))))
 
 (define (generate prompt [model *gemini-model*])
-  (let* ((data (hash 'contents (list (hash 'parts (list (hash 'text prompt))))))
-         (r (call-gemini data model)))
-    (extract-text r)))
+  (let* ((data (hash 'model model 'input prompt))
+         (r (call-interactions data)))
+    (extract-text-from-steps r)))
 
 (define (generate-with-search prompt [model *gemini-model*])
-  (extract-text (call-gemini (make-search-request prompt) model)))
+  (let* ((data (hash 'model model
+                     'input prompt
+                     'tools (list (hash 'type "google_search"))))
+         (r (call-interactions data)))
+    (extract-text-from-steps r)))
 
 (define (generate-with-search-and-citations prompt [model *gemini-model*])
-  (let* ((r (call-gemini (make-search-request prompt) model))
-         (text (extract-text r))
-         (candidates (hash-ref r 'candidates '()))
-         (candidate (if (null? candidates) (hash) (car candidates)))
-         (metadata (hash-ref candidate 'groundingMetadata (hash)))
-         (chunks (hash-ref metadata 'groundingChunks '()))
-         (citations (for*/list ([chunk chunks]
-                                #:when (hash-has-key? chunk 'web))
-                      (let ((web (hash-ref chunk 'web (hash))))
-                        (cons (hash-ref web 'title "")
-                              (hash-ref web 'uri ""))))))
+  (let* ((data (hash 'model model
+                     'input prompt
+                     'tools (list (hash 'type "google_search"))))
+         (r (call-interactions data))
+         (text (extract-text-from-steps r))
+         (steps (hash-ref r 'steps '()))
+         (citations
+          (for*/list ([step steps]
+                      #:when (equal? (hash-ref step 'type "") "model_output")
+                      [content-item (hash-ref step 'content '())]
+                      #:when (hash-has-key? content-item 'annotations)
+                      [annotation (hash-ref content-item 'annotations '())]
+                      #:when (equal? (hash-ref annotation 'type "") "url_citation"))
+            (cons (hash-ref annotation 'title "")
+                  (hash-ref annotation 'url "")))))
     (values text citations)))
 
 #| Examples:
