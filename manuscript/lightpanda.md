@@ -180,17 +180,6 @@ Key techniques:
 - `string-join` — Combines the argument list into a space-separated command string
 - `(lightpanda-binary)` — Calls the parameter to retrieve the current value
 
-### Comparison with Common Lisp
-
-| Concept | Common Lisp | Racket |
-|---------|------------|--------|
-| Keyword args | `&key (dump "html")` | `#:dump [dump "html"]` |
-| Dynamic config | `defvar *lightpanda-binary*` | `(make-parameter "lightpanda")` |
-| Subprocess | `uiop:run-program` | `subprocess` |
-| String join | `(format nil "~{~a~^ ~}" args)` | `(string-join parts " ")` |
-| Error handling | `handler-case` | `with-handlers` |
-| Private functions | `%run` prefix convention | Not exported from `provide` |
-
 ## Helper Functions
 
 Higher-level helpers make common operations easy:
