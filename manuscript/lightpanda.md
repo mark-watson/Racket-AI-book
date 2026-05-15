@@ -41,7 +41,7 @@ You must have the `lightpanda` tool installed; here I verify the installation on
 
 ```
 $ which lightpanda
-/Users/mark/bin/lightpanda
+/usr/local/bin/lightpanda
 ```
 
 We use a Racket **parameter** for configurable settings:
@@ -140,7 +140,7 @@ We also use a small helper for finding character positions:
 The following diagram shows the high-level architecture of the Lightpanda browser client developed in this chapter:
 
 {width: "80%"}
-![Architecture diagram](images/lightpanda_architecture.png)
+![Architecture diagram](images/lightpanda_architecture.jpg)
 
 ## The Main API Function
 
