@@ -465,6 +465,11 @@ Flagstaff, Arizona, is a city located in the Phoenix metropolitan area, known fo
 Select option: 
 ```
 
+The following diagram shows the high-level architecture of the Ollama tool-calling framework developed in this chapter:
+
+{width: "100%"}
+![Architecture diagram](images/Ollama_Tools_architecture.jpg)
+
 ## Summary
 
 Tool calling transforms LLMs from passive text generators into active agents that can:

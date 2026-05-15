@@ -222,6 +222,11 @@ Several helper functions are implemented to support query execution:
 ```
 
 
+The following diagram shows the high-level architecture of the RDF datastore and SPARQL query engine implemented in this chapter:
+
+{width: "100%"}
+![Architecture diagram](images/RDF_Datastore_SPARQL_Implementation_architecture.jpg)
+
 ## Conclusion
 
 This implementation provides a basic framework for an RDF datastore with partial SPARQL support in Racket. While it lacks many features of a full-fledged RDF database and SPARQL engine, it demonstrates the core concepts and can serve as a starting point for more complex implementations. The code is simple and can be fun experimenting with.

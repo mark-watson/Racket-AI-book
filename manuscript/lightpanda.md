@@ -139,7 +139,7 @@ We also use a small helper for finding character positions:
 
 The following diagram shows the high-level architecture of the Lightpanda browser client developed in this chapter:
 
-{width: "80%"}
+{width: "100%"}
 ![Architecture diagram](images/lightpanda_architecture.jpg)
 
 ## The Main API Function

@@ -630,6 +630,11 @@ The function **embeddings-ollama** can be used to create embedding vectors from 
 While I often use larger and more capable proprietary LLMs like Claude 2.1 and GPT-4, smaller open models from Mistral are very capable and sufficient for most of my experiments embedding LLMs in application code. As I write this, you can run Mistral models locally and through commercially hosted APIs.
 
 
+The following diagram shows the high-level architecture of the LLM API integrations developed in this chapter:
+
+{width: "100%"}
+![Architecture diagram](images/llm_architecture.jpg)
+
 ## Examples Using William J. Bowman’s Racket Language LLM
 
 I implemented the code in this chapter using REST API interfaces for LLM providers like OpenAI and Anthropic and also for running local models using Ollama.

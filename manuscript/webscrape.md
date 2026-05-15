@@ -182,6 +182,11 @@ Here are a few examples in a Racket REPL (most output omitted for brevity):
   "http://kbsportal.com")
 ```
 
+The following diagram shows the high-level architecture of the web scraping library developed in this chapter:
+
+{width: "100%"}
+![Architecture diagram](images/webscrape_architecture.jpg)
+
 If you want to install this library on your laptop using linking (requiring the library access a link to the source code in the directory **Racket-AI-book/source-code/webscrape**) run the following in the library source directory **Racket-AI-book/source-code/webscrape**:
 
    raco pkg install --scope user

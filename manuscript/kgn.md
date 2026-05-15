@@ -489,6 +489,11 @@ The local file **kgn.rkt** is the main program for this application.
 
 The two screen shot figures seen earlier show the GUI application running.
 
+The following diagram shows the high-level architecture of the Knowledge Graph Navigator application developed in this chapter:
+
+{width: "100%"}
+![Architecture diagram](images/kgn_architecture.jpg)
+
 ## Knowledge Graph Navigator Wrap Up
 
 This KGN example was hopefully both interesting to you and simple enough in its implementation to use as a jumping off point for your own projects. 

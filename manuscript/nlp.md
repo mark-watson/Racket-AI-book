@@ -475,6 +475,11 @@ word: London
 > 
 ```
 
+The following diagram shows the high-level architecture of the NLP library developed in this chapter:
+
+{width: "100%"}
+![Architecture diagram](images/nlp_architecture.jpg)
+
 ## NLP Wrap Up
 
 The NLP library is still a work in progress so please check for updates to this *live eBook* and the GitHub repository for this book:

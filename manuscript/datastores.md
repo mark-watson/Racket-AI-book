@@ -181,6 +181,11 @@ Here we see how to interact with a SQLite database using the **db** and **sqlite
 
 The **query-exec** function call is made to create a permanent table named **person** with three columns: **name** of type **varchar(30)**, **age** of type **integer**, and **email** of type **varchar(20)**. The next **query-exec** function call is made to insert a new row into the **person** table with the values 'Mary', 34, and 'mary@test.com'. There is a function **query** that we don't use here that returns the types of the columns returned by a query. We use the alternative function **query-rows** that only returns the query results with no type information.
 
+The following diagram shows the high-level architecture of the datastore integrations developed in this chapter:
+
+{width: "100%"}
+![Architecture diagram](images/datastores_architecture.jpg)
+
 
 
 

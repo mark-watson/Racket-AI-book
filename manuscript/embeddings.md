@@ -265,6 +265,11 @@ Response: Robert Boyle was born in Lismore Castle, County Waterford, Ireland.
 Enter chat (STOP or empty line to stop) >> 
 ```
 
+The following diagram shows the high-level architecture of the RAG pipeline developed in this chapter:
+
+{width: "100%"}
+![Architecture diagram](images/embeddings_architecture.jpg)
+
 ## Retrieval Augmented Generation Wrap Up
 
 Retrieval Augmented Generation (RAG) is one of the best use cases for semantic search. Another way to write RAG applications is to use a web search API to get context text for a query, and add this context data to whatever context data you have in a local embeddings data store.

@@ -233,6 +233,11 @@ Welcome to Racket v8.10 [cs].
 
 If you have local and public libraries you frequently load you can permanently keep **require** forms for them in **~/.racketrc** but that will slightly slow down the startup times of **racket** and **DrRacket**.
 
+The following diagram shows the key Racket concepts and tools covered in this tutorial chapter:
+
+{width: "100%"}
+![Architecture diagram](images/tutorial_architecture.jpg)
+
 ## Tutorial Wrap Up
 
 The rest of this book is comprised of example Racket programs that I have written for my own enjoyment that I hope will also be useful to you, dear reader. Please refer to the [https://docs.racket-lang.org/guide/](The Racket Guide) for more technical detail on effectively using the Racket language and ecosystem.

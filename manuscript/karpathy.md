@@ -418,6 +418,11 @@ sample 12: jorena
 ```
 
 
+The following diagram shows the high-level architecture of the MicroGPT Transformer model implemented in this chapter:
+
+{width: "100%"}
+![Architecture diagram](images/karpathy_architecture.jpg)
+
 ## Wrap Up
 
 This concludes our exploration of MicroGPT implemented from scratch in Racket. By studying the complete source code listing provided above, you have seen firsthand how the abstract mathematical concepts of reverse-mode automatic differentiation, self-attention, and autoregressive language modeling translate into concrete, functional code.
