@@ -4,6 +4,10 @@
 
 This project is a port of Mark Watson's Knowledge Graph Navigator to Racket. It demonstrates how to query and navigate knowledge graphs using SPARQL and natural language to extract information.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 Test queries:
 - "who is Bill Gates?"
 - "where is California?"

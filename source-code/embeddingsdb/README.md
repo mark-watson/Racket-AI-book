@@ -4,6 +4,10 @@
 
 This project provides a simple vector database implementation for managing and querying text embeddings, useful for building Retrieval-Augmented Generation (RAG) pipelines in Racket.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Install as a local package
 
     raco pkg remove

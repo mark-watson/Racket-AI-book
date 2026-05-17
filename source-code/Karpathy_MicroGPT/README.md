@@ -4,6 +4,10 @@
 
 This project is a Racket implementation of Andrej Karpathy's MicroGPT, a minimal Generative Pre-trained Transformer. It demonstrates how to build and train a basic autoregressive language model based on the concepts from the original PyTorch implementation.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Run
 
     racket microgpt.rkt

@@ -6,6 +6,10 @@ This directory contains examples of using various Large Language Model APIs (Ope
 
 The **Gemini module** (`gemini.rkt`) uses the new **Interactions API** (`v1beta/interactions`) with the `steps` response schema (Api-Revision: 2026-05-20), replacing the legacy `generateContent` endpoint.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Install as a local package
 
     raco pkg remove

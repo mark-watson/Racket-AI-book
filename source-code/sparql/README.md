@@ -4,6 +4,10 @@
 
 This project provides utilities for executing SPARQL queries against external semantic web endpoints (like DBPedia or Wikidata) directly from Racket.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Run
 
     racket sparql.rkt

@@ -4,6 +4,10 @@
 
 This directory contains a Racket implementation of Ollama's tool/function calling feature.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Files
 
 - `tools.rkt` - Core library with tool registry, built-in tools, and API communication

@@ -4,6 +4,10 @@
 
 This directory contains assorted utilities and helper code referenced in the book, covering topics like SQLite integration, list manipulations, hashing, and fetching HTTP content in Racket.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Install dependencies
 
 Install Racket packages:

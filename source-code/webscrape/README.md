@@ -4,6 +4,10 @@
 
 This library provides foundational web scraping utilities in Racket, enabling you to extract raw text and data from web pages. This is highly useful for feeding external knowledge to LLMs.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ### Partial implementation
 
 I will commit the complete library code here when it is feature complete.

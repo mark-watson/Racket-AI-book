@@ -4,6 +4,10 @@
 
 This project implements a simple RDF (Resource Description Framework) datastore in Racket, featuring partial support for querying with SPARQL. This is useful for representing and querying knowledge graphs locally.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Run
 
     racket rdf_sparql.rkt

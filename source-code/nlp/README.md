@@ -4,6 +4,10 @@
 
 This project implements various NLP utilities in Racket, including Part-Of-Speech (POS) tagging and named entity recognition. It demonstrates foundational text processing techniques essential for AI applications.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Install as a local package
 
     raco pkg install --scope user

@@ -4,6 +4,10 @@
 
 This library provides a Racket interface to the [Lightpanda](https://lightpanda.io/) headless browser. Lightpanda renders JavaScript-heavy web pages from the command line, and this library wraps it in a clean Racket API for fetching rendered HTML, Markdown, or semantic tree output, and extracting links.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Prerequisites
 
 Install the Lightpanda command-line tool following the [Lightpanda documentation](https://lightpanda.io/docs/open-source/installation).
