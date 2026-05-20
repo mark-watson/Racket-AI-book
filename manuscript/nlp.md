@@ -34,6 +34,8 @@ The `parts-of-speech` function iterates over each word in the input vector, chec
 
 (provide parts-of-speech)
 
+(define-runtime-path my-data-path "data")
+
 ;; FastTag.lisp
 ;;
 ;; Conversion of KnowledgeBooks.com Java FastTag to Scheme
@@ -194,6 +196,8 @@ Overall, the code is fairly optimized for its purpose, utilizing hash tables for
 (require racket/runtime-path)
 (provide find-human-names)
 (provide find-place-names)
+
+(define-runtime-path my-data-path "data")
 
 (define (process-one-word-per-line file-path func)
   (with-input-from-file file-path

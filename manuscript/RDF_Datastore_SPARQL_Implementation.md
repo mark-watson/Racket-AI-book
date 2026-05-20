@@ -2,10 +2,10 @@
 
 This chapter explains a Racket implementation of a simple RDF (Resource Description Framework) datastore with partial SPARQL (SPARQL Protocol and RDF Query Language) support. We'll cover the core RDF data structures, query parsing and execution, helper functions, and the main function with example queries. The file **rdf_sparql.rkt** can be found online at [https://github.com/mark-watson/Racket-AI-book/source-code/simple_RDF_SPARQL](https://github.com/mark-watson/Racket-AI-book/tree/main/source-code/simple_RDF_SPARQL).
 
-Before looking at the code we look at sample use and output. The  function **test** function demonstrates the usage of the RDF datastore and SPARQL query execution:
+Before looking at the code we look at sample use and output. The function **main** demonstrates the usage of the RDF datastore and SPARQL query execution:
 
 ```racket
-(define (test)
+(define (main)
   (set! rdf-store '())
 
   (add-triple "John" "age" "30")
@@ -28,16 +28,19 @@ Before looking at the code we look at sample use and output. The  function **tes
                     (string-join
                      (map (lambda (pair)
                             (format "~a: ~a" (car pair) (cdr pair)))
-                          result)
+                           result)
                      ", "))))
       (printf "\n")))
 
   (print-query-results "select * where { ?name age ?age . ?name likes ?food }")
   (print-query-results "select ?s ?o where { ?s likes ?o }")
   (print-query-results "select * where { ?name age ?age . ?name likes pizza }"))
-  ```
 
-This function **test**:
+;; Run the main function
+(main)
+```
+
+This function **main**:
 
 1. Initializes the RDF store with sample data.
 2. Prints all triples in the datastore.
@@ -133,7 +136,38 @@ A simple SPARQL query is represented by the `sparql-query` structure:
 
 ### 2.2 Query Parsing
 
-The `parse-sparql-query` function takes a query string and converts it into a `sparql-query` structure:
+First, we need to split the query string into tokens, ignoring the curly braces `{` and `}`. We define a helper `split-string`:
+
+```racket
+(define (split-string string [delimiter " "])
+  (string-split string delimiter))
+```
+
+The `parse-where-patterns` helper parses the WHERE patterns, separating them by periods:
+
+```racket
+(define (parse-where-patterns where-clause)
+  (let loop ([tokens where-clause]
+             [current-pattern '()]
+             [patterns '()])
+    (cond
+      [(null? tokens)
+       (if (null? current-pattern)
+           (reverse patterns)
+           (reverse (cons (reverse current-pattern) patterns)))]
+      [(string=? (car tokens) ".")
+       (loop (cdr tokens)
+             '()
+             (if (null? current-pattern)
+                 patterns
+                 (cons (reverse current-pattern) patterns)))]
+      [else
+       (loop (cdr tokens)
+             (cons (car tokens) current-pattern)
+             patterns)])))
+```
+
+The main `parse-sparql-query` function takes a query string and converts it into a `sparql-query` structure:
 
 ```racket
 (define (parse-sparql-query query-string)
@@ -150,6 +184,43 @@ The `parse-sparql-query` function takes a query string and converts it into a `s
 ```
 
 ### 2.3 Query Execution
+
+Query execution works recursively. `execute-where-patterns` initiates execution by finding bindings for the first pattern in the `WHERE` clause. Subsequent patterns are matched using `execute-where-patterns-with-bindings`, combining existing variable bindings with new ones:
+
+```racket
+;; Execute WHERE patterns with bindings
+(define (execute-where-patterns-with-bindings patterns bindings)
+  (if (null? patterns)
+      (list bindings)
+      (let* ([pattern (first patterns)]
+             [remaining-patterns (rest patterns)]
+             [bound-pattern (apply-bindings pattern bindings)]
+             [matching-triples (apply query-triples bound-pattern)])
+        (let ([new-bindings (map (lambda (t)
+                                   (merge-bindings bindings (triple-to-binding t pattern)))
+                                 matching-triples)])
+          (if (null? remaining-patterns)
+              new-bindings
+              (append-map (lambda (binding)
+                            (execute-where-patterns-with-bindings remaining-patterns binding))
+                          new-bindings))))))
+
+(define (execute-where-patterns patterns)
+  (if (null? patterns)
+      (list '())
+      (let* ([pattern (first patterns)]
+             [remaining-patterns (rest patterns)]
+             [matching-triples (apply query-triples pattern)])
+        (let ([bindings (map (lambda (t) (triple-to-binding t pattern)) matching-triples)])
+          (if (null? remaining-patterns)
+              bindings
+              (append-map (lambda (binding)
+                            (let ([results (execute-where-patterns-with-bindings remaining-patterns binding)])
+                              (map (lambda (result)
+                                     (merge-bindings binding result))
+                                   results)))
+                          bindings))))))
+```
 
 The main query execution function is `execute-sparql-query`:
 
@@ -175,6 +246,8 @@ Several helper functions are implemented to support query execution:
 4. `apply-bindings`: Applies bindings to a pattern.
 5. `merge-bindings`: Merges two sets of bindings.
 6. `project-results`: Projects the final results based on the SELECT variables.
+7. `remove-duplicate-bindings`: Removes duplicate bindings for the same variable.
+8. `print-all-triples`: Prints all triples in the store.
 
 ```racket
 (define (variable? str)
@@ -219,6 +292,18 @@ Several helper functions are implemented to support query execution:
                      (cons var (dict-ref result var #f)))
                    select-vars)))
            results)))
+
+(define (remove-duplicate-bindings bindings)
+  (remove-duplicates bindings #:key car))
+
+(define (print-all-triples)
+  (printf "All triples in the datastore:\n")
+  (for ([t rdf-store])
+    (printf "~a ~a ~a\n"
+            (triple-subject t)
+            (triple-predicate t)
+            (triple-object t)))
+  (printf "\n"))
 ```
 
 

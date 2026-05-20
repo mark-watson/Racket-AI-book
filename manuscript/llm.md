@@ -68,7 +68,7 @@ The function **completion**, on the other hand, serves a specific use case of co
              "{\"messages\": [ {\"role\": \"user\","
              " \"content\": \"" prefix ": "
              prompt
-             "\"}], \"model\": \"gpt-5\"}"))))
+             "\"}], \"model\": \"gpt-5-mini\"}"))))
          (auth (lambda (uri headers params)
                  (values
                   (hash-set*
@@ -131,9 +131,9 @@ The function **completion**, on the other hand, serves a specific use case of co
 The output looks like (output from the second example shortened for brevity):
 
 ```
-> (question "Mary is 30 and Harry is 25. Who is older?")
+> (question-openai "Mary is 30 and Harry is 25. Who is older?")
 "Mary is older than Harry."
-> (completion "Frank bought a new sports car. Frank drove")
+> (completion-openai "Frank bought a new sports car. Frank drove")
 Frank bought a new sports car. Frank drove it out of the dealership with a wide grin on his face. The sleek, aerodynamic design of the car hugged the road as he accelerated, feeling the power under his hands. The adrenaline surged through his veins, and he couldn't help but let out a triumphant shout as he merged onto the highway.
 
 As he cruised down the open road, the wind whipping through his hair, Frank couldn't help but reflect on how far he had come. It had been a lifelong dream of his to own a sports car, a symbol of success and freedom in his eyes. He had worked tirelessly, saving every penny, making sacrifices along the way to finally make this dream a reality.
@@ -158,7 +158,7 @@ We can also use "one shot prompting" to describe precisly how we want output for
 
 ## Using Google Gemini APIs in Racket
 
-This code provides a lightweight client that doesn't just generate text; it also leverages Gemini's ability to "ground" its answers using Google Search. This is particularly useful when you need your AI to have access to up-to-date information rather than just relying on its training data. We will use the **gemini-3-flash-preview** model here, which I’ve found to be incredibly fast and cost-effective for these kinds of experiments.
+This code provides a lightweight client that doesn't just generate text; it also leverages Gemini's ability to "ground" its answers using Google Search. This is particularly useful when you need your AI to have access to up-to-date information rather than just relying on its training data.
 
 ```racket
 #lang racket
@@ -174,82 +174,73 @@ This code provides a lightweight client that doesn't just generate text; it also
          generate-with-search-and-citations)
 
 (define *gemini-model* "gemini-3-flash-preview")
-(define *gemini-max-tokens* 8192)
 
 (define *google-api-key*
   (or (getenv "GOOGLE_API_KEY")
       (error "GOOGLE_API_KEY environment variable is not set")))
 
-(define (gemini-endpoint [model *gemini-model*])
-  (string-append
-   "https://generativelanguage.googleapis.com/v1beta/models/"
-   model ":generateContent"))
+(define *interactions-url*
+  "https://generativelanguage.googleapis.com/v1beta/interactions")
 
 (define (auth-proc uri headers params)
   (values
    (hash-set* headers
               'x-goog-api-key *google-api-key*
-              'content-type "application/json")
+              'content-type "application/json"
+              'Api-Revision "2026-05-20")
    params))
 
-(define (make-generation-config)
-  (hash 'maxOutputTokens *gemini-max-tokens*))
-
-(define (call-gemini data [model *gemini-model*])
+(define (call-interactions data)
   (response-json
-   (post (gemini-endpoint model)
+   (post *interactions-url*
          #:auth auth-proc
-         #:json (hash-set data 'generationConfig (make-generation-config)))))
+         #:json data)))
 
-(define (extract-text response)
+(define (extract-text-from-steps response)
+  "Extract text from the last model_output step in an Interactions API response."
   (when (hash-has-key? response 'error)
-    (error "Gemini API error" (hash-ref response 'error)))
-  (let* ((candidates (hash-ref response 'candidates '()))
-         (candidate (if (null? candidates) (hash) (car candidates)))
-         (content (hash-ref candidate 'content (hash)))
-         (parts (hash-ref content 'parts '()))
-         (first-part (if (null? parts) (hash) (car parts))))
-    (hash-ref first-part 'text "No response")))
-
-(define (make-search-request prompt)
-  (hash 'contents (list (hash 'parts (list (hash 'text prompt))))
-        'tools (list (hash 'googleSearch (hash)))))
+    (error "Gemini Interactions API error" (hash-ref response 'error)))
+  (let* ((steps (hash-ref response 'steps '())))
+    (for/last ([step steps]
+               #:when (equal? (hash-ref step 'type "") "model_output"))
+      (let* ((content (hash-ref step 'content '()))
+             (first-content (if (null? content) (hash) (car content))))
+        (hash-ref first-content 'text "No response")))))
 
 (define (generate prompt [model *gemini-model*])
-  (let* ((data (hash 'contents (list (hash 'parts (list (hash 'text prompt))))))
-         (r (call-gemini data model)))
-    (extract-text r)))
+  (let* ((data (hash 'model model 'input prompt))
+         (r (call-interactions data)))
+    (extract-text-from-steps r)))
 
 (define (generate-with-search prompt [model *gemini-model*])
-  (extract-text (call-gemini (make-search-request prompt) model)))
+  (let* ((data (hash 'model model
+                     'input prompt
+                     'tools (list (hash 'type "google_search"))))
+         (r (call-interactions data)))
+    (extract-text-from-steps r)))
 
 (define (generate-with-search-and-citations prompt [model *gemini-model*])
-  (let* ((r (call-gemini (make-search-request prompt) model))
-         (text (extract-text r))
-         (candidates (hash-ref r 'candidates '()))
-         (candidate (if (null? candidates) (hash) (car candidates)))
-         (metadata (hash-ref candidate 'groundingMetadata (hash)))
-         (chunks (hash-ref metadata 'groundingChunks '()))
-         (citations (for*/list ([chunk chunks]
-                                #:when (hash-has-key? chunk 'web))
-                      (let ((web (hash-ref chunk 'web (hash))))
-                        (cons (hash-ref web 'title "")
-                              (hash-ref web 'uri ""))))))
+  (let* ((data (hash 'model model
+                     'input prompt
+                     'tools (list (hash 'type "google_search"))))
+         (r (call-interactions data))
+         (text (extract-text-from-steps r))
+         (steps (hash-ref r 'steps '()))
+         (citations
+          (for*/list ([step steps]
+                      #:when (equal? (hash-ref step 'type "") "model_output")
+                      [content-item (hash-ref step 'content '())]
+                      #:when (hash-has-key? content-item 'annotations)
+                      [annotation (hash-ref content-item 'annotations '())]
+                      #:when (equal? (hash-ref annotation 'type "") "url_citation"))
+            (cons (hash-ref annotation 'title "")
+                  (hash-ref annotation 'url "")))))
     (values text citations)))
-
-#| Examples:
-(displayln (generate "What is the capital of France?"))
-(displayln (generate "Mary is 30 and Harry is 25. Who is older?"))
-(displayln (generate-with-search "What are the latest developments in AI?"))
-(let-values ([(text citations) (generate-with-search-and-citations "Latest AI news")])
-  (displayln text) (displayln citations))
-(let-values ([(text citations) (generate-with-search-and-citations "Sci-fi movies playing in Flagstaff Arizona today?")]) (displayln text) (displayln citations))
-|#
 ```
 
-Here we use the **net/http-easy** library for handling our web requests and the standard json library to parse the results. You will notice that I am pulling the GOOGLE_API_KEY from the system environment variables because it is always best practice to keep secrets out of your source code. The core workhorse here is the **call-gemini** function. Since the Gemini API expects a specific JSON structure where prompts are nested inside contents and parts, I wrote a few helper functions to construct these payloads automatically. This keeps the main logic clean and lets us focus on the data we want to send, rather than the formatting requirements of the REST API.
+Here we use the **net/http-easy** library for handling our web requests and the standard json library to parse the results. You will notice that I am pulling the GOOGLE_API_KEY from the system environment variables because it is always best practice to keep secrets out of your source code. The core workhorse here is the **call-interactions** function, which calls the newer Gemini Interactions API. We must supply the `Api-Revision` header (set to `2026-05-20` in `auth-proc`) for the Interactions API.
 
-The most interesting part of this module is how we handle search grounding. In the generate-with-search-and-citations function, we pass a googleSearch tool definition in our request. This instructs the model to browse the web before formulating an answer. Parsing the response is a bit like peeling an onion because the JSON is deeply nested, but we drill down into the groundingMetadata to extract specific web chunks. This allows us to return not just the generated text, but also a list of citations and URLs, which is essential if you are building a research assistant or any tool where verifying the source of information is important.
+The most interesting part of this module is how we handle search grounding. In the generate-with-search-and-citations function, we pass a `google_search` tool definition in our request. This instructs the model to browse the web before formulating an answer. Parsing the response involves extracting text from the last `model_output` step, and drilling down into the step's content `annotations` to find `url_citation` entries. This allows us to return not just the generated text, but also a list of citations and URLs.
 
 Here is an example of using Gemini with grounding search with annotations (output is heavily edited for conciseness):
 
@@ -439,11 +430,11 @@ In the next section we will write a simple library to extract data from Llama.cp
 ### A Racket Library for Using a Local Llama.cpp server with a Llama2-13b-orca Model
 
 
-The following Racket code is designed to interface with a local instance of a Llama.cpp server to interact with a language model for generating text completions. This setup is particularly beneficial when there's a requirement to have a local language model server, reducing latency and ensuring data privacy. We start by requiring libraries for handling HTTP requests and responses. The functionality of this code is encapsulated in three functions: **helper**, **question**, and **completion**, each serving a unique purpose in the interaction with the Llama.cpp server.
+The following Racket code is designed to interface with a local instance of a Llama.cpp server to interact with a language model for generating text completions. This setup is particularly beneficial when there's a requirement to have a local language model server, reducing latency and ensuring data privacy. We start by requiring libraries for handling HTTP requests and responses. The functionality of this code is encapsulated in three functions: **helper**, **question-llama-local**, and **completion-llama-local**, each serving a unique purpose in the interaction with the Llama.cpp server.
 
 The **helper** function provides common functionality, handling the core logic of constructing the HTTP request, sending it to the Llama.cpp server, and processing the response. It accepts a **prompt** argument which forms the basis of the request payload. A JSON string is constructed with three key fields: **prompt**, **n_predict**, and **top_k**, which respectively contain the text prompt, the number of tokens to generate, and a parameter to control the diversity of the generated text. A debug line with `displayln` is used to output the constructed JSON payload to the console, aiding in troubleshooting. The function **post** is employed to send a POST request to the Llama.cpp server hosted locally on port 8080 at the **/completion** endpoint, with the constructed JSON payload as the request body. Upon receiving the response, it's parsed into a Racket hash data structure, and the **content** field, which contains the generated text, is extracted and returned.
 
-The **question** and **completion** functions serve as specialized interfaces to the **helper** function, crafting specific prompts aimed at answering a question and continuing a text, respectively. The **question** function prefixes the provided question text with "Answer: " to guide the model's response, while the **completion** function prefixes the provided text with a phrase instructing the model to continue from the given text. Both functions then pass these crafted prompts to the **helper** function, which in turn handles the interaction with the Llama.cpp server and extracts the generated text from the response.
+The **question-llama-local** and **completion-llama-local** functions serve as specialized interfaces to the **helper** function, crafting specific prompts aimed at answering a question and continuing a text, respectively. The **question-llama-local** function prefixes the provided question text with "Answer: " to guide the model's response, while the **completion-llama-local** function prefixes the provided text with a phrase instructing the model to continue from the given text. Both functions then pass these crafted prompts to the **helper** function, which in turn handles the interaction with the Llama.cpp server and extracts the generated text from the response.
 
 The following code is in the file **llama_local.rkt**:
 
@@ -453,6 +444,8 @@ The following code is in the file **llama_local.rkt**:
 (require net/http-easy)
 (require racket/set)
 (require pprint)
+
+(provide question-llama-local completion-llama-local)
 
 (define (helper prompt)
   (let* ((prompt-data
@@ -470,10 +463,10 @@ The following code is in the file **llama_local.rkt**:
          (r (response-json p)))
     (hash-ref r 'content)))
 
-(define (question question)
+(define (question-llama-local question)
   (helper (string-append "Answer: " question)))
 
-(define (completion prompt)
+(define (completion-llama-local prompt)
   (helper
    (string-append
     "Continue writing from the following text: "
@@ -483,13 +476,13 @@ The following code is in the file **llama_local.rkt**:
 We can try this in a Racket REPL (output of the second example is edited for brevity):
 
 ```racket
-> (question "Mary is 30 and Harry is 25. Who is older?")
+> (question-llama-local "Mary is 30 and Harry is 25. Who is older?")
 {"prompt": "Answer: Mary is 30 and Harry is 25. Who is older?", "n_predict": 256, "top_k": 1}
 "\nAnswer: Mary is older than Harry."
-> (completion "Frank bought a new sports car. Frank drove")
+> (completion-llama-local "Frank bought a new sports car. Frank drove")
 {"prompt": "Continue writing from the following text: Frank bought a new sports car. Frank drove", "n_predict": 256, "top_k": 1}
 " his new sports car to work every day. He was very happy with his new sports car. One day, while he was driving his new sports car, he saw a beautiful girl walking on the side of the road. He stopped his new sports car and asked her if she needed a ride. The beautiful girl said yes, so Frank gave her a ride in his new sports car. They talked about many things during the ride to work. When they arrived at work, Frank asked the beautiful girl for her phone number. She gave him her phone number, and he promised to call her later that day...."
-> (question "Mary is 30 and Harry is 25. Who is older and by how much?")
+> (question-llama-local "Mary is 30 and Harry is 25. Who is older and by how much?")
 {"prompt": "Answer: Mary is 30 and Harry is 25. Who is older and by how much?", "n_predict": 256, "top_k": 1}
 "\nAnswer: Mary is older than Harry by 5 years."
 > 
@@ -566,34 +559,43 @@ While we use the **mistral** LLM here, there are many more available models list
 The example code in the file **ollama_ai_local.rkt** is very similar to the example code in the last section. The main changes are a different REST service URI and the format of the returned JSON response:
 
 ```racket
+#lang racket
+
 (require net/http-easy)
 (require racket/set)
 (require pprint)
 
-(define (helper prompt)
-  (let* ((prompt-data
+(provide question-ollama-ai-local completion-ollama-ai-local embeddings-ollama)
+
+(define (helper prompt . model-name)
+  (displayln (list "Model name: " model-name))
+  (let* ((model
+          (if (equal? model-name '()) "mistral" (first (first model-name))))
+         (prompt-data
           (string-join
            (list
             (string-append
              "{\"prompt\": \""
              prompt
-             "\", \"model\": \"mistral\", \"stream\": false}"))))
-         (ignore (displayln prompt-data))
+             "\", \"model\": \"" model "\", \"stream\": false}"))))
+         ;;(ignore (displayln prompt-data))
          (p
           (post
            "http://localhost:11434/api/generate"
            #:data prompt-data))
          (r (response-json p)))
+    ;;(displayln r)
     (hash-ref r 'response)))
 
-(define (question-ollama-ai-local question)
-  (helper (string-append "Answer: " question)))
+(define (question-ollama-ai-local question . model-name)
+  (helper (string-append "Answer: " question) model-name))
 
-(define (completion-ollama-ai-local prompt)
+(define (completion-ollama-ai-local prompt . model-name)
   (helper
    (string-append
     "Continue writing from the following text: "
-    prompt)))
+    prompt)
+    model-name))
 
 ;; EMBEDDINGS:
 
@@ -610,18 +612,15 @@ The example code in the file **ollama_ai_local.rkt** is very similar to the exam
              #:data prompt-data))
            (r (response-json p)))
       (hash-ref r 'embedding)))
-
-
-;; (embeddings-ollama "Here is an article about llamas...")
 ```
 
 The function **embeddings-ollama** can be used to create embedding vectors from text input. Embeddings are used for chat with local documents, web sites, etc. We will run the same examples we used in the last section for comparison:
 
 ```
-> (question "Mary is 30 and Harry is 25. Who is older and by how much?")
+> (question-ollama-ai-local "Mary is 30 and Harry is 25. Who is older and by how much?")
 {"prompt": "Answer: Mary is 30 and Harry is 25. Who is older and by how much?", "model": "mistral", "stream": false}
 "Answer: Mary is older than Harry by 5 years."
-> (completion "Frank bought a new sports car. Frank drove")
+> (completion-ollama-ai-local "Frank bought a new sports car. Frank drove")
 {"prompt": "Continue writing from the following text: Frank bought a new sports car. Frank drove", "model": "mistral", "stream": false}
 "Frank drove his new sports car around town, enjoying the sleek design and powerful engine. The car was a bright red, which caught the attention of everyone on the road. Frank couldn't help but smile as he cruised down the highway, feeling the wind in his hair and the sun on his face.\n\nAs he drove, Frank couldn't resist the urge to test out the car's speed and agility. He weaved through traffic, expertly maneuvering the car around curves and turns. The car handled perfectly, and Frank felt a rush of adrenaline as he pushed it to its limits.\n\nEventually, Frank found himself at a local track where he could put his new sports car to the test. He revved up the engine and took off down the straightaway, hitting top speeds in no time. The car handled like a dream, and Frank couldn't help but feel a sense of pride as he crossed the finish line.\n\nAfterwards, Frank parked his sports car and walked over to a nearby café to grab a cup of coffee. As he sat outside, sipping his drink and watching the other cars drive by, he couldn't help but think about how much he loved his new ride. It was the perfect addition to his collection of cars, and he knew he would be driving it for years to come."
 > 

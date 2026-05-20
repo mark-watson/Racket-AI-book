@@ -48,15 +48,16 @@ The provided Racket code uses a local SQLite database and OpenAI's APIs for calc
 
 - `test` function creates documents by reading from specified file paths, and performs some queries using the `QA` function.
 
-The code uses a local SQLite database to store and manage document embeddings and the OpenAI API for generating embeddings and performing semantic searches based on user queries. Two functions are exported in case you want to use this example as a library: **create-document** and **QA**. Note: in the test code at the bottom of the listing, change the absolute path to reflect where you cloned the GitHub repository for this book.
+The code uses a local SQLite database to store and manage document embeddings and the OpenAI API for generating embeddings and performing semantic searches based on user queries. Two functions are exported in case you want to use this example as a library: **create-document** and **QA**.
 
 ```racket
 #lang racket
 
 (require db)
 (require llmapis)
+(require racket/runtime-path)
 
-(provide create-document QA)
+(provide create-document QA CHAT semantic-match)
 
 ; Function to convert list of floats to string representation
 (define (floats->string floats)
@@ -98,13 +99,10 @@ The code uses a local SQLite database to store and manage document embeddings an
 (define (decode-row row)
   (let ((id (vector-ref row 0))
         (context (vector-ref row 1))
-        (embedding (string-to-list (read-line (open-input-string (vector-ref row 2))))))
+        (embedding (string-to-list (vector-ref row 2))))
     (list id context embedding)))
 
-(define
-  db
-  (sqlite3-connect #:database "test.db" #:mode 'create
-                   #:use-place #t))
+(define db (sqlite3-connect #:database "test.db" #:mode 'create #:use-place #t))
 
 (with-handlers ([exn:fail? (lambda (ex) (void))])
   (query-exec
@@ -120,10 +118,9 @@ The code uses a local SQLite database to store and manage document embeddings an
 
 (define (get-document-by-document-path document-path)
   (map decode-row
-       (query-rows
-         db
-         "SELECT * FROM documents WHERE document_path = ?;"
-         document-path)))
+       (query-rows db
+                    "SELECT * FROM documents WHERE document_path = ?;"
+                    document-path)))
 
 (define (all-documents)
   (map
@@ -131,7 +128,7 @@ The code uses a local SQLite database to store and manage document embeddings an
    (query-rows
     db
     "SELECT * FROM documents;")))
-   
+
 (define (create-document fpath)
   (let ((contents (break-into-chunks (file->string fpath) 200)))
     (for-each
@@ -145,13 +142,9 @@ The code uses a local SQLite database to store and manage document embeddings an
 (define (execute-to-list db query)
   (query-rows db query))
 
-;; dot product of two lists of floating point numbers:
-(define (dot-product a b) 
-  (cond
-    [(or (null? a) (null? b)) 0]
-    [else
-     (+ (* (car a) (car b))
-        (dot-product (cdr a) (cdr b)))]))
+(define (dot-product a b) ;; dot product of two lists of floating point numbers
+  (for/sum ([x a] [y b])
+    (* x y)))
 
 (define (semantic-match query custom-context [cutoff 0.7])
   (let ((emb (embeddings-openai query))
@@ -195,14 +188,12 @@ The code uses a local SQLite database to store and manage document embeddings an
             (printf "~%Response: ~a~%" response)
             (loop))))))))
 
-;; ... test code ...
+(define-runtime-path data-dir "data")
 
 (define (test)
-  "Test Semantic Document Search Using GPT APIs and local vector database"
-  (create-document
-    "/Users/markw/GITHUB/Racket-AI-book/source-code/embeddingsdb/data/sports.txt")
-  (create-document
-    "/Users/markw/GITHUB/Racket-AI-book/source-code/embeddingsdb/data/chemistry.txt")
+  "Test code for Semantic Document Search Using OpenAI GPT APIs and local vector database"
+  (create-document (path->string (simplify-path (build-path data-dir "sports.txt"))))
+  (create-document (path->string (simplify-path (build-path data-dir "chemistry.txt"))))
   (QA "What is the history of the science of chemistry?")
   (QA "What are the advantages of engaging in sports?"))
 ```

@@ -63,79 +63,64 @@ Racket parameters (created with `make-parameter`) are the idiomatic equivalent o
 
 ## Running External Programs with `subprocess`
 
-Racket provides `subprocess` in `racket/system` for launching external processes. Our internal helper wraps this with error handling:
+Racket provides `subprocess` in `racket/system` for launching external processes. Our internal helper locates the executable on the system path and executes it directly using argument lists, ensuring safe argument passing and proper cleanup of resources using `dynamic-wind`:
 
 ```racket
-(define (run-command cmd)
-  "Run a shell command string, return stdout as a string (or #f on error)."
-  (with-handlers ([exn:fail?
-                   (lambda (e)
-                     (eprintf "Command error: ~a\nCommand: ~a\n"
-                              (exn-message e) cmd)
-                     #f)])
-    (define-values (proc stdout stdin stderr)
-      (subprocess #f #f #f "/bin/sh" "-c" cmd))
-    (close-output-port stdin)
-    (define output (port->string stdout))
-    (close-input-port stdout)
-    (close-input-port stderr)
-    (subprocess-wait proc)
-    (if (zero? (subprocess-status proc))
-        output
+(define (run-command exe-path args)
+  "Run a command directly, return stdout as a string (or #f on error)."
+  (let ([resolved-path (find-executable-path exe-path)])
+    (if (not resolved-path)
         (begin
-          (eprintf "Command exited with status ~a: ~a\n"
-                   (subprocess-status proc) cmd)
-          #f))))
+          (eprintf "Executable not found: ~a\n" exe-path)
+          #f)
+        (with-handlers ([exn:fail?
+                         (lambda (e)
+                           (eprintf "Command execution error: ~a\n" (exn-message e))
+                           #f)])
+          (define-values (proc stdout stdin stderr)
+            (apply subprocess #f #f #f resolved-path args))
+          (dynamic-wind
+            (lambda () (close-output-port stdin))
+            (lambda ()
+              (let ([output (port->string stdout)])
+                (subprocess-wait proc)
+                (if (zero? (subprocess-status proc))
+                    output
+                    (begin
+                      (eprintf "Command exited with status ~a\n" (subprocess-status proc))
+                      #f))))
+            (lambda ()
+              (close-input-port stdout)
+              (close-input-port stderr)))))))
 ```
 
 Key Racket features used:
-- `subprocess` — Creates a new process with three ports (stdout, stdin, stderr) plus the process handle
-- `define-values` — Destructures the four return values in one binding
-- `port->string` — Reads the entire stdout port into a string
-- `with-handlers` — Catches exceptions gracefully, returning `#f` on failure
-- `subprocess-wait` / `subprocess-status` — Waits for completion and checks the exit code
+- `subprocess` — Creates a new process with three pipes (stdout, stdin, stderr) plus the process handle.
+- `apply` — Calls `subprocess` dynamically with a list of arguments.
+- `find-executable-path` — Locates the full path of the executable by checking system directories.
+- `define-values` — Destructures multiple return values from `subprocess` in a single binding.
+- `port->string` — Reads the entire stdout stream into a Racket string.
+- `with-handlers` — Gracefully catches exceptions, reporting error details to `stderr` and returning `#f`.
+- `dynamic-wind` — Guarantees resource cleanup by closing input and output ports regardless of how the evaluation finishes.
 
-Note: We pass `#f` for all three port arguments to `subprocess`, which creates new pipes. The command is run through `/bin/sh -c` so we get shell expansion and PATH lookup.
+## HTML Parsing: Extracting Links
 
-## String Processing: Extracting Links
-
-For link extraction, we scan HTML using Racket's `regexp-match-positions` for efficient pattern matching:
+For link extraction, instead of brittle regular expressions, we use Racket's HTML parsing libraries (`html-parsing` and `xml/path`) to parse HTML into an X-expression and query it:
 
 ```racket
 (define (extract-links html)
   "Return a list of href strings found in <a> tags within an HTML string."
-  (define marker "href=\"")
-  (define marker-len (string-length marker))
-  (let loop ([pos 0] [links '()])
-    (define found (regexp-match-positions (regexp-quote marker) html pos))
-    (cond
-      [(not found) (reverse links)]
-      [else
-       (define start (cdr (car found)))
-       (define end-pos
-         (let ([idx (string-index-of html "\"" start)])
-           (if idx idx #f)))
-       (if end-pos
-           (loop (add1 end-pos)
-                 (cons (substring html start end-pos) links))
-           (loop (add1 start) links))])))
+  (with-handlers ([exn:fail? (lambda (e)
+                               (eprintf "Error parsing HTML for links: ~a\n" (exn-message e))
+                               '())])
+    (define xexp (html->xexp html))
+    (se-path*/list '(href) xexp)))
 ```
 
 Walkthrough:
-1. `regexp-match-positions` finds `"href=\""` starting from position `pos`, returning position pairs
-2. `substring` extracts the href value between quotes
-3. `cons` accumulates links (building a list in reverse)
-4. `reverse` produces the final list in correct order
-5. The named `let loop` is Racket's idiomatic tail-recursive loop pattern
-
-We also use a small helper for finding character positions:
-
-```racket
-(define (string-index-of str char-str start)
-  "Find the first occurrence of char-str in str starting from start."
-  (define found (regexp-match-positions (regexp-quote char-str) str start))
-  (if found (car (car found)) #f))
-```
+1. `html->xexp` parses the HTML string into an S-expression representation of HTML (X-expression).
+2. `se-path*/list` searches the X-expression and extracts all occurrences of `href` attributes.
+3. `with-handlers` catches any parsing failures on malformed HTML, returning an empty list.
 
 The following diagram shows the high-level architecture of the Lightpanda browser client developed in this chapter:
 
@@ -144,7 +129,7 @@ The following diagram shows the high-level architecture of the Lightpanda browse
 
 ## The Main API Function
 
-The central function combines everything:
+The central function constructs the command line arguments list and invokes the helper:
 
 ```racket
 (define (fetch-url url
@@ -162,23 +147,22 @@ No server process is required; lightpanda is invoked directly.
   (fetch-url \"https://markwatson.com/\")
   (fetch-url \"https://markwatson.com/\" #:dump \"markdown\")
 "
-  (define parts
+  (define args
     (append
-     (list (lightpanda-binary) "fetch")
+     (list "fetch")
      (if obey-robots '("--obey_robots") '())
      (list "--dump" dump
            "--log_level" log-level
-           "--log_format" "pretty")
-     (list url)))
-  (define cmd (string-join parts " "))
-  (run-command cmd))
+           "--log_format" "pretty"
+           url)))
+  (run-command (lightpanda-binary) args))
 ```
 
 Key techniques:
-- `#:keyword [param default]` — Racket's keyword arguments with default values (analogous to Common Lisp's `&key`)
-- `(if obey-robots '("--obey_robots") '())` — Conditional list inclusion: returns a singleton list or empty
-- `string-join` — Combines the argument list into a space-separated command string
-- `(lightpanda-binary)` — Calls the parameter to retrieve the current value
+- `#:keyword [param default]` — Racket's keyword arguments with default values.
+- `(if obey-robots '("--obey_robots") '())` — Conditional list inclusion.
+- `append` — Combines several lists into a single flat argument list.
+- `(lightpanda-binary)` — Invokes the configuration parameter.
 
 ## Helper Functions
 

@@ -93,6 +93,8 @@ In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SP
 
 
 ```racket
+#lang at-exp racket
+
 (provide sparql-dbpedia-person-uri)
 (provide sparql-query->hash)
 (provide json->listvals)
@@ -109,15 +111,15 @@ In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SP
       (GROUP_CONCAT(DISTINCT ?website; SEPARATOR="  |  ")
                                    AS ?website) ?comment {
       OPTIONAL {
-       @person-uri
-       <http://www.w3.org/2000/01/rdf-schema#comment>
-       ?comment . FILTER (lang(?comment) = 'en')
+        { @person-uri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . FILTER (lang(?comment) = 'en') }
+        UNION
+        { @person-uri <http://dbpedia.org/ontology/description> ?comment . FILTER (lang(?comment) = 'en') }
       } .
       OPTIONAL {
-       @person-uri
-       <http://dbpedia.org/ontology/wikiPageExternalLink>
-       ?website
-        . FILTER( !regex(str(?website), "dbpedia", "i"))
+        @person-uri
+        <http://dbpedia.org/ontology/wikiPageExternalLink>
+        ?website
+         . FILTER( !regex(str(?website), "dbpedia", "i"))
       }
      } LIMIT 4})
 
@@ -127,10 +129,13 @@ In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SP
       ?personuri
         <http://xmlns.com/foaf/0.1/name>
         "@person-name"@"@"en .
-      ?personuri
-        <http://www.w3.org/2000/01/rdf-schema#comment>
-        ?comment .
-             FILTER  (lang(?comment) = 'en') .
+      {
+        ?personuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
+        FILTER (lang(?comment) = 'en')
+      } UNION {
+        ?personuri <http://dbpedia.org/ontology/description> ?comment .
+        FILTER (lang(?comment) = 'en')
+      }
 }})
 
 
@@ -146,50 +151,29 @@ In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SP
    '("Accept: application/json")))
 
 (define (json->listvals a-hash)
-  (let ((bindings (hash->list a-hash)))
-    (let* ((head (first bindings))
-           (vars (hash-ref (cdr head) 'vars))
-           (results (second bindings)))
-      (let* ((x (cdr results))
-             (b (hash-ref x 'bindings)))
-        (for/list
-            ([var vars])
-          (for/list ([bc b])
-            (let ((bcequal
-                   (make-hash (hash->list bc))))
-              (let ((a-value
-                     (hash-ref
-                      (hash-ref
-                       bcequal
-                       (string->symbol var)) 'value)))
-                (list var a-value)))))))))
+  (let* ([head (hash-ref a-hash 'head (hash))]
+         [vars (hash-ref head 'vars '())]
+         [results (hash-ref a-hash 'results (hash))]
+         [bindings (hash-ref results 'bindings '())])
+    (for/list ([var vars])
+      (for/list ([bc bindings])
+        (let* ([var-sym (string->symbol var)]
+               [var-info (hash-ref bc var-sym (hash))]
+               [a-value (hash-ref var-info 'value "")])
+          (list var a-value))))))
 
-
-(define gd (lambda (data)
-
-    (let ((jd (json->listvals data)))
-
-      (define gg1
-        (lambda (jd) (map list (car jd))))
-      (define gg2
-        (lambda (jd) (map list (car jd) (cadr jd))))
-      (define gg3
-        (lambda (jd)
-          (map list (car jd) (cadr jd) (caddr jd))))
-      (define gg4
-        (lambda (jd)
-          (map list
-               (car jd) (cadr jd)
-               (caddr jd) (cadddr jd))))
-
-      (case (length (json->listvals data))
-        [(1) (gg1 (json->listvals data))]
-        [(2) (gg2 (json->listvals data))]
-        [(3) (gg3 (json->listvals data))]
-        [(4) (gg4 (json->listvals data))]
-        [else
-         (error "sparql queries with 1 to 4 vars")]))))
-
+(define (gd data)
+  (let ([jd (json->listvals data)])
+    (define gg1 (lambda (x) (map list (car x))))
+    (define gg2 (lambda (x) (map list (car x) (cadr x))))
+    (define gg3 (lambda (x) (map list (car x) (cadr x) (caddr x))))
+    (define gg4 (lambda (x) (map list (car x) (cadr x) (caddr x) (cadddr x))))
+    (case (length jd)
+      [(1) (gg1 jd)]
+      [(2) (gg2 jd)]
+      [(3) (gg3 jd)]
+      [(4) (gg4 jd)]
+      [else (error "sparql queries with 1 to 4 vars")])))
 
 (define sparql-dbpedia
   (lambda (sparql)
@@ -332,11 +316,14 @@ The file **Racket-AI-book/source-code/kgn/dialog-utils.rkt** contains the user i
 The local file **sparql-utils.rkt** contains additional utility functions for accessing information in DBPedia.
 
 ```racket
-(provide sparql-dbpedia-for-person)
-(provide sparql-dbpedia-person-uri)
-(provide sparql-query->hash)
-(provide json->listvals)
-(provide extract-name-uri-and-comment)
+#lang at-exp racket
+
+(provide sparql-dbpedia-for-person
+         sparql-dbpedia-person-uri
+         sparql-dbpedia-place-uri
+         sparql-query->hash
+         json->listvals
+         extract-name-uri-and-comment)
 
 (require net/url)
 (require net/uri-codec)
@@ -355,7 +342,11 @@ The local file **sparql-utils.rkt** contains additional utility functions for ac
   @string-append{
      SELECT
       (GROUP_CONCAT(DISTINCT ?website; SEPARATOR="  |  ") AS ?website) ?comment {
-      OPTIONAL { @person-uri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . FILTER (lang(?comment) = 'en') } .
+      OPTIONAL {
+        { @person-uri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . FILTER (lang(?comment) = 'en') }
+        UNION
+        { @person-uri <http://dbpedia.org/ontology/description> ?comment . FILTER (lang(?comment) = 'en') }
+      } .
       OPTIONAL { @person-uri <http://dbpedia.org/ontology/wikiPageExternalLink> ?website . FILTER( !regex(str(?website), "dbpedia", "i"))} .
      } LIMIT 4})
 
@@ -363,33 +354,49 @@ The local file **sparql-utils.rkt** contains additional utility functions for ac
   @string-append{
     SELECT DISTINCT ?personuri ?comment {
       ?personuri <http://xmlns.com/foaf/0.1/name> "@person-name"@"@"en .
-      ?personuri <http://www.w3.org/2000/01/rdf-schema#comment>  ?comment .
-                  FILTER  (lang(?comment) = 'en') .
+      {
+        ?personuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
+        FILTER (lang(?comment) = 'en')
+      } UNION {
+        ?personuri <http://dbpedia.org/ontology/description> ?comment .
+        FILTER (lang(?comment) = 'en')
+      }
+}})
+
+(define (sparql-dbpedia-place-uri place-name)
+  @string-append{
+    SELECT DISTINCT ?placeuri ?comment {
+      ?placeuri <http://xmlns.com/foaf/0.1/name> "@place-name"@"@"en .
+      {
+        ?placeuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
+        FILTER (lang(?comment) = 'en')
+      } UNION {
+        ?placeuri <http://dbpedia.org/ontology/description> ?comment .
+        FILTER (lang(?comment) = 'en')
+      }
 }})
 
 (define (sparql-query->hash query)
   (call/input-url (string->url (string-append "https://dbpedia.org/sparql?query=" (uri-encode query)))
                       get-pure-port
                       (lambda (port)
-                        (string->jsexpr (port->string port))
-                        )
+                        (string->jsexpr (port->string port)))
                       '("Accept: application/json")))
 
 (define (json->listvals a-hash)
-  (let ((bindings (hash->list a-hash)))
-    (let* ((head (first bindings))
-           (vars (hash-ref (cdr head) 'vars))
-           (results (second bindings)))
-      (let* ((x (cdr results))
-             (b (hash-ref x 'bindings)))
-        (for/list ([var vars])
-                  (for/list ([bc b])
-                    (let ((bcequal (make-hash (hash->list bc))))
-                      (let ((a-value (hash-ref (hash-ref bcequal (string->symbol var)) 'value)))
-                        (list var a-value)))))))))
+  (let* ([head (hash-ref a-hash 'head (hash))]
+         [vars (hash-ref head 'vars '())]
+         [results (hash-ref a-hash 'results (hash))]
+         [bindings (hash-ref results 'bindings '())])
+    (for/list ([var vars])
+      (for/list ([bc bindings])
+        (let* ([var-sym (string->symbol var)]
+               [var-info (hash-ref bc var-sym (hash))]
+               [a-value (hash-ref var-info 'value "")])
+          (list var a-value))))))
 
 (define extract-name-uri-and-comment (lambda (l1 l2)
-              (map ;; perform a "zip" action on teo lists
+              (map ;; perform a "zip" action on two lists
                (lambda (a b)
                  (list (second a) (second b)))
                l1 l2)))
