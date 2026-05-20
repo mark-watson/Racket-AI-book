@@ -2,7 +2,8 @@
 
 (require racket/hash
          racket/contract
-         racket/sequence)
+         racket/sequence
+         racket/sandbox)
 
 (require rackunit)
 
@@ -121,24 +122,17 @@
 ;; Tool Call Parsing (Simple Example)
 
 (define (parse-tool-call-request response-text)
-  "Parses the LLM response to check for a tool call request.
-  ... (rest of the documentation as before) ..."
-  (define (trim-whitespace str)
-    (regexp-replace* #rx"^\\s+|\\s+$" str ""))
-
-  (define (parse-args arg-str)
-    (string-split arg-str " "))
-
-  (define call-tool-regex #rx"\\(call-tool\\s+([^\\)]+)\\)")
-
-  (let ([match-result (regexp-match call-tool-regex response-text)])
-    (if match-result ; Check if match-result is not #f (i.e., a match was found)
-        (let* ([tool-call-str (cadr match-result)] ; Use match-result here
-               [parts (string-split tool-call-str " " #:trim? #t)]
-               [tool-name (and (not (null? parts)) (string->symbol (car parts)))])
-          (if tool-name
-              (cons tool-name (map string->symbol (cdr parts)))
-              #f))
+  "Parses the LLM response to check for a tool call request."
+  (let ([match-pos (regexp-match-positions #rx"\\(call-tool" response-text)])
+    (if match-pos
+        (with-handlers ([exn:fail? (lambda (e) #f)])
+          (let* ([start-idx (caar match-pos)]
+                 [port (open-input-string (substring response-text start-idx))]
+                 [expr (read port)])
+            (match expr
+              [`(call-tool ,(? symbol? tool-name) ,args ...)
+               (cons tool-name args)]
+              [_ #f])))
         #f))) ; If match-result is #f, return #f
 
 
@@ -181,11 +175,11 @@
 
 
 (define (racket-eval code)
-  "Simulated Racket evaluation tool.
-  In a real application, be extremely careful about security when evaluating arbitrary code.
-  This is for demonstration purposes only and should be used with caution."
+  "Simulated Racket evaluation tool running in a secure sandbox.
+  Uses racket/sandbox to prevent arbitrary filesystem/network access."
   (displayln (string-append "Simulated racket-eval: " code))
-  (eval (read (open-input-string code)) (make-base-namespace))) ; Be very careful with `eval` in real systems!
+  (with-handlers ([exn:fail? (lambda (e) (string-append "Error in evaluation: " (exn-message e)))])
+    ((make-evaluator 'racket/base) code)))
 
 
 ;; -----------------------------------------------------------------------------
@@ -232,7 +226,8 @@
   (displayln (string-append "Agent Response: " response))
   (displayln (string-append "Result from context: " (number->string (context-get updated-ctx 'tool-result  #:default 0)))))
 
-(run-calculator-agent-example)
+(module+ main
+  (run-calculator-agent-example))
 
 ;; -----------------------------------------------------------------------------
 ;; Info file for library

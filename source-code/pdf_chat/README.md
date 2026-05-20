@@ -28,8 +28,8 @@ raco pkg install racket-poppler
 
 Currently on macOS, these examples may not work in DrRacket. Run them on the command line, for example:
 
-    racket pdf2text.rkt
-    racket pdfchat.rkt
+    DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib racket pdf2text.rkt
+    DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib racket pdfchat.rkt
 
 ## License and Copyright
 

@@ -22,6 +22,8 @@ On macOS, you might see the following list added:
 
 ## Run
 
+You can uncomment the test cases at the bottom of the file fasttag.rkt and then run:
+
     racket main.rkt
     # Or to test the tagger directly:
     racket fasttag.rkt

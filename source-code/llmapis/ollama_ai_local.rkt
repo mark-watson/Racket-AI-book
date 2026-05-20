@@ -4,7 +4,7 @@
 (require racket/set)
 (require pprint)
 
-(provide question-ollama-ai-local completion-ollama-ai-local)
+(provide question-ollama-ai-local completion-ollama-ai-local embeddings-ollama)
 
 (define (helper prompt . model-name)
   (displayln (list "Model name: " model-name))

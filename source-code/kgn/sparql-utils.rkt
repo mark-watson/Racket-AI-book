@@ -24,7 +24,11 @@
   @string-append{
      SELECT
       (GROUP_CONCAT(DISTINCT ?website; SEPARATOR="  |  ") AS ?website) ?comment {
-      OPTIONAL { @person-uri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . FILTER (lang(?comment) = 'en') } .
+      OPTIONAL {
+        { @person-uri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . FILTER (lang(?comment) = 'en') }
+        UNION
+        { @person-uri <http://dbpedia.org/ontology/description> ?comment . FILTER (lang(?comment) = 'en') }
+      } .
       OPTIONAL { @person-uri <http://dbpedia.org/ontology/wikiPageExternalLink> ?website . FILTER( !regex(str(?website), "dbpedia", "i"))} .
      } LIMIT 4})
 
@@ -32,8 +36,13 @@
   @string-append{
     SELECT DISTINCT ?personuri ?comment {
       ?personuri <http://xmlns.com/foaf/0.1/name> "@person-name"@"@"en .
-      ?personuri <http://www.w3.org/2000/01/rdf-schema#comment>  ?comment .
-                  FILTER  (lang(?comment) = 'en') .
+      {
+        ?personuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
+        FILTER (lang(?comment) = 'en')
+      } UNION {
+        ?personuri <http://dbpedia.org/ontology/description> ?comment .
+        FILTER (lang(?comment) = 'en')
+      }
 }})
 
 
@@ -42,8 +51,13 @@
   @string-append{
     SELECT DISTINCT ?placeuri ?comment {
       ?placeuri <http://xmlns.com/foaf/0.1/name> "@place-name"@"@"en .
-      ?placeuri <http://www.w3.org/2000/01/rdf-schema#comment>  ?comment .
-                  FILTER  (lang(?comment) = 'en') .
+      {
+        ?placeuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
+        FILTER (lang(?comment) = 'en')
+      } UNION {
+        ?placeuri <http://dbpedia.org/ontology/description> ?comment .
+        FILTER (lang(?comment) = 'en')
+      }
 }})
 
 
@@ -56,22 +70,23 @@
                       '("Accept: application/json")))
 
 (define (json->listvals a-hash)
-  (let ((bindings (hash->list a-hash)))
-    (let* ((head (first bindings))
-           (vars (hash-ref (cdr head) 'vars))
-           (results (second bindings)))
-      (let* ((x (cdr results))
-             (b (hash-ref x 'bindings)))
-        (for/list ([var vars])
-                  (for/list ([bc b])
-                    (let ((bcequal (make-hash (hash->list bc))))
-                      (let ((a-value (hash-ref (hash-ref bcequal (string->symbol var)) 'value)))
-                        (list var a-value)))))))))
+  (let* ([head (hash-ref a-hash 'head (hash))]
+         [vars (hash-ref head 'vars '())]
+         [results (hash-ref a-hash 'results (hash))]
+         [bindings (hash-ref results 'bindings '())])
+    (for/list ([var vars])
+      (for/list ([bc bindings])
+        (let* ([var-sym (string->symbol var)]
+               [var-info (hash-ref bc var-sym (hash))]
+               [a-value (hash-ref var-info 'value "")])
+          (list var a-value))))))
 
 (define extract-name-uri-and-comment (lambda (l1 l2)
-              (map ;; perform a "zip" action on teo lists
+              (map ;; perform a "zip" action on two lists
                (lambda (a b)
                  (list (second a) (second b)))
                l1 l2)))
 
-;;(sparql-query->hash (sparql-dbpedia-person-uri "Steve Jobs"))
+(module+ main
+  ;; (pretty-print (sparql-query->hash (sparql-dbpedia-person-uri "Steve Jobs")))
+  (void))

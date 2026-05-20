@@ -4,6 +4,9 @@
 (require html-parsing)
 (require net/url xml xml/path)
 (require srfi/13) ;; for strings
+(provide web-uri->xexp
+         web-uri->text
+         web-uri->links)
 
 (define (web-uri->xexp a-uri)
   (let* ((a-stream
@@ -31,6 +34,8 @@
      (lambda (s) (string-prefix? "http" s))
      (se-path*/list '(href) a-xexp))))
 
-;; (web-uri->xexp "https://knowledgebooks.com")
-;; (web-uri->text "https://knowledgebooks.com")
-;; (web-uri->links "https://knowledgebooks.com")
+(module+ main
+  ;; (web-uri->xexp "https://knowledgebooks.com")
+  ;; (web-uri->text "https://knowledgebooks.com")
+  ;; (web-uri->links "https://knowledgebooks.com")
+  (void))

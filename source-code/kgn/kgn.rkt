@@ -71,19 +71,17 @@
                      (send  sparql-canvas set-value sparql-results)
                      (send  results-canvas set-value
                             (string-append (string-join  (wrap-line (first query-helper-results) 95) "\n") "\n\n" (first uris))))
-                   (if (> (length query-helper-results) 1)
-                       (let ()
-                         (set-new-items-and-show-dialog (map short-string query-helper-results))
-                         (set! query-helper-results
-                               (let ((sel-index (get-selection-index)))
-                                 (if (> sel-index -1)
-                                     (list-ref query-helper-results sel-index)
-                                     '(""))))
-                         (set! uris (list-ref uris (get-selection-index)))
-                         (display query-helper-results)
-                         (send  sparql-canvas set-value sparql-results)
-                         (send  results-canvas set-value
-                                (string-append (string-join  (wrap-line query-helper-results 95) "\n") "\n\n" uris)))
-                       (send  results-canvas set-value (string-append "No results for: " (send query-field get-value))))))))))
+                    (if (> (length query-helper-results) 1)
+                        (begin
+                          (set-new-items-and-show-dialog (map short-string query-helper-results))
+                          (let ([sel-index (get-selection-index)])
+                            (if (and (>= sel-index 0) (< sel-index (length query-helper-results)))
+                                (let ([selected-result (list-ref query-helper-results sel-index)]
+                                      [selected-uri (list-ref uris sel-index)])
+                                  (display selected-result)
+                                  (send sparql-canvas set-value sparql-results)
+                                  (send results-canvas set-value
+                                        (string-append (string-join (wrap-line selected-result 95) "\n") "\n\n" selected-uri)))
+                                (send results-canvas set-value "Selection cancelled"))))
+                        (send  results-canvas set-value (string-append "No results for: " (send query-field get-value))))))))))
      (send frame show #t)))
-    

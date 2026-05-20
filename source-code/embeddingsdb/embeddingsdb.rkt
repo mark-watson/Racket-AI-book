@@ -2,8 +2,9 @@
 
 (require db)
 (require llmapis)
+(require racket/runtime-path)
 
-(provide create-document QA)
+(provide create-document QA CHAT semantic-match)
 
 ; Function to convert list of floats to string representation
 (define (floats->string floats)
@@ -46,7 +47,7 @@
 (define (decode-row row)
   (let ((id (vector-ref row 0))
         (context (vector-ref row 1))
-        (embedding (string-to-list (read-line (open-input-string (vector-ref row 2))))))
+        (embedding (string-to-list (vector-ref row 2))))
     (list id context embedding)))
 
 (define db (sqlite3-connect #:database "test.db" #:mode 'create #:use-place #t))
@@ -95,11 +96,8 @@
   (query-rows db query))
 
 (define (dot-product a b) ;; dot product of two lists of floating point numbers
-  (cond
-    [(or (null? a) (null? b)) 0]
-    [else
-     (+ (* (car a) (car b))
-        (dot-product (cdr a) (cdr b)))]))
+  (for/sum ([x a] [y b])
+    (* x y)))
 
 
 (define (semantic-match query custom-context [cutoff 0.7])
@@ -144,16 +142,19 @@
             (printf "~%Response: ~a~%" response)
             (loop))))))))
 
-;; ... test code ...
+(define-runtime-path data-dir "data")
 
 (define (test)
   "Test code for Semantic Document Search Using OpenAI GPT APIs and local vector database"
-  (create-document "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/sports.txt")
-  (create-document "/Users/markw/GITHUB/Racket-AI-book-code/embeddingsdb/data/chemistry.txt")
+  (create-document (path->string (simplify-path (build-path data-dir "sports.txt"))))
+  (create-document (path->string (simplify-path (build-path data-dir "chemistry.txt"))))
   (QA "What is the history of the science of chemistry?")
   (QA "What are the advantages of engaging in sports?"))
 
-;; test()
+(module+ main
+  ;; Uncomment below if you want to execute tests when running this module
+  ;; (test)
+  )
 
 
 

@@ -12,6 +12,7 @@
 (require net/http-easy)
 (require json)
 (require racket/date)
+(require net/uri-codec)
 
 (provide register-tool
          get-tool
@@ -71,22 +72,33 @@
         (string-trim (bytes->string/utf-8 body))))))
 
 (define (list-directory args)
-  "Lists files in the current directory.
-   ARGS: empty hash (no parameters needed)"
-  (let ([files (directory-list (current-directory))])
-    (format "Files in ~a: ~a"
-            (current-directory)
-            (string-join (map path->string files) ", "))))
+  "Lists files in the current directory or specified directory.
+   ARGS: optional 'dir_path'"
+  (let* ([dir-path (hash-ref args 'dir_path (current-directory))]
+         [resolved-dir (simplify-path (path->complete-path dir-path))]
+         [resolved-sandbox (simplify-path (path->complete-path (current-directory)))])
+    (if (string-prefix? (path->string resolved-sandbox) (path->string resolved-dir))
+        (if (directory-exists? resolved-dir)
+            (let ([files (directory-list resolved-dir)])
+              (format "Files in ~a: ~a"
+                      resolved-dir
+                      (string-join (map path->string files) ", ")))
+            (format "Directory not found: ~a" dir-path))
+        (format "Access denied: ~a is outside the sandbox directory" dir-path))))
 
 (define (read-file-contents args)
   "Reads contents of a file.
    ARGS should contain 'file_path' key."
-  (let ([file-path (hash-ref args 'file_path #f)])
-    (if (and file-path (file-exists? file-path))
-        (with-handlers ([exn:fail? (lambda (e)
-                                     (format "Error reading file: ~a" (exn-message e)))])
-          (file->string file-path))
-        (format "File not found: ~a" file-path))))
+  (let* ([file-path (hash-ref args 'file_path #f)]
+         [resolved-path (and file-path (simplify-path (path->complete-path file-path)))]
+         [resolved-sandbox (simplify-path (path->complete-path (current-directory)))])
+    (if (and resolved-path (string-prefix? (path->string resolved-sandbox) (path->string resolved-path)))
+        (if (file-exists? resolved-path)
+            (with-handlers ([exn:fail? (lambda (e)
+                                         (format "Error reading file: ~a" (exn-message e)))])
+              (file->string resolved-path))
+            (format "File not found: ~a" file-path))
+        (format "Access denied: file path is invalid or outside the sandbox directory"))))
 
 (define (search-wikipedia args)
   "Searches Wikipedia for a query and returns summary.
@@ -96,7 +108,7 @@
         (with-handlers ([exn:fail? (lambda (e)
                                      (format "Error searching Wikipedia: ~a" (exn-message e)))])
           (let* ([url (format "https://en.wikipedia.org/api/rest_v1/page/summary/~a"
-                              (string-replace query " " "_"))]
+                              (uri-encode (string-replace query " " "_")))]
                  [response (get url
                                #:headers (hash 'user-agent "RacketOllamaTools/1.0"))]
                  [data (response-json response)])
@@ -180,23 +192,27 @@
 
 (define (handle-tool-call tool-call)
   "Execute a tool call from the LLM response."
-  (let* ([name (hash-ref tool-call 'function (hash))]
-         [func-name (hash-ref name 'name #f)]
-         [args-str (hash-ref name 'arguments "{}")]
-         [args (if (string? args-str)
-                   (string->jsexpr args-str)
-                   args-str)]
-         [tool (get-tool func-name)])
-    (if tool
-        (let ([handler (hash-ref tool 'handler #f)])
-          (if handler
-              (let ([result (handler args)])
+  (with-handlers ([exn:fail? (lambda (e)
+                               (hash 'role "tool"
+                                     'content (format "Error processing tool call: ~a" (exn-message e))))])
+    (let* ([name (hash-ref tool-call 'function (hash))]
+           [func-name (hash-ref name 'name #f)]
+           [args-str (hash-ref name 'arguments "{}")]
+           [args (cond
+                   [(hash? args-str) args-str]
+                   [(string? args-str) (string->jsexpr args-str)]
+                   [else (hash)])]
+           [tool (get-tool func-name)])
+      (if tool
+          (let ([handler (hash-ref tool 'handler #f)])
+            (if handler
+                (let ([result (handler args)])
+                  (hash 'role "tool"
+                        'content result))
                 (hash 'role "tool"
-                      'content result))
-              (hash 'role "tool"
-                    'content (format "No handler for tool: ~a" func-name))))
-        (hash 'role "tool"
-              'content (format "Unknown tool: ~a" func-name)))))
+                      'content (format "No handler for tool: ~a" func-name))))
+          (hash 'role "tool"
+                'content (format "Unknown tool: ~a" func-name))))))
 
 (define (call-ollama-with-tools prompt tool-names #:model [model (*default-model*)])
   "Call Ollama with tools and handle the tool calling loop.
