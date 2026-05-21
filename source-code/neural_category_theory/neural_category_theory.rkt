@@ -1,5 +1,7 @@
 #lang racket
 
+;; Reference: https://rust-ml.com/materials/one-training-step-end-to-end.html
+
 ;; =============================================================================
 ;; Category-Theory-Inspired 2-Hidden-Layer Neural Network in Racket
 ;; =============================================================================
