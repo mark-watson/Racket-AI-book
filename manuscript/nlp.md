@@ -489,3 +489,10 @@ The following diagram shows the high-level architecture of the NLP library devel
 The NLP library is still a work in progress so please check for updates to this *live eBook* and the GitHub repository for this book:
 
 [https://github.com/mark-watson/Racket-AI-book/source-code](https://github.com/mark-watson/Racket-AI-book/source-code)
+
+## Optional Practice Problems
+
+1. **Dynamic Lexicon Updates**: The Part-of-Speech tagger loads its word lexicon from static files. Implement a function `add-to-lexicon!` that allows developers to dynamically register new words and their corresponding tags at runtime without modifying the source data files.
+2. **Enhance Named Entity Recognition (NER)**: Heuristics in `names.rkt` extract sequences of proper nouns (`NNP`). Extend these rules to correctly handle titles (e.g., "Dr.", "Professor") and middle initials (e.g., "George W. Bush") when extracting complete names.
+3. **Sentence Tokenizer**: Implement a sentence tokenizer function that segments paragraphs into individual sentences. Make sure it correctly distinguishes between sentence-ending punctuation and abbreviations such as "e.g.", "i.e.", or "Ms.".
+

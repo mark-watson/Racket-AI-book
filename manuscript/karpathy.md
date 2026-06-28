@@ -428,3 +428,10 @@ The following diagram shows the high-level architecture of the MicroGPT Transfor
 This concludes our exploration of MicroGPT implemented from scratch in Racket. By studying the complete source code listing provided above, you have seen firsthand how the abstract mathematical concepts of reverse-mode automatic differentiation, self-attention, and autoregressive language modeling translate into concrete, functional code.
 
 I highly encourage you to load `microgpt.rkt` into your own Racket REPL or DrRacket and run it. Try experimenting with the hyperparameters—adjust the `*n-layer*`, `*n-embd*`, or `*n-head*` variables and observe how they impact both the training time and the quality of the hallucinated outputs. You can also swap out the `names.txt` dataset for your own text files to see how the model adapts to entirely different linguistic patterns. By actively tinkering with this minimalistic implementation, you will cement your understanding of how modern generative AI truly works under the hood.
+
+## Optional Practice Problems
+
+1. **Implement GELU Activation**: The current Multi-Layer Perceptron (MLP) implementation in `microgpt.rkt` uses a standard ReLU activation function. Replace it with a GELU (Gaussian Error Linear Unit) activation function, which is commonly used in modern GPT models, and observe how it affects convergence.
+2. **Add Weight Decay**: Enhance the optimizer implementation to support weight decay (L2 regularization). Update the parameter update step to scale down parameters by a small factor before applying the gradients.
+3. **Temperature and Top-K Sampling**: Modify the inference sampling function to support temperature scaling and Top-K filtering. This will help control the creativity and coherence of the generated names.
+

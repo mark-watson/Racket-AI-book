@@ -265,3 +265,10 @@ The following diagram shows the high-level architecture of the RAG pipeline deve
 
 Retrieval Augmented Generation (RAG) is one of the best use cases for semantic search. Another way to write RAG applications is to use a web search API to get context text for a query, and add this context data to whatever context data you have in a local embeddings data store.
 
+## Optional Practice Problems
+
+1. **Calculate Cosine Similarity**: In `embeddingsdb.rkt`, semantic similarity is measured using the raw `dot-product`. Implement a true `cosine-similarity` metric that divides the dot product by the product of the vector magnitudes, ensuring compatibility with embeddings that are not pre-normalized to unit length.
+2. **Chunking with Overlaps**: The current `break-into-chunks` implementation slices text at arbitrary character boundaries. Write an improved chunking function that slices text at sentence or paragraph boundaries and allows for a configurable overlap (e.g., 200 characters with a 40-character overlap) to preserve local context.
+3. **Extend Database Operations**: Add a function `delete-document` that deletes all chunks and vector representations associated with a given file path from the SQLite database.
+
+

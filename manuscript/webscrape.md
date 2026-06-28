@@ -193,3 +193,9 @@ The following diagram shows the high-level architecture of the web scraping libr
 If you want to install this library on your laptop using linking (requiring the library access a link to the source code in the directory **Racket-AI-book/source-code/webscrape**) run the following in the library source directory **Racket-AI-book/source-code/webscrape**:
 
    raco pkg install --scope user
+
+## Optional Practice Problems
+
+1. **Resolve Relative Links**: Currently, `web-uri->links` only keeps links that start with `"http"`. Modify the function to accept the original URI as a base and resolve any relative paths (e.g., `/about.html` or `../contact`) into absolute URLs.
+2. **Extract Headings and Lists**: The `web-uri->text` function only retrieves text nested within `<p>` tags. Extend it to extract text from headers (`<h1>` to `<h6>`) and list items (`<li>`) to get a more complete textual representation of the page.
+3. **Graceful Error and Timeout Handling**: Wrap the HTTP `get` request in `with-handlers` to catch connection issues, timeouts, or non-200 HTTP statuses, returning a meaningful error code or an empty xexp instead of crashing the program.

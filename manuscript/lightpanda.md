@@ -250,3 +250,10 @@ Found 14 link(s):
 6. **`with-handlers`** — Structured exception handling with predicate-based dispatch
 
 This pattern — shelling out to a specialized tool and processing its output — is a powerful technique. You can wrap any command-line tool this way: databases, image processors, compilers, or your own scripts. The result is a Racket API that hides the implementation details while providing access to the tool's capabilities.
+
+## Optional Practice Problems
+
+1. **Verify Binary Installation**: Implement a function `verify-lightpanda-path` that validates if the configured `lightpanda-binary` path exists using `find-executable-path`. If the binary cannot be resolved, raise a clear user-facing error message with advice on installation.
+2. **Support Dynamic Fetch Options**: Extend the `fetch-url` function to support additional command-line parameters that Lightpanda offers (for example, setting a custom `--user_agent` or specifying custom `--headers`).
+3. **Capture Process Standard Error**: In `run-command`, standard error output is discarded. Refactor the subprocess handling to capture `stderr` from the subprocess and include its contents in the error output logs when the exit code is non-zero.
+

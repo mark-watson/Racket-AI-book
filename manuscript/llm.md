@@ -731,6 +731,11 @@ Language: racket, with debugging; memory limit: 128 MB.
 > 
 ```
 
-Here I entered more examples in the DrRacket REPL.
-
 For general work and experimentation with LLMs I like the flexibility of using my own Racket LLM client code, but for the LLM package makes it simple to experiment with prompts and if you only need to generate text from a prompt the LLM package lets generate text using just two lines of Racket code that is using the standard **#language racket** language..
+
+## Optional Practice Problems
+
+1. **Streaming API Responses**: The current HTTP requests in `llmapis` (e.g., in `openai.rkt` and `gemini.rkt`) block until the entire JSON response is received. Modify one of these client files to use streaming features of `net/http-easy`, displaying tokens/chunks to the console as they are received from the API.
+2. **Implement Conversation History**: Create a wrapper function in `llmapis` that maintains conversation state (a list of prior user and assistant turns) and sends the entire message history list to the chat completions API, allowing for multi-turn chat sessions.
+3. **Compare Models using Bowman's `#lang llm`**: Using the examples in `racket_llm_language`, configure `#lang llm` to connect to a new local model in Ollama (such as `llama3` or `gemma`). Write a standard Racket script that queries both `gpt4o-mini` and your new local model with the same prompts and logs the differences in their outputs.
+

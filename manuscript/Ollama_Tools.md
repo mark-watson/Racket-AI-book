@@ -496,3 +496,10 @@ Tool calling transforms LLMs from passive text generators into active agents tha
 - **Chain operations** — multiple tools in sequence
 
 This is foundational for building AI agents and assistants. In the next chapter on agents, we'll see how tools enable more complex autonomous behavior.
+
+## Optional Practice Problems
+
+1. **Implement a Calculator Tool**: Create and register a new tool named `calculate` that accepts a mathematical expression (e.g., `"125 * 8"` or `"2^10"`) and safely evaluates the expression in Racket, returning the result to the model.
+2. **Execute Multiple Tool Calls**: The current implementation handles a single tool call returned by the model. Refactor the execution loop in `call-ollama-with-tools` to support processing multiple tool calls in a single turn when the LLM returns an array of tool requests.
+3. **Schema Validation**: Write a Racket function to validate the tool arguments received from the LLM against the parameters' JSON schema defined in `register-tool` before executing the tool's handler. Return a schema error response to the LLM if validation fails.
+

@@ -506,3 +506,10 @@ The following diagram shows the high-level architecture of the Knowledge Graph N
 This KGN example was hopefully both interesting to you and simple enough in its implementation to use as a jumping off point for your own projects. 
 
 I had the idea for the KGN application because I was spending quite a bit of time manually setting up SPARQL queries for DBPedia (and other public sources like WikiData) and I wanted to experiment with partially automating this process. I have experimented with versions of KGN written in Java, Hy language ([Lisp running on Python that I wrote a short book on](https://leanpub.com/hy-lisp-python/read)), Swift, and Common Lisp and all four implementations take different approaches as I experimented with different ideas.
+
+## Optional Practice Problems
+
+1. **Extend templates for Historical Events**: The current KGN implementation only recognizes persons and places. Add support to `sparql-utils.rkt` for querying historical events (e.g., battles, treaty signings) by crafting a new SPARQL template and corresponding parsing logic.
+2. **Add Wikidata Backend**: Currently, KGN only queries DBpedia. Implement alternative search functions in `sparql-utils.rkt` targeting Wikidata's SPARQL endpoint, mapping the resulting entities back to the GUI.
+3. **Query History in the GUI**: Modify the GUI code in `main.rkt` to include a historical list of past queries in the user interface. Clicking on an item in the history list should automatically reload and execute that query.
+

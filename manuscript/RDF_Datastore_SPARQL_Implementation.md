@@ -315,3 +315,9 @@ The following diagram shows the high-level architecture of the RDF datastore and
 ## Conclusion
 
 This implementation provides a basic framework for an RDF datastore with partial SPARQL support in Racket. While it lacks many features of a full-fledged RDF database and SPARQL engine, it demonstrates the core concepts and can serve as a starting point for more complex implementations. The code is simple and can be fun experimenting with.
+
+## Optional Practice Problems
+
+1. **Persistent Storage**: Currently, the RDF triples in `rdf_sparql.rkt` are stored entirely in memory in the `rdf-store` list. Implement functions to serialize the triples to a file (such as in NTriples or simple CSV format) and load them back during initialization.
+2. **FILTER Clause Support**: Extend the SPARQL parser and query execution engine to support a basic `FILTER` statement (e.g., filtering string values by regex or numeric variables by comparison operators like `<` or `>`).
+3. **Support for UNION Queries**: Modify `execute-where-patterns` to handle basic `UNION` blocks, allowing a query to match one of multiple sub-patterns and merge their resulting bindings.

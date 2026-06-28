@@ -168,6 +168,8 @@ The following diagram shows the high-level architecture of the datastore integra
 {width: "100%"}
 ![Architecture diagram](images/datastores_architecture.jpg)
 
+## Optional Practice Problems
 
-
-
+1. **Extend the SQLite Example**: Modify the SQLite code to support updating an existing person's age or email, and writing a query function to retrieve a person by their name.
+2. **Dynamic SPARQL Variable Handling**: The `gd` function in `sparql.rkt` is limited to handling up to 4 return variables. Rewrite `gd` to support an arbitrary number of variables using a general list-zipping function.
+3. **DBpedia Location Search**: Write a function `sparql-dbpedia-for-city` that queries DBpedia for a city's name (e.g., "Paris" or "Tokyo"), returning its URI, country, and population, using SPARQL query templates.
