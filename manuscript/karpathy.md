@@ -22,7 +22,13 @@ In our Racket code, this mechanism is implemented using a simple `struct` called
 
 When operations like addition (`u+`), multiplication (`u*`), exponentiation (`upow`), or non-linearities like ReLU (`urelu`) are executed, they instantiate new `val` objects. These objects maintain pointers to their operands. For example, if `c = (u+ a b)`, then `c` knows that it was created from `a` and `b`, and it stores the local derivatives of the addition operation.
 
-Once a forward pass through the network is complete and a scalar loss value is computed (representing how wrong the network's predictions were), the `back` function takes over. It performs a topological sort of the entire computational graph. Then, traversing this sorted list in reverse order, it applies the chain rule from calculus to propagate gradients backward from the loss down to every individual weight of the model. This dependency-free approach, heavily inspired by Karpathy's `micrograd`, clearly illustrates that automatic differentiation is fundamentally just an automated, programmatic application of the chain rule over a directed acyclic graph.
+Once a forward pass through the network is complete and a scalar loss value is computed (representing how wrong the network's predictions were), the `back` function takes over. It performs a topological sort of the entire computational graph. Then, traversing this sorted list in reverse order, it applies the chain rule from calculus to propagate gradients backward from the loss down to every individual weight of the model. Concretely, for a composed operation `y = f(g(x))`$ the chain rule states:
+
+```$
+\frac{\partial y}{\partial x} \;=\; \frac{\partial y}{\partial g}\,\frac{\partial g}{\partial x}.
+```
+
+This dependency-free approach, heavily inspired by Karpathy's `micrograd`, clearly illustrates that automatic differentiation is fundamentally just an automated, programmatic application of the chain rule over a directed acyclic graph.
 
 ### Model Parameters and Initialization
 
@@ -41,8 +47,26 @@ Each parameter is initialized using a Gaussian distribution (`random-gauss`). Th
 The `gp` function serves as the central processing unit of the model. It implements the forward pass of a decoder-only Transformer. As data flows through this function, it undergoes a series of sophisticated transformations:
 
 1. **Embeddings:** Each discrete token (in our case, characters) and its position in the sequence are converted into dense vectors using our embedding matrices. These two vectors are added together to form the initial representation of the input sequence.
-2. **Layer Normalization:** We employ RMSNorm (Root Mean Square Normalization) to stabilize the neural activations. RMSNorm is computationally simpler than standard Layer Normalization because it does not require mean-centering, yet it is highly effective. It has become a standard technique in modern, highly optimized models like Meta's LLaMA.
-3. **Multi-Head Self-Attention:** This is the defining feature of the Transformer. The model linearly projects the input into three distinct representations: Queries (Q), Keys (K), and Values (V). For each attention head, the model computes the dot product of the Query and Key. This dot product determines how much "attention" the current token should pay to all past tokens. The attention scores are normalized using a `usoftmax` function and are then multiplied by the Value vector. To significantly speed up inference, we maintain a Key-Value (KV) cache. This cache stores past K and V computations, preventing the model from redundantly recalculating past context for every newly generated token.
+2. **Layer Normalization:** We employ RMSNorm (Root Mean Square Normalization) to stabilize the neural activations. RMSNorm is computationally simpler than standard Layer Normalization because it does not require mean-centering, yet it is highly effective. For an activation vector `x \in \mathbb{R}^{n}`$ it is defined as:
+
+    ```$
+    \mathrm{RMSNorm}(x) \;=\; \frac{x}{\sqrt{\dfrac{1}{n}\sum_{i=1}^{n} x_i^{2} + \varepsilon}}.
+    ```
+
+    It has become a standard technique in modern, highly optimized models like Meta's LLaMA.
+3. **Multi-Head Self-Attention:** This is the defining feature of the Transformer. The model linearly projects the input into three distinct representations: Queries (`Q`$), Keys (`K`$), and Values (`V`$). For each attention head, the model computes the dot product of the Query and Key, scales it by `\sqrt{d_h}`$ (where `d_h`$ is the per-head dimension), and normalizes the resulting scores with a softmax to obtain attention weights that determine how much "attention" the current token should pay to all past tokens. The weights are then multiplied by the Value vector. In equations, the softmax used for normalization is:
+
+    ```$
+    \mathrm{softmax}(z_i) \;=\; \frac{e^{z_i}}{\sum_{j=1}^{n} e^{z_j}},
+    ```
+
+    and scaled dot-product attention is:
+
+    ```$
+    \mathrm{Attention}(Q, K, V) \;=\; \mathrm{softmax}\!\left(\frac{Q K^{\top}}{\sqrt{d_h}}\right) V.
+    ```
+
+    To significantly speed up inference, we maintain a Key-Value (KV) cache. This cache stores past `K`$ and `V`$ computations, preventing the model from redundantly recalculating past context for every newly generated token.
 4. **Multi-Layer Perceptron (MLP):** Following the attention mechanism, the data is passed through a simple feed-forward neural network equipped with a ReLU activation function. While the attention mechanism allows tokens to communicate with one another, the MLP allows each individual token to process and refine the information it has gathered.
 5. **Residual Connections:** You will notice in the code that the outputs of the attention layer and the MLP layer are added back to their respective inputs (`set! x (map u+ x xr)`). These residual connections create "shortcuts" for gradients to flow backward through the network, mitigating the vanishing gradient problem and enabling the training of deeper architectures.
 6. **Language Modeling Head:** Finally, the refined representations are projected back into the vocabulary space. The output is a set of raw scores, or "logits," representing the model's prediction for what the next token in the sequence should be.
@@ -53,9 +77,25 @@ The `run-train` function orchestrates the intricate dance of the learning proces
 
 The training loop proceeds iteratively over many steps:
 1. **The Forward Pass:** The model ingests a sequence of characters and attempts to predict the subsequent character for every position in the sequence simultaneously.
-2. **Loss Calculation:** We utilize the cross-entropy loss function. By applying the softmax function to our raw logits, we convert them into a normalized probability distribution. The loss is calculated as the negative log-likelihood of the correct next character. If the model assigns a high probability to the correct character, the loss is low. If it assigns a low probability, the loss is high.
+2. **Loss Calculation:** We utilize the cross-entropy loss function. By applying the softmax function to our raw logits, we convert them into a normalized probability distribution. The loss is calculated as the negative log-likelihood of the correct next character. Averaged across a sequence of length `T`$ with correct-token indices `y_t`$ and predicted probabilities `p_{t, y_t}`$, this is:
+
+    ```$
+    \mathcal{L} \;=\; -\frac{1}{T}\sum_{t=1}^{T} \log p_{t,\, y_t}.
+    ```
+
+    If the model assigns a high probability to the correct character, the loss is low. If it assigns a low probability, the loss is high.
 3. **The Backward Pass:** The `back` function is invoked on the final scalar loss value. This single function call ripples backward through the computational graph, computing the exact gradient for every parameter in the network.
-4. **Optimization:** We update the parameters using the Adam optimization algorithm. Unlike simple stochastic gradient descent, Adam maintains running averages of both the gradients and the squared gradients. This allows it to adaptively tune the learning rate for each individual parameter, resulting in faster and more stable convergence.
+4. **Optimization:** We update the parameters using the Adam optimization algorithm. Unlike simple stochastic gradient descent, Adam maintains running averages of both the gradients and the squared gradients, which allows it to adaptively tune the learning rate for each individual parameter, resulting in faster and more stable convergence. At step `t`$ with gradient `g_t`$, learning rate `\eta`$, and decay rates `\beta_1, \beta_2`$, the update rules are:
+
+    ```$
+    \begin{aligned}
+    m_t &= \beta_1\, m_{t-1} + (1 - \beta_1)\, g_t, \\
+    v_t &= \beta_2\, v_{t-1} + (1 - \beta_2)\, g_t^{2}, \\
+    \hat{m}_t &= \frac{m_t}{1 - \beta_1^{t}}, \qquad
+    \hat{v}_t \;=\; \frac{v_t}{1 - \beta_2^{t}}, \\
+    \theta_t &= \theta_{t-1} \;-\; \eta\,\frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \varepsilon}.
+    \end{aligned}
+    ```
 
 By executing this loop over hundreds or thousands of steps, the model incrementally adjusts its internal weights. It slowly learns to assign higher probabilities to the correct sequences of characters, thereby absorbing the underlying statistical structure of the training data.
 
