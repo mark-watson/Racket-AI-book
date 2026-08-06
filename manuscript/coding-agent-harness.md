@@ -492,7 +492,7 @@ The approval prompt puts the terminal in raw mode so that a bare ESC keypress ca
           (let ([ch (read-char (current-input-port))])
             (cond
               [(eof-object? ch) (set! done? #t)]
-              [(char=? ch #)
+              [(char=? ch #ESC ;; differs in real code (ESC key broke book publishing))
                (sleep 0.05)
                (if (char-ready? (current-input-port))
                    (let drain ()
