@@ -511,7 +511,7 @@ The approval prompt puts the terminal in raw mode so that a bare ESC keypress ca
   (values (list->string (reverse chars)) esc?))
 ```
 
-After reading an ESC byte (`#`) the code waits 50 ms. If the input port has more bytes ready within that window, they belong to an ANSI sequence and are drained. If no bytes arrive, it was a standalone ESC and `esc?` is set to `#t`. The function returns two values: the accumulated character string and the ESC flag.
+After reading an ESC character the code waits 50 ms. If the input port has more bytes ready within that window, they belong to an ANSI sequence and are drained. If no bytes arrive, it was a standalone ESC and `esc?` is set to `#t`. The function returns two values: the accumulated character string and the ESC flag.
 
 `prompt-yes-no-skip` wraps `read-line-raw` in `dynamic-wind` to ensure `stty sane` always restores the terminal, then interprets the result:
 
