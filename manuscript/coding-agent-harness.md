@@ -121,11 +121,14 @@ Every API response includes a `usage` field with token counts. The module accumu
     (call-with-semaphore stats-sema
       (lambda ()
         (set-box! session-prompt-tokens
-                  (+ (unbox session-prompt-tokens) (hash-ref usage 'prompt_tokens 0)))
+                  (+ (unbox session-prompt-tokens)
+				     (hash-ref usage 'prompt_tokens 0)))
         (set-box! session-completion-tokens
-                  (+ (unbox session-completion-tokens) (hash-ref usage 'completion_tokens 0)))
+                  (+ (unbox session-completion-tokens)
+				     (hash-ref usage 'completion_tokens 0)))
         (set-box! session-total-tokens
-                  (+ (unbox session-total-tokens) (hash-ref usage 'total_tokens 0)))
+                  (+ (unbox session-total-tokens)
+				     (hash-ref usage 'total_tokens 0)))
         (define details (hash-ref usage 'prompt_tokens_details (hash)))
         (when (hash? details)
           (set-box! session-cached-tokens
