@@ -182,7 +182,8 @@ This path is used for the intent classifier (where a single-word response is all
   (define (loop iter)
     (cond
       [(task-interrupted?)
-       (values "(task interrupted by user)" (without-dangling (unbox current-messages)))]
+       (values "(task interrupted by user)" (without-dangling
+	   (unbox current-messages)))]
       [(>= iter max-iterations)
        ;; One final no-tools call to generate a summary
        (define payload
@@ -214,7 +215,8 @@ This path is used for the intent classifier (where a single-word response is all
        (set-box! current-messages (append (unbox current-messages) (list msg)))
        (cond
          [(task-interrupted?)
-          (values "(task interrupted by user)" (without-dangling (unbox current-messages)))]
+          (values "(task interrupted by user)"
+		  (without-dangling (unbox current-messages)))]
          [(not tool-calls)
           (values (or content "(empty response from model)") (unbox current-messages))]
          [else
@@ -347,7 +349,8 @@ The agent registers five tools at startup:
      (if (not (set-member? SHELL-WHITELIST cmd))
          (format "Command '~a' not whitelisted. Allowed: ~a"
                  cmd (string-join (sort (set->list SHELL-WHITELIST) string<?) ", "))
-         (with-handlers ([exn:fail? (lambda (e) (format "Error: ~a" (exn-message e)))])
+         (with-handlers ([exn:fail?
+		                 (lambda (e) (format "Error: ~a" (exn-message e)))])
            (define args (rest tokens))
            (define-values (out code) (run-external cmd args))
            (string-append out (format "(exit ~a)" code))))]))
