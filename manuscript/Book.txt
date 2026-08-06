@@ -7,6 +7,7 @@ lightpanda.md
 karpathy.md
 llm.md
 Ollama_Tools.md
+coding-agent-harness.md
 embeddings.md
 nlp.md
 kgn.md
