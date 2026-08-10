@@ -14,7 +14,7 @@ I have been developing commercial Artificial Intelligence (AI) tools and applica
 
 ![Mark Watson](images/Mark.png)
 
-I wrote this book for both professional programmers and home hobbyists who already know how to program in Racket (or another Scheme dialect) and who want to learn practical AI programming and information processing techniques. I have tried to make this an enjoyable book to work through. In the style of a “cook book,” the chapters can be read in any order. 
+This book is written for both professional programmers and home hobbyists who already know how to program in Racket (or another Scheme dialect) and who want to learn practical AI programming and information processing techniques. I have tried to make this an enjoyable book to work through. In the style of a “cook book,” the chapters can be read in any order. 
 
 You can find the code examples and the files for the manuscript for this book in the following GitHub repository:
 
