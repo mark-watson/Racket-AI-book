@@ -1,0 +1,273 @@
+;----------------------------------------------------------------------
+;Here's a monkey-and-banana problem in OPS5 (this comes with the OPS5
+;distribution, which you can get for free from Forgy at CMU)
+
+;To run this demo, load into an OPS5 image, and type
+;(make start 1)
+;(run)
+
+
+
+(i-g-v)
+; a monkey is AT some location and may be ON some object and 
+; may be HOLDing something
+;
+(literalize start )
+(literalize monkey
+	at
+	on
+	holds)
+
+; an object has a NAME, is AT somewhere, has a WEIGHT and may
+; be ON something
+;
+(literalize object
+	name
+	at
+	weight
+	on)
+
+; a goal is a flag for sequencing actions that may be active,
+; describe the state of an object or monkey, the object may be
+; speciifed and its future location as well
+;
+(literalize goal
+	status
+	type
+	object
+	to)
+;
+
+;
+; if the object someone wants to hold is on the ceiling, move
+;the ladder to the place under the object.
+;
+(p mb1
+	(goal ^ status active ^ type holds ^ object <w>)
+	(object ^ name <w> ^ at <p> ^ on ceiling)
+    -->
+	(ops-write (crlf)  Since the <w> are on the ceiling at position <p> )
+	(ops-write (crlf)  I would like to move  the ladder under them.)
+	(make goal ^ status active ^ type move ^ object ladder ^ to <p>))
+
+; if the object is on the ceiling and the ladder is under the
+; object and you want the object, then get on the ladder
+;
+(p mb2
+	(goal ^ status active ^ type holds ^ object <w>)
+	(object ^ name <w> ^ at <p> ^ on ceiling)
+	(object ^ name ladder ^ at <p>)
+    -->
+	(ops-write (crlf)  With the ladder at <p> )
+	(ops-write (crlf) I climb onto the ladder to get the <w> \.)
+	(make goal ^ status active ^ type on ^ object ladder))
+;
+; if you're on the ladder under the sought-after object (which
+; is on the ceiling), make grabbing it your own desire
+;
+(p mb3
+	(goal ^ status active ^ type holds ^ object <w>)
+	(object ^ name <w> ^ at <p> ^ on ceiling)
+	(object ^ name ladder ^ at <p>)
+	(monkey ^ on ladder)
+    -->
+	(ops-write (crlf) what I want to do now is get the <w>)
+	(make goal ^ status active ^ type holds ^ object nil))
+
+;
+; so you're under the object and you're on the ladder with empty
+; hands, now grab for the gusto !!
+;
+(p mb4
+	(goal ^ status active ^ type holds ^ object <w>)
+	(object ^ name <w> ^ at <p> ^ on ceiling)
+	(object ^ name ladder ^ at <p>)
+	(monkey ^ on ladder ^ holds nil)
+    -->
+	(ops-write (crlf) I have the <w>  in hand)
+	(modify 4 ^ holds <w>)
+	(modify 1 ^ status satified))
+
+; if you want to hold something, and it's on the floor,
+; you must decide to walk over and pick it up
+;
+(p mb5
+	(goal ^ status active ^ type holds ^ object <w>)
+	(object ^ name <w> ^ at <p> ^ on floor)
+    -->
+	(ops-write (crlf) I think I will walk over to <p> to get the <w>)
+	(make goal ^ status active ^ type walk-to ^ object <p>))
+;
+; in order to hold something, one needs ones hands free
+;
+(p mb6
+	(goal ^ status active ^ type holds ^ object <w>)
+	(object ^ name <w> ^ at <p> ^ on floor)
+	(monkey ^ at <p>)
+    -->
+	(ops-write (crlf) if I am going to hold <w> here at <p>)
+	(ops-write (crlf) I am going to need to have empty hands)
+	(make goal ^ status active ^ type holds ^ object nothing))
+;
+; if you where the object is and its on the floor,
+; pick it up
+;
+(p mb7
+	(goal ^ status active ^ type holds ^ object <w>)
+	(object ^ name <w> ^ at <p> ^ on floor)
+	(monkey ^ at <p> ^ holds nothing)
+    -->
+	(ops-write (crlf) I picked the <w> off the floor)
+	(modify 3 ^ holds <w>)
+	(modify 1 ^ status satisfied))
+
+;
+; if the object is light enough, move it where you will
+;
+(p mb8
+	(goal ^ status active ^ type move ^ object <o> ^ to <p>)
+	(object ^ name <o> ^ weight light ^ at <> <p>)
+    -->
+	(ops-write (crlf) since the <o> is light I can move it )
+	(make goal ^ status active ^ type holds ^ object <o>))
+
+;
+; since i'm holding the object I can and will move it
+;
+(p mb9
+	(goal ^ status active ^ type move ^ object <o> ^ to <p>)
+	(object ^ name <o> ^ weight light ^ at <> <p>)
+	(monkey ^ holds <o>)
+    -->
+	(ops-write (crlf) since I can move the <o> to <p>  I will)
+	(make goal ^ status active ^ type walk-to ^ object <p>))
+
+;
+; and it is moved ...
+;
+(p mb10
+	(goal ^ status active ^ type move ^ object <o> ^ to <p>)
+	(object ^ name <o> ^ weight light ^ at <p>)
+    -->
+	(ops-write (crlf) and it is where I want it)
+	(modify 1 ^ status satisfied))
+
+(p mb11
+	(goal ^ status active ^ type walk-to ^ object <p>)
+    -->
+	(ops-write (crlf) since I need to be on the floor to walk )
+	(ops-write (crlf)  I better get to the floor)
+	(make goal ^ status active ^ type on ^ object floor))
+
+; if the monkey is on the floor and not at his goal location
+; <p> then walk to <p>
+;
+(p mb12
+	(goal ^ status active ^ type walk-to ^ object <p>)
+	(monkey ^ on floor ^ at "{"  <c> <> <p>  "}"  ^ holds nothing)
+    -->
+	(ops-write (crlf) I will walk over to <p>)
+	(modify 2 ^ at <p>)
+	(modify 1 ^ status satisfied))
+
+; if i walk to <p>, then I am at <p> and so is anything i am
+; holding
+;
+(p mb13
+	(goal ^ status active ^ type walk-to ^ object <p>)
+	(monkey ^ on floor ^ at "{"  <c> <> <p>  "}"  ^ holds <w> <> nothing)
+	(object ^ name <w>)
+    -->
+	(ops-write (crlf) I will carry <w> to <p>)
+	(modify 2 ^ at <p>)
+	(modify 3 ^ at <p>)
+	(modify 1 ^ status satisfied))
+
+;
+; if i am not on the floor and what I want is, I had better
+; jump down to the floor
+;
+(p mb14
+	(goal ^ status active ^ type on ^ object floor)
+	(monkey ^ on "{"  <x> <> floor  "}" )
+    -->
+	(ops-write (crlf) I will jump onto the floor)
+	(modify 2 ^ on floor)
+	(modify 1 ^ status satisfied))
+
+;
+(p mb15
+	(goal ^  status active ^ type on ^ object <o>)
+	(object ^ name <o> ^ at <p>)
+    -->
+	(ops-write (crlf) when does mb15 get fired )
+	(make goal ^ status active ^ type walk-to ^ object <p>))
+
+;
+; if i want to get on something and i am at it
+; make it so that I have a goal of holding something
+;
+(p mb16
+	(goal ^ status active ^ type on ^ object <o>)
+	(object ^ name <o> ^ at <p>)
+	(monkey ^ at <p>)
+    -->
+	(ops-write (crlf) I will need free hands to climb the <o> )
+	(make goal ^ status active ^ type holds ^ object nothing))
+
+;
+; if I have free hands at <p> and my active goal is at <p>
+; climb up the object I am at
+;
+(p mb17
+	(goal ^ status active ^ type on ^ object <o>)
+	(object ^ name <o> ^ at <p>)
+	(monkey ^ at <p> ^ holds nothing)
+    -->
+	(ops-write (crlf)  I will now climb onto <o>)
+	(modify 3 ^ on <o>)
+	(modify 1 ^ status satisfied))
+
+;
+; if I want to hold nothing and I have something in hand, drop
+; it
+;
+(p mb18
+	(goal ^ status active ^ type holds ^ object nothing)
+	(monkey ^ holds "{"  <x> <> nothing  "}" )
+    -->
+	(ops-write (crlf) since I need my hands free I will put <x> down )
+	(modify 2 ^ holds nothing)
+	(modify 1 ^ status satisfied))
+
+;(p mb19
+;	(goal ^ status active)
+;    -->
+;	(ops-write (crlf) when does mb19 get fired )
+; (ops-remove  1)
+;	(make goal ^ status not-processed))
+;
+;------------------------------------------------------------
+;                   STARTING CONDITIONS
+;------------------------------------------------------------
+;
+; in the beginning, the monkey is at loaction [5,7] on the
+; couch.  The bananas are on the ceiling at location [2,2].
+; There is a light ladder on the floor at [9,5].  The monkey's
+; goal is to have those bananas.
+; 
+(p t1
+	(start 1)
+    -->
+	(make monkey ^ at 5-7 ^ on couch ^ holds nothing)
+	(ops-write (crlf) I am a monkey lying on the couch)
+	(make object ^ name couch ^ at 5-7 ^ weight heavy)
+	(ops-write (crlf)  "... a heavy couch")
+	(make object ^ name bananas ^ on ceiling ^ at 2-2)
+	(ops-write (crlf) there are some bananas on the ceiling at position 2-2)
+	(make object ^ name ladder ^ on floor ^ at 9-5 ^ weight light)
+	(ops-write (crlf) there is a ladder on the floor at position 9-5)
+	
+	(make goal ^ status active ^ type holds ^ object bananas)
+	(ops-write (crlf) I sure would like those bananas )
+	(ops-write (crlf) (crlf) "The action begins:" (crlf)))

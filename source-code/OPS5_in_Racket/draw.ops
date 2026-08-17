@@ -1,0 +1,31 @@
+;; Sample OPS5 program for Draw
+
+(i-g-v)
+
+(p look-for-pairs
+   (goal start)
+   (card <suit> <num>)
+  -(three)
+   (card "{" <suit2> <> <suit> "}" <num>)
+  -(pair <suit2> <suit> <num>)
+-->
+   (make pair <suit> <suit2> <num>)
+   (ops-write (crlf) found a pair <suit> <num> <suit2>))
+
+(p look-for-three-of-a-kind
+   (goal start)
+   (card <suit> <num>)
+  -(four)
+   (card "{" <suit2> <> <suit> "}" <num>)
+   (card <suit3> "{" <> <suit2> "}" )
+  -(three <any-suit1> <any-suit2> <any-suit3> "{" <num10> >= <num> "}" )
+-->
+   (make three <suit> <suit2> <suit3> <num>)
+   (ops-write three of a kind <suit> <suit2> <suit3> <num>))
+
+(make goal start)
+(make card heart 10)
+(make card diamond 10)
+(make card club 10)
+(make card diamond 4)
+
