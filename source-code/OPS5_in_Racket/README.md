@@ -24,9 +24,9 @@ library.
 Run the driver from this directory:
 
 ```
-racket OPS5_all.rkt draw.ops      # then type (run)
-racket OPS5_all.rkt monkey.ops    # then (make start 1) and (run)
-racket OPS5_all.rkt               # or just the REPL, then (load "draw.ops")
+racket ops5.rkt draw.ops      # then type (run)
+racket ops5.rkt monkey.ops    # then (make start 1) and (run)
+racket ops5.rkt               # or just the REPL, then (load "draw.ops")
 ```
 
 The REPL prompt is `OPS5>`. Useful commands:

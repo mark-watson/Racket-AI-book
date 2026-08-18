@@ -243,49 +243,36 @@ The monkey starts at `5-7` on the couch. The bananas are on the ceiling at `2-2`
 
 The full `monkey.ops` file has 18 productions (`mb1` through `mb18`) plus the starter. Each follows the same shape as the three shown here: match a goal and some world facts, print a line, and make or satisfy a subgoal.
 
-## The Racket Conversion: One File and a Namespace
+## The Racket Conversion: One File of Pure Code
 
-Dear reader, I had many problems with the Racket conversion, and most were solved using the fallowing hack that someday I will rewrite:
+Dear reader, I had many problems with the Racket conversion. For a long time I worked around them with a hack: the whole system lived inside one giant string, which the driver wrote to a temporary file and loaded into a dedicated namespace. That preserved the sequential, load-time semantics the code relies on, but it was ugly and hard to edit. The fix turned out to be one line: the file now starts with `#lang racket/load` and contains nothing but plain Racket code.
 
-The original OPS5-in-Scheme code was split across six files: a compatibility layer, the top-level commands, the LHS compiler, the Rete network, the RHS actions, and the literalize support. A driver loaded them in order into a namespace.
+The original OPS5-in-Scheme code was split across six files: a compatibility layer, the top-level commands, the LHS compiler, the Rete network, the RHS actions, and the literalize support. A driver loaded them in order into a namespace. The Racket version, `ops5.rkt`, keeps that structure as six clearly marked sections in one file.
 
-The Racket version keeps that structure but ships it as one file, `OPS5_all.rkt`. The six parts now "live" in this single string, separated by section markers, and the driver writes that string to a temporary file and loads it into a dedicated namespace. Here is how the file sets that up.
+Why `racket/load` instead of plain `#lang racket`? A Racket module rejects a second definition of an identifier at the top level ("identifier already defined"), and the OPS5 source redefines names freely — both its own helper names across sections and names like `append` and `member` that it deliberately replaces with lenient versions. The `racket/load` language gives the file load-like top-level semantics: each form is evaluated in order as if loaded, redefinition is allowed, and `eval` at run time sees the definitions made so far. That is exactly the behavior the old namespace hack was simulating.
 
 ```scheme
-#lang racket
-;; OPS5_all.rkt -- the complete OPS5-in-Racket system in one file.
-
-(require racket/load)
-
-(define ops5-namespace (make-base-namespace))
-
-(define (load-file-into-ns! file)
-  (parameterize ([current-namespace ops5-namespace])
-    (load file)))
-
-(define (load-string-into-ns! s)
-  (define tmp (make-temporary-file "ops5-~a.rkt"))
-  (call-with-output-file tmp
-    (lambda (out) (display s out))
-    #:exists 'replace)
-  (load-file-into-ns! tmp)
-  (delete-file tmp))
-
-(define ops5-source #<<__OPS5_SOURCE_END__
-;; ... the six source sections follow here (about 3600 lines, elided) ...
-__OPS5_SOURCE_END__
-)
-
-(load-string-into-ns! ops5-source)
+#lang racket/load
+;; ops5.rkt -- the complete OPS5-in-Racket system as pure code.
+;; racket/load gives load-like top-level semantics: redefinitions and
+;; (require ...) forms behave as they did under load.rkt.
 ```
 
-Why a separate namespace? The original code relies on sequential, top-level loading. It redefines names, mutates pairs in place, and uses `eval` to build and run forms at runtime. Loading into a fresh base namespace preserves those semantics and keeps the OPS5 names out of the Racket module that holds the driver.
+There is one subtlety worth knowing about, because it bit me during the cleanup. Under `racket/load`, free references in a definition are bound when that form is expanded, in file order. The OPS5 function `remove-duplicates` is defined near the end of the file, but `old-literalize`, defined earlier, calls it — and since `remove-duplicates` also exists in `racket/base`, the call site captured Racket's strict version, which rejects the mutable pairs this code uses. The fix was to rename the OPS5 version to `ops5-remove-duplicates`, a unique name, so the call becomes a forward reference resolved at run time.
 
-Why load a temp file instead of evaluating the string form by form? The embedded source begins with `require` forms. Racket's module and load machinery processes those forms correctly only when it loads a file. Writing the string to a temp file and calling `load` gives the `require` forms the same treatment the old driver gave them.
+```scheme
+(define (ops5-remove-duplicates lst)
+  ;; the atom base case must return '() (MIT nil doubles as empty list
+  ;; and false); returning #f would make appended lists improper
+  (cond ((null? lst) '())
+        ((atom? lst) #f)
+        ((member (car lst) (cdr lst)) (ops5-remove-duplicates (cdr lst)))
+        (t (cons (car lst) (ops5-remove-duplicates (cdr lst))))))
+```
 
 ### The compatibility layer
 
-The first section inside the string is `compat.rkt`. It bridges MIT Scheme and Racket. The original code assumes mutable pairs, a `t` and `nil` that differ from Racket's `#t` and `'()`, and a set of list functions with lenient semantics. Racket's pairs are immutable, so the layer imports mutable pairs from the `r5rs` language.
+The first section of the file is the compatibility layer (the old `compat.rkt`). It bridges MIT Scheme and Racket. The original code assumes mutable pairs, a `t` and `nil` that differ from Racket's `#t` and `'()`, and a set of list functions with lenient semantics. Racket's pairs are immutable, so the layer imports mutable pairs from the `r5rs` language.
 
 ```scheme
 (require (except-in r5rs eval lambda)
@@ -735,10 +722,10 @@ A `modify` action reads the bound condition-element fact, removes it from workin
 
 You need Racket. No packages are required; the code uses only the standard library and the `r5rs` language that ships with Racket.
 
-Run the driver from the example directory. Give it a `.ops` file to load before the REPL starts.
+Run the system from the example directory. Give it a `.ops` file to load before the REPL starts.
 
 ```
-racket OPS5_all.rkt draw.ops
+racket ops5.rkt draw.ops
 ```
 
 The system prints its banner and the compiled production names, then drops you at the `OPS5>` prompt. Type `(run)` to fire the productions.
@@ -746,7 +733,7 @@ The system prints its banner and the compiled production names, then drops you a
 ### draw.ops
 
 ```
-$ racket OPS5_all.rkt draw.ops
+$ racket ops5.rkt draw.ops
 ******* Beta test of OPS5 *******
 Note: the Scheme version of OPS5 requires curly brakets { and }
 to have surrounding double quotes.  Place spaces around the ^tab character.
@@ -799,7 +786,7 @@ The four cards are three tens and a four. The two rules find the pairs among the
 Start the monkey program and trigger the starter production with `(make start 1)`.
 
 ```
-$ racket OPS5_all.rkt monkey.ops
+$ racket ops5.rkt monkey.ops
 ... banner and 19 compiled production names ...
 
 OPS5> (make start 1)
@@ -868,13 +855,13 @@ This chapter walked through a working OPS5 implementation in Racket. The core id
 
 A production system keeps facts in working memory and runs rules in a match-resolve-act loop. Forward chaining fires rules whose conditions hold and lets the new facts trigger more rules. The cost of matching is the hard problem, and the Rete algorithm solves it by compiling each rule's pattern into a network of alpha and beta nodes that store partial matches and update incrementally. Conflict resolution picks one instantiation per cycle, using recency (LEX) or a goal-first variant (MEA), and refraction stops repeats. The RHS assembles new facts in a result array and asserts them, and `modify` does a remove-then-add that pushes changes back through the network.
 
-The Racket conversion did not change any of this. It ported the MIT Scheme dialect to Racket with a compatibility layer that supplies mutable pairs, lenient list functions, and the empty-list-is-false truthiness the original code assumes. It wrapped the six source sections in one file and loaded them into a dedicated namespace to preserve the sequential loading and runtime `eval` the code relies on. The user-facing commands became Racket macros that pass forms to the compiler unevaluated.
+The Racket conversion did not change any of this. It ported the MIT Scheme dialect to Racket with a compatibility layer that supplies mutable pairs, lenient list functions, and the empty-list-is-false truthiness the original code assumes. It keeps the six source sections in one plain Racket file, and the `#lang racket/load` language preserves the sequential loading, redefinition, and runtime `eval` the code relies on. The user-facing commands became Racket macros that pass forms to the compiler unevaluated.
 
 The two examples show the range. `draw.ops` uses OPS5 for pattern finding over a small fixed set of facts, and the noisy output shows what happens when many orderings match. `monkey.ops` uses OPS5 for planning, where a chain of goal facts drives a sequence of actions from a couch toward a bunch of bananas, stopping one step short of the grab. The statistics line in each run ties the behavior back to the algorithm: node counts reflect sharing, the conflict set reflects how much the strategy had to choose from, and token memory reflects the cost Rete pays to keep matching cheap.
 
 ## Optional Practice Problems
 
-These exercises build on the example code in this directory. Run each in a fresh session with `racket OPS5_all.rkt your-file.ops`.
+These exercises build on the example code in this directory. Run each in a fresh session with `racket ops5.rkt your-file.ops`.
 
 1. **Four of a kind.** The `draw.ops` program finds pairs and three of a kind but stops there. Add a production `look-for-four-of-a-kind` that fires when four cards share a number. Seed working memory with four cards of the same number and run it. Use the existing `look-for-three-of-a-kind` production as a template, and add a `-(four)` guard to the three-of-a-kind rule so the new rule takes over first.
 

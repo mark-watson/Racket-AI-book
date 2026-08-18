@@ -1,5 +1,5 @@
 #lang racket/load
-;; ops5_try.rkt -- pure-code version of OPS5_all.rkt (no embedded string).
+;; ops5.rkt -- the complete OPS5-in-Racket system as pure code (no embedded string).
 ;; racket/load gives load-like top-level semantics: redefinitions and
 ;; (require ...) forms behave as they did under load.rkt / the namespace hack.
 
