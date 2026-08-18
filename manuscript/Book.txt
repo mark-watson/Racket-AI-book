@@ -9,6 +9,7 @@ llm.md
 Ollama_Tools.md
 coding-agent-harness.md
 embeddings.md
+Malt_deep_learning.md
 deep_learning_category_theory.md
 nlp.md
 kgn.md
