@@ -2,11 +2,11 @@
 
 I converted OPS5 from Common Lisp to MIT Scheme in the early 1980s. The code for this chapter is that code, converted to run in Racket. Dear reader, even though I spent years of my life working on rule based symbolic AI, now I don’t really recommend rule based systems for practical work.
 
-OPS5 was written by Charles Forgy (Carnegie Mellon University) and is the classic production-system language. The original Common Lisp code was “very hackable” and I modified it twice for projects at SAIC in the 1980s. I hope that Racket developers find the version converted to Racket to also be “hackable.”
+OPS5 was written by Charles Forgy (Carnegie Mellon University) and is the classic production-system language. The original Common Lisp code was “very hackable” and I heavily modified it twice for projects at SAIC in the 1980s. I hope that Racket developers find this version converted to Racket to also be “hackable.”
 
 An expert system shell is a program that runs rules over a set of facts. You write the rules. The shell decides which rules apply, picks one, fires it, and repeats.
 
-The conversion does not change the algorithm. The interesting work is the algorithm itself: how a forward-chaining rule engine matches rule conditions against facts without scanning every fact on every cycle. The answer is the Rete algorithm, and it is the heart of this chapter.
+The Racket conversion does not change the algorithm. The interesting work is the algorithm itself: how a forward-chaining rule engine matches rule conditions against facts without scanning every fact on every cycle. The answer is the Rete algorithm, and it is the heart of this chapter.
 
 ## Production Systems and Forward Chaining
 
@@ -245,9 +245,11 @@ The full `monkey.ops` file has 18 productions (`mb1` through `mb18`) plus the st
 
 ## The Racket Conversion: One File and a Namespace
 
+Dear reader, I had many problems with the Racket conversion, and most were solved using the fallowing hack that someday I will rewrite:
+
 The original OPS5-in-Scheme code was split across six files: a compatibility layer, the top-level commands, the LHS compiler, the Rete network, the RHS actions, and the literalize support. A driver loaded them in order into a namespace.
 
-The Racket version keeps that structure but ships it as one file, `OPS5_all.rkt`. The six pieces sit inside a string, separated by section markers, and the driver writes that string to a temporary file and loads it into a dedicated namespace. Here is how the file sets that up.
+The Racket version keeps that structure but ships it as one file, `OPS5_all.rkt`. The six parts now "live" in this single string, separated by section markers, and the driver writes that string to a temporary file and loads it into a dedicated namespace. Here is how the file sets that up.
 
 ```scheme
 #lang racket
