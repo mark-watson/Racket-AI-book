@@ -1,4 +1,4 @@
-# Implementing OPS5: A Forward-Chaining Production System in Racket
+# Implementing OPS5 in Racket: A Forward-Chaining Production System
 
 I converted OPS5 from Common Lisp to MIT Scheme in the early 1980s. The code for this chapter is that code, converted to run in Racket. Dear reader, even though I spent years of my life working on rule based symbolic AI, now I don’t really recommend rule based systems for practical work.
 
