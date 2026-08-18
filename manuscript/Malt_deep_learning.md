@@ -1,4 +1,4 @@
-# Deep Learning in Racket with Malt: From XOR to a Two-Tower Recommender
+# Deep Learning in Racket with Malt: From XOR to a Two-Tower Recommendation System
 
 ## Why neural networks and why XOR first?
 
@@ -7,7 +7,7 @@ input/output pairs of the XOR function, like: (0,0)→0, (0,1)→1, (1,0)→1, (
 and it fails no matter how long you train it, because no straight line
 separates the 1s from the 0s. This was the famous critique that stalled
 neural network research in 1969, and it has a famous resolution: *stack*
-layers with a non-linear function (here, the rectifier `max(0, x)`, or ReLU)
+layers with a non-linear function (here, the rectifier `\max(0, x)`$, or ReLU)
 between them. One hidden layer is enough to bend the decision boundary
 around the XOR pattern.
 
@@ -73,7 +73,7 @@ well; treat this as the reference you can flip back to.
 - `linear` :the affine layer. `((linear t) theta)` computes
   `W·t + b`, where `theta` is the list `(weights bias)`. (You will never
   write the multiplication yourself.)
-- `rectify`: the ReLU activation, `max(0, x)`, applied elementwise.
+- `rectify`: the ReLU activation, `\max(0, x)`$, applied elementwise.
 - `relu`: `linear` followed by `rectify`: the standard fully-connected
   layer used in all three examples.
 - `(block fn shape-list)`: bundles a layer function with the *shapes* of
@@ -97,10 +97,12 @@ well; treat this as the reference you can flip back to.
   the training data and theta: the average squared difference between the
   network's predictions and the targets. "L2" refers to the L2 (Euclidean)
   norm, the straight-line distance between two vectors. Concretely, for a
-  batch of n samples, where ŷᵢ is the network's prediction and yᵢ the true
-  target, the L2 loss is the mean of squared errors:
+  batch of `n`$ samples, where `\hat{y}_i`$ is the network's prediction and
+  `y_i`$ the true target, the L2 loss is the mean of squared errors:
 
-      loss(θ) = (1/n) Σᵢ ‖ f(xᵢ, θ) − yᵢ ‖²
+```$
+\mathrm{loss}(\theta) = \frac{1}{n} \sum_{i} \left\| f(x_i, \theta) - y_i \right\|^2
+```
 
   Squaring does two jobs at once: it makes every error positive (over- and
   under-predictions can't cancel), and it penalizes large errors much more
@@ -327,7 +329,7 @@ the rest of `two_hidden_layers.rkt`:
 The label generator deserves a close look: for each of the 300 samples,
 `tref` twice digs out the coordinates: `(tref circle-xs i)` is the i-th
 sample (a 2-vector), and a second `tref` picks the x or y coordinate; then
-the label is 1.0 exactly when x² + y² < 0.36 = 0.6². The self-check at the
+the label is 1.0 exactly when `x^2 + y^2 < 0.36 = 0.6^2`$. The self-check at the
 bottom applies the trained `circle-model` to every training point and
 counts how often the thresholded prediction (`> pred 0.5`) matches the
 label; that `for/sum` pattern (model in, count out) is the minimal
@@ -378,11 +380,13 @@ much of a bargain hunter, quality seeker, and novelty seeker they are.
 Products get 4 numbers: cheapness (inverse price), quality, popularity, and
 novelty. The hidden ground truth is a *taste match*:
 
-```
-rating = 0.1 + 0.8 × ( bargain_hunter × cheapness
-                     + quality_seeker × quality
-                     + novelty_seeker × novelty )
-         + noise in [-0.025, 0.025]
+```$
+\begin{aligned}
+\mathrm{rating} = \; & 0.1 + 0.8 \times (\, \mathrm{bargain\_hunter} \times \mathrm{cheapness} \\
+  & \quad + \; \mathrm{quality\_seeker} \times \mathrm{quality} \\
+  & \quad + \; \mathrm{novelty\_seeker} \times \mathrm{novelty} \,) \\
+  & + \; \mathrm{noise}, \quad \mathrm{noise} \in [-0.025, 0.025]
+\end{aligned}
 ```
 
 Note the multiplications: a rating depends on *products of* customer and
