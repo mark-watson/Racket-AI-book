@@ -1,6 +1,6 @@
 # A Racket Coding Agent
 
-The source code for this example is in [https://github.com/mark-watson/racket-coding-agent](https://github.com/mark-watson/racket-coding-agent).
+The source code for this example is in the directory **coding-agent-harness**.
 
 ## The Agentic Loop
 
