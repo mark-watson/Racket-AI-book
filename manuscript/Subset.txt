@@ -1,1 +1,16 @@
+preface.md
+tutorial.md
+datastores.md
+RDF_Datastore_SPARQL_Implementation.md
+webscrape.md
+lightpanda.md
+karpathy.md
+llm.md
+Ollama_Tools.md
+coding-agent-harness.md
+embeddings.md
+deep_learning_category_theory.md
+nlp.md
+kgn.md
 OPS5_in_Racket.md
+conclusion.md
