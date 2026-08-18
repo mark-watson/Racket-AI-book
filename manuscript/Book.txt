@@ -12,4 +12,5 @@ embeddings.md
 deep_learning_category_theory.md
 nlp.md
 kgn.md
+OPS5_in_Racket.md
 conclusion.md
