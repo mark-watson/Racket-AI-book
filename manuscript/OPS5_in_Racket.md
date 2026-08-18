@@ -2,6 +2,8 @@
 
 I converted OPS5 from Common Lisp to MIT Scheme in the early 1980s. The code for this chapter is that code, converted to run in Racket. Dear reader, even though I spent years of my life working on rule based symbolic AI, now I don’t really recommend rule based systems for practical work.
 
+Dear reader, while the material in this chapter is important to me for historic reasons, the next chapter uses a modern logic library **Racklog** to solve the same two example problems covered in this chapter.
+
 OPS5 was written by Charles Forgy (Carnegie Mellon University) and is the classic production-system language. The original Common Lisp code was “very hackable” and I heavily modified it twice for projects at SAIC in the 1980s. I hope that Racket developers find this version converted to Racket to also be “hackable.”
 
 An expert system shell is a program that runs rules over a set of facts. You write the rules. The shell decides which rules apply, picks one, fires it, and repeats.
