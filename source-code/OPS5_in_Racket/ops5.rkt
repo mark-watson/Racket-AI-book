@@ -1,49 +1,8 @@
-#lang racket
-;; OPS5_all.rkt -- the complete OPS5-in-Racket system in one file.
-;;
-;; A Racket conversion of the OPS5 production-rule interpreter written
-;; in Scheme for the 1995 Springer-Verlag book by Mark Watson.
-;;
-;; This file merges the pieces that `load.rkt` used to load separately
-;; (compat.rkt, ops5.rkt, compiler.rkt, network.rkt, rhs.rkt, lit.rkt)
-;; plus the driver/REPL from load.rkt, into a single self-contained
-;; program.  The system source is loaded into a dedicated namespace
-;; exactly the way load.rkt did it, so all of the original sequential-
-;; loading semantics (redefinitions, mutable pairs, `eval`, the macro
-;; definitions) are preserved unchanged.
-;;
-;; Usage (same as before):
-;;   racket OPS5_all.rkt                 ; start the REPL
-;;   racket OPS5_all.rkt draw.ops        ; load a program, then the REPL
-;;   racket OPS5_all.rkt monkey.ops      ; load another program, then the REPL
-;;
-;; The REPL prompt is `OPS5>`; the useful commands are the ones in the
-;; README: (load "draw.ops"), (i-g-v), (p ...), (make ...), (run),
-;; (wm), (exit).
+#lang racket/load
+;; ops5_try.rkt -- pure-code version of OPS5_all.rkt (no embedded string).
+;; racket/load gives load-like top-level semantics: redefinitions and
+;; (require ...) forms behave as they did under load.rkt / the namespace hack.
 
-(require racket/load)
-
-(define ops5-namespace (make-base-namespace))
-
-(define (load-file-into-ns! file)
-  (parameterize ([current-namespace ops5-namespace])
-    (load file)))
-
-;; Load the embedded OPS5 source into the namespace.  It is written to a
-;; temporary file and handed to `load` (rather than eval'd form-by-form)
-;; so that the `require` forms at the top of compat.rkt are processed by
-;; Racket's module/load machinery exactly as load.rkt's (load file) calls
-;; processed them.
-(define (load-string-into-ns! s)
-  (define tmp (make-temporary-file "ops5-~a.rkt"))
-  (call-with-output-file tmp
-    (lambda (out) (display s out))
-    #:exists 'replace)
-  (load-file-into-ns! tmp)
-  (delete-file tmp))
-
-;; ---- the complete OPS5 source (compat.rkt first, then the rest) ----
-(define ops5-source #<<__OPS5_SOURCE_END__
 ;; =====================================================================
 ;; 1. compat.rkt (compatibility layer)
 ;; =====================================================================
@@ -3437,8 +3396,8 @@
                #f)
               (t    
 		       			   (set! *class-list* (cons class-name *class-list*))
-		       	     (set! atts (remove-duplicates (cdr l)))
-		             (set! *ats* (remove-duplicates (append atts *ats*)))
+		       	     (set! atts (ops5-remove-duplicates (cdr l)))
+		             (set! *ats* (ops5-remove-duplicates (append atts *ats*)))
 		             (test-attribute-names atts)
 		             (mark-conflicts atts atts)
 		             (put class-name 'att-list atts)))))
@@ -3540,13 +3499,19 @@
           (set! conf (get att 'conflicts))
           (top)) #f)))
 		
-(define (remove-duplicates lst)
+;; Renamed ops5-remove-duplicates: under #lang racket/load, free
+;; references are bound at expansion time and old-literalize above is
+;; compiled before this definition exists -- under the original name its
+;; calls would capture racket/base's strict remove-duplicates (which
+;; rejects mutable pairs and #f).  A unique name makes those calls
+;; forward references resolved at run time.
+(define (ops5-remove-duplicates lst)
   ;; the atom base case must return '() (MIT nil doubles as empty list
   ;; and false); returning #f would make appended lists improper
   (cond ((null? lst) '())
         ((atom? lst) #f)
-        ((member (car lst) (cdr lst)) (remove-duplicates (cdr lst)))
-        (t (cons (car lst) (remove-duplicates (cdr lst))))))
+        ((member (car lst) (cdr lst)) (ops5-remove-duplicates (cdr lst)))
+        (t (cons (car lst) (ops5-remove-duplicates (cdr lst))))))
 
 (define (store-binding name lit)
   (put name 'ops-bind lit)
@@ -3606,48 +3571,40 @@
 	          	(t (set! la (cdr la)) (top))))
   (top))
 	
-__OPS5_SOURCE_END__
-)
-
-(load-string-into-ns! ops5-source)
 
 ;; ---------------------------------------------------------------------
 ;; Driver / REPL (from load.rkt)
 ;; ---------------------------------------------------------------------
 
 (define (repl)
-  (parameterize ([current-namespace ops5-namespace])
-    (displayln "")
-    (displayln "OPS5 Scheme interpreter (Racket conversion)")
-    (displayln "Type OPS5 expressions, e.g.:")
-    (displayln "  (load \"draw.ops\")   load a program file")
-    (displayln "  (i-g-v)              initialize (or reset) OPS5")
-    (displayln "  (p name lhs --> rhs) define a production")
-    (displayln "  (make class ...)     add a working-memory element")
-    (displayln "  (run)                run the productions")
-    (displayln "  (wm)                 print working memory")
-    (displayln "  (exit)               leave the REPL")
-    (displayln "")
-    (let loop ()
-      (display "OPS5> ")
-      (flush-output)
-      (let ([form (read)])
-        (cond
-          [(eof-object? form)
-           (displayln "bye")]
-          [else
-           (let ([v (with-handlers ([exn:fail? (lambda (e) (displayln (exn-message e)))])
-                      (eval form))])
-             (unless (void? v)
-               (write v)
-               (newline)))
-           (loop)])))))
+  (displayln "")
+  (displayln "OPS5 Scheme interpreter (Racket conversion)")
+  (displayln "Type OPS5 expressions, e.g.:")
+  (displayln "  (load \"draw.ops\")   load a program file")
+  (displayln "  (i-g-v)              initialize (or reset) OPS5")
+  (displayln "  (p name lhs --> rhs) define a production")
+  (displayln "  (make class ...)     add a working-memory element")
+  (displayln "  (run)                run the productions")
+  (displayln "  (wm)                 print working memory")
+  (displayln "  (exit)               leave the REPL")
+  (displayln "")
+  (let loop ()
+    (display "OPS5> ")
+    (flush-output)
+    (let ([form (read)])
+      (cond
+        [(eof-object? form)
+         (displayln "bye")]
+        [else
+         (let ([v (with-handlers ([exn:fail? (lambda (e) (displayln (exn-message e)))])
+                    (eval form))])
+           (unless (void? v)
+             (write v)
+             (newline)))
+         (loop)]))))
 
-;; Any .ops files given on the command line are loaded before the REPL
-;; starts.  (load.rkt had a `(cdr argv)` here that dropped the first
-;; argument, so `racket load.rkt draw.ops` silently ignored draw.ops;
-;; this version loads every .ops file named on the command line.)
+;; Any .ops files given on the command line are loaded before the REPL starts.
 (define ops-files (vector->list (current-command-line-arguments)))
 
-(for-each load-file-into-ns! ops-files)
+(for-each load ops-files)
 (repl)
