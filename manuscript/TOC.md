@@ -8,7 +8,8 @@
 - [Chapter 5: Interfacing with External Programs: A Lightpanda Browser Client](lightpanda.md)
 - [Chapter 6: Using the OpenAI, Anthropic, Mistral, and Local Hugging Face Large Language Model APIs in Racket](llm.md)
 - [Chapter 7: Retrieval Augmented Generation of Text Using Embeddings](embeddings.md)
-- [Chapter 8: Natural Language Processing](nlp.md)
-- [Chapter 9: Knowledge Graph Navigator](kgn.md)
-- [Chapter 10: Conclusions](conclusion.md)
+- [Chapter 8: Agentic RAG Using the Gemini API](RAG.md)
+- [Chapter 9: Natural Language Processing](nlp.md)
+- [Chapter 10: Knowledge Graph Navigator](kgn.md)
+- [Chapter 11: Conclusions](conclusion.md)
 
