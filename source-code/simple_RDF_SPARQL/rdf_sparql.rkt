@@ -1,10 +1,40 @@
 #lang racket
 
+;; Copyright (C) 2022-2026 Mark Watson <markw@markwatson.com>
+;; Apache 2 License
+;;
+;; A small in-memory RDF datastore with partial SPARQL support.
+;;
+;; Run the demo:      racket rdf_sparql.rkt
+;; Use as a library:  (require "rdf_sparql.rkt")
+
+(provide (struct-out triple)
+         (struct-out sparql-query)
+         rdf-store
+         set-rdf-store!
+         add-triple
+         remove-triple
+         variable?
+         triple-to-binding
+         query-triples
+         print-all-triples
+         apply-bindings
+         merge-bindings
+         parse-where-patterns
+         parse-sparql-query
+         project-results
+         remove-duplicate-bindings
+         execute-where-patterns
+         execute-sparql-query)
+
 ;; RDF triple structure
 (struct triple (subject predicate object) #:transparent)
 
 ;; RDF datastore
 (define rdf-store '())
+
+(define (set-rdf-store! triples)
+  (set! rdf-store triples))
 
 ;; Add a triple to the datastore
 (define (add-triple subject predicate object)
@@ -187,5 +217,7 @@
   (print-query-results "select ?s ?o where { ?s likes ?o }")
   (print-query-results "select * where { ?name age ?age . ?name likes pizza }"))
 
-;; Run the main function
-(main)
+;; Run the demo only when this file is the main program, not when it is
+;; required as a library by other modules.
+(module+ main
+  (main))

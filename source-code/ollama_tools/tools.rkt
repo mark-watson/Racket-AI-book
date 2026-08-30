@@ -17,6 +17,8 @@
 (provide register-tool
          get-tool
          call-ollama-with-tools
+         make-tool-schemas
+         handle-tool-call
          get-current-datetime
          get-weather
          list-directory
@@ -57,7 +59,15 @@
 
 (define (get-current-datetime args)
   "Returns the current date and time as a string."
-  (date->string (current-date) "~Y-~m-~d ~H:~M:~S"))
+  (define d (current-date))
+  (define (pad n) (~r n #:min-width 2 #:pad-string "0"))
+  (format "~a-~a-~a ~a:~a:~a"
+          (date-year d)
+          (pad (date-month d))
+          (pad (date-day d))
+          (pad (date-hour d))
+          (pad (date-minute d))
+          (pad (date-second d))))
 
 (define (get-weather args)
   "Fetches current weather for a location using wttr.in.

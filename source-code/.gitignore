@@ -15,3 +15,5 @@ compiled/*
 
 .DS_Store
 
+simple_RDF_SPARQL/store.nt
+

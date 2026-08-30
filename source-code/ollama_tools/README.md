@@ -12,23 +12,26 @@ This directory contains a Racket implementation of Ollama's tool/function callin
 
 - `tools.rkt` - Core library with tool registry, built-in tools, and API communication
 - `main.rkt` - Interactive demo program
+- `custom-tools.rkt` - Custom tools: calculator, URL fetch, persistent notes scratchpad
+- `demo-custom.rkt` - Non-interactive demo of the custom tools
+- `tests.rkt` - rackunit tests that need no Ollama server
 
 ## Requirements
 
 - Racket 8.0 or later
 - Ollama running locally or accessible via HTTP
-- A model that supports tool calling (e.g., `llama3.2`, `qwen2.5`, `mistral`)
+- A model that supports tool calling (e.g., `llama3.2`, `qwen2.5`, `qwen3.5`, `mistral`)
 
 ## Setup
 
 1. Install Ollama and pull a model:
    ```bash
-   ollama pull llama3.2
+   ollama pull qwen3.5:4b
    ```
 
 2. Set environment variables (optional):
    ```bash
-   export OLLAMA_MODEL=llama3.2
+   export OLLAMA_MODEL=qwen3.5:4b
    export OLLAMA_HOST=http://localhost:11434
    ```
 
@@ -38,6 +41,18 @@ Run the interactive demo:
 
 ```bash
 racket main.rkt
+```
+
+Run the custom tools demo:
+
+```bash
+racket demo-custom.rkt
+```
+
+Run the tests (no server needed):
+
+```bash
+racket tests.rkt
 ```
 
 Or use the library programmatically:
