@@ -1,2 +1,5 @@
-RAG.md
+embeddings.md
+RDF_Datastore_SPARQL_Implementation.md
+Ollama_Tools.md
+
 

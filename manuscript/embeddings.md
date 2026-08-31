@@ -67,6 +67,7 @@ The code uses a local SQLite database to store and manage document embeddings an
 (define (string->floats str)
   (map string->number (string-split str)))
 
+
 (define (read-file infile)
   (with-input-from-file infile
     (lambda ()
@@ -108,6 +109,8 @@ The code uses a local SQLite database to store and manage document embeddings an
   (query-exec
    db
    "CREATE TABLE documents (document_path TEXT, content TEXT, embedding TEXT);"))
+      
+;; ... database setup, error handling, and queries ...
 
 (define (insert-document document-path content embedding)
   (printf "~%insert-document:~%  content:~a~%~%" content)
@@ -128,6 +131,8 @@ The code uses a local SQLite database to store and manage document embeddings an
    (query-rows
     db
     "SELECT * FROM documents;")))
+   
+;; ... remaining database query functions ...
 
 (define (create-document fpath)
   (let ((contents (break-into-chunks (file->string fpath) 200)))
@@ -138,6 +143,7 @@ The code uses a local SQLite database to store and manage document embeddings an
            (insert-document fpath content embedding))))
      contents)))
 
+
 ;; Assuming a function to fetch documents from database
 (define (execute-to-list db query)
   (query-rows db query))
@@ -145,6 +151,7 @@ The code uses a local SQLite database to store and manage document embeddings an
 (define (dot-product a b) ;; dot product of two lists of floating point numbers
   (for/sum ([x a] [y b])
     (* x y)))
+
 
 (define (semantic-match query custom-context [cutoff 0.7])
   (let ((emb (embeddings-openai query))
@@ -196,6 +203,14 @@ The code uses a local SQLite database to store and manage document embeddings an
   (create-document (path->string (simplify-path (build-path data-dir "chemistry.txt"))))
   (QA "What is the history of the science of chemistry?")
   (QA "What are the advantages of engaging in sports?"))
+
+(module+ main
+  ;; Uncomment below if you want to execute tests when running this module
+  ;; (test)
+  )
+
+
+
 ```
 
 Let's look at a few examples form a Racket REPL:
@@ -256,6 +271,270 @@ Response: Robert Boyle was born in Lismore Castle, County Waterford, Ireland.
 Enter chat (STOP or empty line to stop) >> 
 ```
 
+Notice how the second question, "Where was he born?", contains no name at all. The CHAT loop prepends the previous turns as custom context ("PREVIOUS CHAT: ..."), so the model sees the word "he" against the earlier mention of Robert Boyle. This is the whole trick behind chat-over-documents systems: the retrieval machinery stays the same, and conversation history is just more context.
+
+## What an Embedding Actually Is
+
+The code above treats embeddings as opaque lists of 1536 floats. It is worth building an intuition for what those numbers are, because every design decision in a RAG system follows from it.
+
+A text embedding model is a neural network trained so that *distance* in its output space corresponds to *meaning*. Two sentences about the same topic get vectors that point in nearly the same direction, even if they share no words ("My dog ate my homework" and "The puppy chewed up the assignment"). Two sentences that share many words but are unrelated ("The bank of the river" and "The bank approved the loan") get vectors that point far apart. The vector's direction encodes what the text is about; its length is typically normalized to 1.
+
+Concretely, think of each of the 1536 dimensions as a soft answer to a learned question the model found useful during training: some dimensions fire for sports text, some for chemistry, some for grammar structure, and the rest have no human-readable interpretation at all. We never pick the questions; training does.
+
+That geometric view explains two things.
+
+First, why we compare vectors at all: if the model pushes related texts to nearby points in space, then finding the chunks closest to the query's point *is* finding the most relevant chunks, with no keyword matching anywhere in the loop. This is why a query "the formula for ZorroOnian Alcohol" can find a chunk containing the words "formula" and "ZorroOnian" even though no synonym list connects them.
+
+Second, why the raw `dot-product` in `embeddingsdb.rkt` is subtly fragile. For two vectors `a` and `b` with angle `\theta`$ between them:
+
+```$
+a \cdot b = \|a\| \, \|b\| \cos\theta
+```
+
+The dot product rewards long vectors as much as aligned directions. If your embedding model does not promise unit-length vectors, a long but tangentially related chunk can outscore a short, perfectly on-topic one. `text-embedding-ada-002` returns unit vectors, so for that model `\|a\| = \|b\| = 1`$ and the dot product *equals* cosine similarity. But that is a property of one model, not of embeddings in general. As soon as you swap in a local embedding model, use cosine similarity:
+
+```$
+\mathrm{cosine}(a, b) = \frac{a \cdot b}{\|a\| \, \|b\|}
+```
+
+The new file **rag_extensions.rkt** in the **embeddingsdb** directory implements this and the other upgrades in this chapter, all runnable without an API key. First, the similarity functions:
+
+```racket
+(define (magnitude v)
+  (sqrt (for/sum ([x v]) (* x x))))
+
+(define (cosine-similarity a b)
+  (let ([ma (magnitude a)]
+        [mb (magnitude b)])
+    (if (or (zero? ma) (zero? mb))
+        0.0
+        (/ (for/sum ([x a] [y b]) (* x y))
+           (* ma mb)))))
+```
+
+The zero check matters more than it looks: a chunk of text that produces an all-zero vector (it happens, for example with some models on empty or whitespace-only input) would otherwise crash the division in the middle of an indexing run. Return 0.0 instead, and that chunk simply never matches anything.
+
+## Chunking: the Most Underrated Part of RAG
+
+Look again at how `create-document` in **embeddingsdb.rkt** prepares text for the index: `break-into-chunks` splits the file every 200 characters. Here is what that does to a normal paragraph, compared with sentence-aware chunking. The output below is real, produced by the code in this section:
+
+```
+old break-into-chunks style, every 60 chars:
+  [Robert Boyle was born in Ireland in 1627. He studied the beh]
+  [avior of gases under pressure. His law states that pressure ]
+  [and volume are inversely related. He also wrote The Sceptica]
+  [l Chymist, a founding text of modern chemistry. He died in L]
+  [ondon in 1691.]
+```
+
+Every chunk except the first starts mid-word and mid-thought. Each chunk gets embedded separately, so the vector for `"avior of gases under pressure. His law states that pressure "` describes a sentence that nobody ever wrote. Retrieval still half-works, because the surrounding words provide signal, but you have handed the embedding model garbage on every boundary.
+
+The chunker in **rag_extensions.rkt** splits on sentence boundaries, packs whole sentences into chunks up to a target size, and then prepends the tail of the previous chunk to each new one. Overlap exists because an answer can sit right at a boundary: if the sentence "His law states that pressure and volume are inversely related" got split from the sentence that introduced "he" as Boyle, neither chunk alone answers "who was Robert Boyle." The overlap carries that context across:
+
+```
+chunked (60 chars, 25 overlap):
+  [Robert Boyle was born in Ireland in 1627.]
+  [born in Ireland in 1627. He studied the behavior of gases under pressure.]
+  [of gases under pressure. His law states that pressure and volume are inversely related.]
+  [me are inversely related. He also wrote The Sceptical Chymist, a founding text of modern chemistry.]
+  [text of modern chemistry. He died in London in 1691.]
+```
+
+Chunk 2 repeats the tail of chunk 1, so the query "where was Boyle born" and the query "what did he study" each find a chunk containing both the setup and the payoff. The overlap is cheap: it duplicates a few dozen characters of storage in exchange for covering the boundary cases.
+
+Here is the code:
+
+```racket
+(define sentence-end (pregexp "[.!?]+[\"'\\)]*\\s+"))
+
+(define (split-sentences text)
+  (let loop ([rest (string-trim text)] [acc '()])
+    (if (zero? (string-length rest))
+        (reverse acc)
+        (let ([m (regexp-match-positions sentence-end rest)])
+          (if (not m)
+              (reverse (cons rest acc))
+              (let* ([end (cdar m)]
+                     [sentence (string-trim (substring rest 0 end))])
+                (loop (string-trim (substring rest end))
+                      (cons sentence acc))))))))
+
+(define (chunk-by-sentences text
+                            #:chunk-size [chunk-size 500]
+                            #:overlap [overlap 40])
+  (define sentences (split-sentences text))
+  (define (with-overlap chunk prev-chunk)
+    (if (and prev-chunk (> overlap 0))
+        (let ([tail (substring prev-chunk
+                               (max 0 (- (string-length prev-chunk) overlap)))])
+          (string-trim (string-append tail " " chunk)))
+        chunk))
+  ;; First pass: pack whole sentences into raw chunks of at most
+  ;; CHUNK-SIZE characters (a sentence longer than CHUNK-SIZE stands alone).
+  (define raw-chunks
+    (let loop ([todo sentences] [current ""] [chunks '()])
+      (cond
+        [(null? todo)
+         (if (zero? (string-length current))
+             (reverse chunks)
+             (reverse (cons current chunks)))]
+        [else
+         (define sentence (car todo))
+         (define candidate
+           (if (zero? (string-length current))
+               sentence
+               (string-append current " " sentence)))
+         (cond
+           [(not (> (string-length candidate) chunk-size))
+            (loop (cdr todo) candidate chunks)]
+           [(zero? (string-length current))
+            ;; Single oversized sentence gets its own chunk.
+            (loop (cdr todo) "" (cons sentence chunks))]
+           [else
+            (loop todo "" (cons current chunks))])])))
+  ;; Second pass: prepend the trailing OVERLAP characters of each chunk to
+  ;; the next, so context survives chunk boundaries.
+  (if (null? raw-chunks)
+      '()
+      (cons (car raw-chunks)
+            (for/list ([prev raw-chunks] [cur (cdr raw-chunks)])
+              (with-overlap cur prev)))))
+```
+
+The structure is deliberately simple: one pass packs sentences, a second pass adds overlap. The edge case to handle is a single sentence longer than the target chunk size, which gets its own chunk rather than looping forever. (A production system would split such a sentence at a clause boundary or fall back to character splitting; for this chapter, keeping it whole is honest.)
+
+How do you pick `chunk-size` and `overlap`? Smaller chunks retrieve more precisely (each vector is about one thing) but carry less context; larger chunks are more forgiving but blur several topics into one vector. Around 300 to 1000 characters with a 10 to 20 percent overlap is a good default for prose. The only real rule: treat chunking as an experiment you rerun against your own documents, not a constant you set once.
+
+## Retrieval, Without Thresholds
+
+`semantic-match` filters with a hard similarity cutoff of 0.7. Any chunk scoring above it goes into the prompt, everything else vanishes. That means one bad day can return zero context (and the LLM answers from training alone), while a query where twenty chunks all score 0.71 drowns the model in context and blows the token budget.
+
+Ranking instead of thresholding fixes both: always take the *top k* chunks, whatever their scores. The generalization in **rag_extensions.rkt** also lets the caller swap in any embedding function with the `#:embed` keyword, so the same code ranks with OpenAI embeddings in production and with the deterministic local embedder (below) in tests:
+
+```racket
+(define (rank-chunks query chunks
+                     #:embed [embed hash-embed]
+                     #:top-k [top-k (length chunks)])
+  "Rank CHUNKS (list of strings) against QUERY by embedding similarity.
+   Returns a list of (score . chunk) pairs, best first, at most TOP-K."
+  (define q-emb (embed query))
+  (define scored
+    (for/list ([chunk chunks])
+      (cons (cosine-similarity q-emb (embed chunk)) chunk)))
+  (take (sort scored > #:key car) (min top-k (length scored))))
+
+(define (assemble-prompt contexts custom-context query)
+  "Build the exact string sent to the LLM: retrieved context, any extra
+   context the caller supplies, then the question."
+  (string-join (list (string-join contexts " . ")
+                     custom-context
+                     "Question:" query)
+               " "))
+```
+
+### Seeing the Whole Pipeline Offline
+
+The problem with developing a RAG system is that every experiment costs API calls. The last piece of **rag_extensions.rkt** is a tiny deterministic embedder that lets you run and test the entire pipeline (chunk, embed, rank, assemble) offline. It is a stand-in with the same *shape* as a real embedder: text in, unit-length vector of floats out. It hashes each word into one of 256 buckets and normalizes, so texts that share words score well together. Never use it in production; do use it to test your plumbing:
+
+```racket
+(define vocab-dim 256)
+
+(define (tokenize text)
+  (regexp-split #px"[^a-z0-9]+" (string-downcase text)))
+
+(define (hash-embed text)
+  "Deterministic unit-length embedding of TEXT as a list of VOCAB-DIM floats."
+  (define v (make-vector vocab-dim 0.0))
+  (for ([tok (tokenize text)])
+    (when (> (string-length tok) 0)
+      (define h (modulo (equal-hash-code tok) vocab-dim))
+      (vector-set! v h (+ 1.0 (vector-ref v h)))))
+  (define m (magnitude (vector->list v)))
+  (if (zero? m)
+      (vector->list v)
+      (map (lambda (x) (/ x m)) (vector->list v))))
+```
+
+The demo at the bottom of the file runs three queries against four miniature documents with a `top-k` of 2. Real output:
+
+```
+$ racket rag_extensions.rkt
+
+== Retrieval over 4 tiny documents (hash embedder) ==
+
+Query: what is the formula for ZorroOnian Alcohol?
+  score 0.428  Amyl alcohol is an organic compound with the formula C 5 H 12 O. Zorro...
+  score 0.3904  Robert Boyle is known as one of the pioneers of modern chemistry. He i...
+
+Query: who is Robert Boyle?
+  score 0.4743  Robert Boyle is known as one of the pioneers of modern chemistry. He i...
+  score 0.1849  Amyl alcohol is an organic compound with the formula C 5 H 12 O. Zorro...
+
+Query: tell me about team sports and exercise
+  score 0.3571  Playing sports improves cardiovascular health, builds muscle, and teac...
+  score 0.0845  Dmitri Mendeleev published the periodic table in 1869, organizing the ...
+
+== Assembled RAG prompt for the top match ==
+
+Robert Boyle is known as one of the pioneers of modern chemistry. He is famous for Boyle's Law, which describes the inverse relationship between the pressure and volume of a gas.  Question: who is Robert Boyle?
+```
+
+Each query's best match lands on the right document, and the scores show the useful failure mode too: the sports query's runner-up scores 0.0845, far below the winner. The score gap between first and second place is itself signal worth watching when you tune a RAG system. A query whose top two scores are close and low usually means the answer is not in your documents at all.
+
+The last block shows the honest output of `assemble-prompt`: retrieved context, a blank custom context, then the question. The word "Question:" is not decoration. It gives the LLM a stable separator between evidence to read and the task to do, and prompts that keep that structure consistent across every call get more consistent answers.
+
+## Testing the Pipeline
+
+**tests.rkt** in the same directory runs the whole stack with rackunit, still offline. A few of the properties it pins down:
+
+```racket
+(test-case "cosine never throws on a zero vector"
+  (check-equal? (cosine-similarity '(0 0 0) '(1 2 3)) 0.0))
+
+(test-case "chunk-by-sentences keeps whole sentences"
+  (define text
+    "Alpha beta gamma delta. Epsilon zeta eta theta. Iota kappa lambda mu.")
+  (define chunks (chunk-by-sentences text #:chunk-size 30 #:overlap 0))
+  (check-true (> (length chunks) 1))
+  ;; no chunk ends mid-word
+  (for ([c chunks])
+    (check-true (regexp-match? #px"[.!?]\\s*$" (string-trim c)))))
+
+(test-case "hash-embed distinguishes related and unrelated text"
+  (define chem (hash-embed "chemistry atoms molecules elements"))
+  (define chem2 (hash-embed "the chemistry of molecules and atoms"))
+  (define sports (hash-embed "sports players teams and goals"))
+  (check-true (> (cosine-similarity chem chem2)
+                 (cosine-similarity chem sports))))
+
+(test-case "rank-chunks orders best first and honors top-k"
+  (define test-docs
+    '("The periodic table organizes elements by atomic weight."
+      "Boyle's Law relates gas pressure and volume."
+      "Sports improve cardiovascular health."))
+  (define ranked (rank-chunks "gas pressure law" test-docs #:top-k 2))
+  (check-equal? (length ranked) 2)
+  (check-true (> (car (first ranked)) (car (second ranked))))
+  (check-true (string-contains? (cdr (first ranked)) "Boyle")))
+```
+
+```text
+$ raco test tests.rkt
+raco test: "tests.rkt"
+
+All tests passed.
+11 tests passed
+```
+
+## Production Notes
+
+A few hard-won notes if you carry this design further:
+
+- **Embedding calls dominate indexing cost.** `create-document` calls the embedding API once per chunk, and re-running `test` re-inserts every document. Cache by file content (a hash) and skip unchanged files.
+- **The vector column is a TEXT string.** `floats->string` stores 1536 numbers as space-separated text, and every query parses all of them back with `string->floats`. For a few thousand chunks that is fine. Beyond that, keep vectors as blobs or move to a database with a vector index.
+- **Linear scans do not scale.** Every query walks every row. Approximate nearest neighbor indexes (HNSW is the usual choice in SQLite-adjacent tooling like sqlite-vec) turn the scan into a near-constant lookup.
+- **Duplicates pollute prompts.** If two documents repeat the same paragraph, both copies can rank in the top k and waste context. Deduplicate by chunk text before indexing, and drop near-duplicate retrieved chunks before assembling the prompt.
+
 The following diagram shows the high-level architecture of the RAG pipeline developed in this chapter:
 
 {width: "100%"}
@@ -267,8 +546,10 @@ Retrieval Augmented Generation (RAG) is one of the best use cases for semantic s
 
 ## Optional Practice Problems
 
-1. **Calculate Cosine Similarity**: In `embeddingsdb.rkt`, semantic similarity is measured using the raw `dot-product`. Implement a true `cosine-similarity` metric that divides the dot product by the product of the vector magnitudes, ensuring compatibility with embeddings that are not pre-normalized to unit length.
-2. **Chunking with Overlaps**: The current `break-into-chunks` implementation slices text at arbitrary character boundaries. Write an improved chunking function that slices text at sentence or paragraph boundaries and allows for a configurable overlap (e.g., 200 characters with a 40-character overlap) to preserve local context.
-3. **Extend Database Operations**: Add a function `delete-document` that deletes all chunks and vector representations associated with a given file path from the SQLite database.
+1. **Wire the Upgrades In**: Modify `create-document` in **embeddingsdb.rkt** to use `chunk-by-sentences` instead of `break-into-chunks`, and `semantic-match` to use `cosine-similarity` and top-k ranking instead of `dot-product` with a cutoff. Run the chemistry and sports queries before and after and compare answers.
+2. **Measure Chunking**: Write a utility that reports, for a given document and chunker settings, the number of chunks, their min/max/mean lengths, and how many chunks end mid-word. Use it to compare the old and new chunkers on **data/chemistry.txt**.
+3. **Hybrid Retrieval**: Some questions are pure keyword ("what is the formula for ZorroOnian Alcohol") and some are conceptual ("why is teamwork valuable"). Add a keyword score (a simple word-overlap count) alongside the embedding score, and combine them with a weight. Show a query where hybrid beats embeddings alone, and one where it does not.
+4. **Extend Database Operations**: Add a function `delete-document` that deletes all chunks and vector representations associated with a given file path from the SQLite database, and a test that proves re-adding a modified file does not leave stale chunks behind.
+5. **Score-Gap Detection**: Add a check to `rank-chunks` callers that detects "no good match": top score below a floor *and* a small gap between first and second place. When detected, have the prompt tell the LLM explicitly that the local documents may not contain the answer, and observe how its answers change.
 
 
