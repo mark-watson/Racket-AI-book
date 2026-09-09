@@ -10,7 +10,7 @@ Writing software is a combination of a business activity, promoting good for soc
 If we never get to meet in person or talk on the telephone, then I would like to thank you now for taking the time to read my book.
 
 {format: mermaid}
-~~
+~~~~~~
 graph TD
     Start([Start]) --> Main[main]
     Main --> Input[/Input num_samples/]
@@ -42,4 +42,4 @@ graph TD
     Try -- Unexpected Error --> CatchEx[Catch Exception]
     CatchEx --> PrintEx[Print unexpected error]
     PrintEx --> End
-~~
+~~~~~~
