@@ -11,18 +11,13 @@
          json
          racket/string
          racket/port
-         "interrupt.rkt"
          "tools.rkt"
-         "chat-loop.rkt")
+         "chat-loop.rkt"
+         "harness-config.rkt")
 
-(provide FIREWORKS-ENDPOINT
-         FIREWORKS-MODEL
-         MAX-TOKENS
-         DEBUG-LOG
+(provide DEBUG-LOG
          CURL-MAX-TIME
-         PRICE-PER-M-PROMPT
-         PRICE-PER-M-CACHED-PROMPT
-         PRICE-PER-M-COMPLETION
+         active-pricing
          prompt-cost
          completion-cost
          cached-cost
@@ -37,10 +32,11 @@
 
 ;; ---------------------------------------------------------------------------
 ;; Constants
+;;
+;; Endpoint, model, api_key_env, generation parameters, and pricing all come
+;; from the active provider profile in the harness config; no provider-specific
+;; value is compiled in here.
 
-(define FIREWORKS-ENDPOINT "https://api.fireworks.ai/inference/v1/chat/completions")
-(define FIREWORKS-MODEL (make-parameter "accounts/fireworks/models/deepseek-v4-flash-0731"))
-(define MAX-TOKENS 32768)
 (define DEBUG-LOG (make-parameter #f))
 ;; Requests use SSE streaming ("stream": true), so there is NO total
 ;; wall-clock cap on generation: a long response that keeps producing
@@ -56,13 +52,12 @@
 (define CURL-MAX-TIME 600)
 (define STREAM-IDLE-TIMEOUT 300)
 
-;; deepseek-v4-flash-0731 pricing (Fireworks serverless):
-;;   uncached input  $0.14/M
-;;   cached input    $0.028/M  (80% cache discount)
-;;   output          $0.28/M
-(define PRICE-PER-M-PROMPT 0.14)
-(define PRICE-PER-M-CACHED-PROMPT 0.028)
-(define PRICE-PER-M-COMPLETION 0.28)
+;; Pricing is read from the active provider profile's "pricing" block (USD per
+;; 1M tokens).  A profile that declares no pricing yields #f rates, and callers
+;; report the cost as unknown instead of inventing a number.
+
+(define (active-pricing)
+  (provider-pricing (config-active-provider)))
 
 ;; ---------------------------------------------------------------------------
 ;; Session stats (thread-safe)
@@ -81,26 +76,39 @@
       (set-box! session-total-tokens 0)
       (set-box! session-cached-tokens 0))))
 
+;; Costs use the active provider's configured rates.  Each returns #f when the
+;; profile declares no such rate, so callers can report "unknown" instead of a
+;; misleading $0.00.
+
+(define (rate-cost tokens rate)
+  (and rate (* tokens rate (/ 1 1000000))))
+
 (define (prompt-cost tokens)
-  (* tokens PRICE-PER-M-PROMPT (/ 1 1000000)))
+  (rate-cost tokens (pricing-ref (active-pricing) 'input)))
 
 (define (cached-cost tokens)
-  (* tokens PRICE-PER-M-CACHED-PROMPT (/ 1 1000000)))
+  (rate-cost tokens (pricing-ref (active-pricing) 'cached_input)))
 
 (define (completion-cost tokens)
-  (* tokens PRICE-PER-M-COMPLETION (/ 1 1000000)))
+  (rate-cost tokens (pricing-ref (active-pricing) 'output)))
 
-;; Cached input tokens are reported by Fireworks in
+;; Cached input tokens are reported by the server in
 ;; usage.prompt_tokens_details.cached_tokens and are part of prompt_tokens;
 ;; bill them at the discounted rate and subtract them from the uncached pool.
 (define (session-cost)
-  (call-with-semaphore stats-sema
-    (lambda ()
-      (define pt (unbox session-prompt-tokens))
-      (define ca (unbox session-cached-tokens))
-      (+ (prompt-cost (max 0 (- pt ca)))
-         (cached-cost ca)
-         (completion-cost (unbox session-completion-tokens))))))
+  ;; -> number, or #f when the active profile declares no pricing at all.
+  (define rates (active-pricing))
+  (define input (pricing-ref rates 'input))
+  (define cached (pricing-ref rates 'cached_input))
+  (define output (pricing-ref rates 'output))
+  (and (or input cached output)
+       (call-with-semaphore stats-sema
+         (lambda ()
+           (define pt (unbox session-prompt-tokens))
+           (define ca (unbox session-cached-tokens))
+           (+ (or (rate-cost (max 0 (- pt ca)) input) 0)
+              (or (rate-cost ca cached) 0)
+              (or (rate-cost (unbox session-completion-tokens) output) 0))))))
 
 (define (print-session-stats)
   (define-values (pt ct tt ca)
@@ -111,6 +119,7 @@
                 (unbox session-total-tokens)
                 (unbox session-cached-tokens)))))
   (define cost (session-cost))
+  (define rates (active-pricing))
   (displayln "")
   (displayln "Session token usage:")
   (displayln (format "  Prompt tokens:     ~a" pt))
@@ -119,11 +128,13 @@
   (when (> ca 0)
     (define pct (* 100.0 (/ ca (max 1 pt))))
     (displayln (format "  Cached tokens:     ~a (~a% of prompt)" ca (~r pct #:precision 1))))
-  (displayln (format "  Estimated cost:    $~a  ($~a/M input, $~a/M cached input, $~a/M output)"
-                     (~r cost #:precision 6)
-                     (~r PRICE-PER-M-PROMPT #:precision 4)
-                     (~r PRICE-PER-M-CACHED-PROMPT #:precision 4)
-                     (~r PRICE-PER-M-COMPLETION #:precision 4))))
+  (if cost
+      (displayln (format "  Estimated cost:    $~a  ($~a/M input, $~a/M cached input, $~a/M output)"
+                         (~r cost #:precision 6)
+                         (~r (or (pricing-ref rates 'input) 0) #:precision 4)
+                         (~r (or (pricing-ref rates 'cached_input) 0) #:precision 4)
+                         (~r (or (pricing-ref rates 'output) 0) #:precision 4)))
+      (displayln "  Estimated cost:    n/a (no \"pricing\" block for this provider)")))
 
 (define (accumulate-usage data)
   (define usage (hash-ref data 'usage (hash)))
@@ -146,11 +157,18 @@
 
 ;; ---------------------------------------------------------------------------
 ;; API key
+;;
+;; The env var name comes from the active provider profile's api_key_env when
+;; a harness config is loaded; falls back to FIREWORKS_API_KEY.
 
 (define (get-api-key)
-  (define key (getenv "FIREWORKS_API_KEY"))
+  (define env-name
+    (or (let ([p (config-active-provider)])
+          (and p (provider-api-key-env p)))
+        "FIREWORKS_API_KEY"))
+  (define key (getenv env-name))
   (unless (and key (not (string=? key "")))
-    (error 'fireworks-ai "FIREWORKS_API_KEY environment variable not set"))
+    (error 'fireworks-ai "~a environment variable not set" env-name))
   key)
 
 ;; ---------------------------------------------------------------------------
@@ -178,7 +196,7 @@
     (unless (sync/timeout STREAM-IDLE-TIMEOUT
               (handle-evt in (lambda (_) #t)))
       (error 'fireworks-ai
-             "stream idle timeout: no data from Fireworks for ~a seconds"
+             "stream idle timeout: no data for ~a seconds"
              STREAM-IDLE-TIMEOUT))
     (define n (read-bytes-avail! buf in))
     (cond
@@ -252,7 +270,7 @@
                    (cond
                      [(hash? err) (hash-ref err 'message (format "~a" err))]
                      [else (format "~a" err)]))
-                 (error 'fireworks-ai "Fireworks API error: ~a" msg))
+                 (error 'fireworks-ai "API error: ~a" msg))
                (when (hash-has-key? chunk 'id)
                  (set-box! message-id (hash-ref chunk 'id "")))
                (when (hash-has-key? chunk 'model)
@@ -331,6 +349,11 @@
 
 (define (post-fireworks payload)
   (define api-key (get-api-key))
+  (define p (config-active-provider))
+  (define endpoint
+    (or (and p (provider-endpoint p))
+        (error 'fireworks-ai
+               "active provider profile has no \"endpoint\"; set it in the harness config")))
   (define headers
     (hash 'content-type "application/json"
           'accept "application/json"
@@ -344,7 +367,7 @@
   (define data
     (with-handlers ([exn:fail? (lambda (e) (error 'fireworks-ai "HTTP error: ~a" (exn-message e)))])
       (define resp
-        (post FIREWORKS-ENDPOINT
+        (post endpoint
               #:headers headers
               #:json stream-payload
               #:stream? #t
@@ -362,29 +385,45 @@
       (cond
         [(hash? err) (hash-ref err 'message (format "~a" err))]
         [else (format "~a" err)]))
-    (error 'fireworks-ai "Fireworks API error: ~a" msg))
+    (error 'fireworks-ai "API error: ~a" msg))
   (accumulate-usage data)
   (unless (hash-has-key? data 'choices)
-    (error 'fireworks-ai "Fireworks response has no 'choices'. Raw: ~a" (jsexpr->string data)))
+    (error 'fireworks-ai "response has no 'choices'. Raw: ~a" (jsexpr->string data)))
   data)
 
 ;; ---------------------------------------------------------------------------
 ;; chat / chat-with-tools -- thin wrappers over the shared provider-agnostic
-;; loop in chat-loop.rkt (also used by ollama-ai.rkt).
+;; loop in chat-loop.rkt (also used by mlx-serve.rkt).
+;;
+;; Generation defaults come from the active provider profile's "generation"
+;; section when a harness config is loaded; explicit keyword args win.
+
+;; Model and generation parameters resolve from the active provider profile.
+;; A missing model is an error; missing generation parameters are left out of
+;; the request so the server's own default applies.
+
+(define (active-model-id)
+  (define p (config-active-provider))
+  (or (and p (provider-model p))
+      (error 'fireworks-ai
+             "active provider profile has no \"model\"; set it in the harness config")))
+
+(define (gen-param key)
+  (generation-ref (provider-generation (config-active-provider)) key #f))
 
 (define (chat messages
-              #:model-id [model-id (FIREWORKS-MODEL)]
-              #:max-tokens [max-tokens MAX-TOKENS]
-              #:temperature [temperature 0.6])
+              #:model-id [model-id (active-model-id)]
+              #:max-tokens [max-tokens (gen-param 'max_tokens)]
+              #:temperature [temperature (gen-param 'temperature)])
   (chat* post-fireworks messages
          #:model-id model-id
          #:max-tokens max-tokens
          #:temperature temperature))
 
 (define (chat-with-tools messages tools
-                         #:model-id [model-id (FIREWORKS-MODEL)]
-                         #:max-tokens [max-tokens MAX-TOKENS]
-                         #:temperature [temperature 0.6]
+                         #:model-id [model-id (active-model-id)]
+                         #:max-tokens [max-tokens (gen-param 'max_tokens)]
+                         #:temperature [temperature (gen-param 'temperature)]
                          #:max-iterations [max-iterations 20])
   (chat-with-tools* post-fireworks messages tools
                     #:model-id model-id
