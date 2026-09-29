@@ -238,7 +238,7 @@ The estimated session cost accumulated over a conversation is:
 \text{cost} = (p - k) \times \frac{0.14}{10^6} + k \times \frac{0.028}{10^6} + c \times \frac{0.28}{10^6}
 ```
 
-where $p$ is the total prompt tokens, $k$ is the cached portion of those prompt tokens (billed at the discount), and $c$ is the total completion tokens. The agent tracks all of these and displays the running total on demand. The rates themselves are read from the profile's `pricing` block, so a different profile can declare different numbers; a profile that declares no pricing at all reports the cost as unknown rather than pretending it is free.
+where `p` is the total prompt tokens, `k` is the cached portion of those prompt tokens (billed at the discount), and `c` is the total completion tokens. The agent tracks all of these and displays the running total on demand. The rates themselves are read from the profile's `pricing` block, so a different profile can declare different numbers; a profile that declares no pricing at all reports the cost as unknown rather than pretending it is free.
 
 ### Streaming with Server-Sent Events
 
