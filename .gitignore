@@ -3,6 +3,8 @@
 .#*.ss
 .DS_Store
 
+.poolside/
+
 *.scm~
 *.scm#*
 .#*.scm
