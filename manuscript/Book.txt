@@ -16,6 +16,7 @@ RAG.md
 PART4.md
 Malt_deep_learning.md
 deep_learning_category_theory.md
+ReinforcementLearning.md
 nlp.md
 kgn.md
 PART5.md

@@ -14,6 +14,7 @@ This table maps each chapter file in `./manuscript` to its source code example d
 | `manuscript/llm.md` | `source-code/racket_llm_language` |
 | `manuscript/Ollama_Tools.md` | `source-code/ollama_tools` |
 | `manuscript/embeddings.md` | `source-code/embeddingsdb` |
+| `manuscript/ReinforcementLearning.md` | `source-code/ReinforcementLearning` |
 | `manuscript/nlp.md` | `source-code/nlp` |
 | `manuscript/kgn.md` | `source-code/kgn`<br>`source-code/sparql` |
 | `manuscript/conclusion.md` | (none) |
