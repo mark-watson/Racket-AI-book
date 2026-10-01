@@ -1,10 +1,19 @@
 #lang racket
 
 (require db)
-(require llmapis)
+(require "../llmapis/llmapis.rkt")
 (require racket/runtime-path)
 
-(provide create-document QA CHAT semantic-match)
+(provide create-document QA CHAT semantic-match
+         *embeddingsdb-chat-model*
+         *embeddingsdb-embedding-model*)
+
+;; Models used through the uniform llmapis.rkt API. Rebind (e.g. to
+;; "ollama/qwen3:1.7b" and an Ollama embedding model) to run locally.
+(define *embeddingsdb-chat-model*
+  (make-parameter "openai/gpt-5-mini"))
+(define *embeddingsdb-embedding-model*
+  (make-parameter "openai/text-embedding-ada-002"))
 
 ; Function to convert list of floats to string representation
 (define (floats->string floats)
@@ -86,7 +95,8 @@
     (for-each
      (lambda (content)
        (with-handlers ([exn:fail? (lambda (ex) (void))])
-         (let ((embedding (embeddings-openai content)))
+         (let ((embedding (first (llm-embedding (*embeddingsdb-embedding-model*)
+                                                content))))
            (insert-document fpath content embedding))))
      contents)))
 
@@ -101,7 +111,7 @@
 
 
 (define (semantic-match query custom-context [cutoff 0.7])
-  (let ((emb (embeddings-openai query))
+  (let ((emb (first (llm-embedding (*embeddingsdb-embedding-model*) query)))
         (ret '()))
     (for-each
      (lambda (doc)
@@ -114,7 +124,7 @@
     (printf "~%semantic-search: ret=~a~%" ret)
     (let* ((context (string-join (reverse ret) " . "))
            (query-with-context (string-join (list context custom-context "Question:" query) " ")))
-      (question-openai query-with-context))))
+      (llm-ask (*embeddingsdb-chat-model*) query-with-context))))
 
 (define (QA query [quiet #f])
   (let ((answer (semantic-match query "")))
@@ -145,7 +155,7 @@
 (define-runtime-path data-dir "data")
 
 (define (test)
-  "Test code for Semantic Document Search Using OpenAI GPT APIs and local vector database"
+  "Test code for Semantic Document Search using the uniform llmapis.rkt API and local vector database"
   (create-document (path->string (simplify-path (build-path data-dir "sports.txt"))))
   (create-document (path->string (simplify-path (build-path data-dir "chemistry.txt"))))
   (QA "What is the history of the science of chemistry?")

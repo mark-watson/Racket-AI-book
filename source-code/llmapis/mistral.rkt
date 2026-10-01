@@ -2,7 +2,6 @@
 
 (require net/http-easy)
 (require racket/set)
-(require pprint)
 
 (provide question-mistral completion-mistral embeddings-mistral)
 

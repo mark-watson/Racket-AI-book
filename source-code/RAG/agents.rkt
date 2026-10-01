@@ -15,8 +15,7 @@
 
 (require "embeddings.rkt")
 (require "vector-store.rkt")
-(require net/http-easy)
-(require json)
+(require "../llmapis/llmapis.rkt")
 
 (provide *rag-model*
          *generate-fn*
@@ -38,42 +37,18 @@
 ;;; ---- LLM generation ----
 
 (define (gemini-generate prompt #:model [model (*rag-model*)])
-  ; Call the Gemini generateContent endpoint; returns text.
-  ; Raises exn:fail:http on 4xx/5xx so call-with-retries can retry.
-  (define api-url
-    (string-append "https://generativelanguage.googleapis.com/v1beta/models/"
-                   model ":generateContent"))
-  (define resp
-    (post api-url
-          #:headers (hash 'Content-Type "application/json"
-                          'x-goog-api-key (google-api-key))
-          #:json (hash 'contents (list (hash 'parts (list (hash 'text prompt)))))))
-  (define code (response-status-code resp))
-  (when (>= code 400)
-    (raise (exn:fail:http
-            (format "HTTP ~a from Gemini API: ~a" code (response-body resp))
-            (current-continuation-marks)
-            code)))
-  (define body (bytes->string/utf-8 (response-body resp)))
-  (define decoded (string->jsexpr body))
-  (when (hash-has-key? decoded 'error)
-    (error "Gemini API error: ~a" body))
-  (define candidates (hash-ref decoded 'candidates '()))
-  (if (null? candidates)
-      "No response"
-      (let* ([first-cand (car candidates)]
-             [content (hash-ref first-cand 'content (hash))]
-             [parts (hash-ref content 'parts '())]
-             [first-part (if (null? parts) (hash) (car parts))])
-        (hash-ref first-part 'text "No response"))))
-
-(define (google-api-key)
-  (or (getenv "GOOGLE_API_KEY")
-      (error "GOOGLE_API_KEY environment variable is not set")))
+  ; Call the LLM through the uniform llmapis.rkt API; returns text.
+  ; Raises exn:fail:llm:api on HTTP errors so call-with-retries can
+  ; retry. Bare model ids route to Gemini; "provider/model" names use
+  ; that provider.
+  (or (llm-response-content
+       (llm-completion (ensure-provider-prefix model)
+                       #:messages prompt))
+      "No response"))
 
 (define *generate-fn* (make-parameter gemini-generate))
 ; Function of (prompt #:model model) returning generated text. Defaults
-; to the Gemini generateContent endpoint. Rebind in tests to run the
+; to the uniform LLM API. Rebind in tests to run the
 ; pipeline without network access.
 
 (define (rag-generate prompt #:model [model (*rag-model*)])

@@ -10,7 +10,7 @@ This project provides a simple vector database implementation for managing and q
 
 ## Files
 
-- `embeddingsdb.rkt` - The original RAG pipeline: chunking, SQLite vector store, OpenAI embeddings, semantic match, and a CHAT loop
+- `embeddingsdb.rkt` - The original RAG pipeline: chunking, SQLite vector store, uniform-API (`llmapis.rkt`) embeddings, semantic match, and a CHAT loop
 - `main.rkt` - Thin wrapper that re-exports the library entry points
 - `rag_extensions.rkt` - Offline extensions: cosine similarity, sentence-aware chunking with overlap, ranked top-k retrieval, prompt assembly, plus a deterministic local embedder for demos. Requires no API key
 - `tests.rkt` - rackunit tests for the extensions; runs fully offline

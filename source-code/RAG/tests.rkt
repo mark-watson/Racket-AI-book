@@ -11,6 +11,7 @@
 
 (require rackunit)
 (require rackunit/text-ui)
+(require "../llmapis/llmapis.rkt")
 (require "embeddings.rkt")
 (require "vector-store.rkt")
 (require "agents.rkt")
@@ -459,6 +460,32 @@
       (check-equal? '("generated query" "orig")
                     (rewrite-queries "orig")))))
 
+(define (test-llm-api-retry-classification)
+  ; The uniform API's exn:fail:llm:api classifies exactly like the
+  ; legacy exn:fail:http: 503 retries, 400 signals immediately.
+  (define (llm-error status)
+    (exn:fail:llm:api "m" (current-continuation-marks) status "b"))
+  (parameterize ([*rag-verbose* #f]
+                 [*retry-sleep-fn* (lambda (s) (void))])
+    (define attempts 0)
+    (check-equal?
+     'ok
+     (call-with-retries
+      (lambda ()
+        (set! attempts (+ attempts 1))
+        (if (= attempts 1)
+            (raise (llm-error 503))
+            'ok))))
+    (check-equal? 2 attempts)
+    (set! attempts 0)
+    (check-exn exn:fail?
+               (lambda ()
+                 (call-with-retries
+                  (lambda ()
+                    (set! attempts (+ attempts 1))
+                    (raise (llm-error 400))))))
+    (check-equal? 1 attempts)))
+
 (define (test-rag-generate-retries)
   ; rag-generate retries transient failures through *generate-fn*
   (define attempts 0)
@@ -491,7 +518,9 @@
    (test-case "corpus-persistence" (test-corpus-persistence))
    (test-case "load-corpus-validation" (test-load-corpus-validation))
    (test-case "agentic-rag-pipeline" (test-agentic-rag-pipeline))
-   (test-case "rag-generate-retries" (test-rag-generate-retries))))
+   (test-case "rag-generate-retries" (test-rag-generate-retries))
+   (test-case "llm-api-retry-classification"
+     (test-llm-api-retry-classification))))
 
 (module+ main
   (run-tests all-tests))

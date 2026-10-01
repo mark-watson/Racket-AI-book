@@ -50,19 +50,18 @@ If context is insufficient, the system generates refined search queries and iter
 
 ## Dependencies
 
-- **net/http-easy** — HTTP client for Gemini API calls
-- **json** — JSON encoding/decoding
+- **llmapis.rkt** (`../llmapis/llmapis.rkt`) — uniform LLM API for generation and embeddings
 - **rackunit** — Unit test framework (tests only)
 
-**Environment variable:** `GOOGLE_API_KEY` must be set.
+**Environment variable:** `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) must be set.
 
-**Models used:**
+**Models used** (uniform `"provider/model"` addresses; bare ids route to Gemini):
 - `gemini-3-flash-preview` — Default for all agent LLM calls (`*rag-model*`; override per call with `#:model`)
-- `gemini-embedding-001` — Free-tier embedding model for document/query vectors (`text-embedding-004` was retired from the v1beta API). The API key is sent in the `x-goog-api-key` header, never in the URL.
+- `gemini-embedding-001` — Free-tier embedding model for document/query vectors (`text-embedding-004` was retired from the v1beta API).
 
 Set `*embedding-dimension*` to `768` (or `1536`) before building or loading a corpus to cut embedding memory and search time by 4x (2x) with little quality loss; the model default is 3072. If you change the embedding model or dimension, re-embed your corpora: `search-corpus` signals a dimension-mismatch error rather than silently scoring with truncated vectors.
 
-Embeddings are computed with batched `batchEmbedContents` calls (at most 100 texts per request, the API cap) and memoized in an in-memory cache (`clear-embedding-cache` resets it; `*embedding-cache-cap*` bounds its size). Transient API failures (HTTP 429/5xx, connection errors) are retried with exponential backoff; permanent 4xx errors signal immediately.
+Embeddings are computed with batched uniform-API calls (at most 100 texts per request) and memoized in an in-memory cache (`clear-embedding-cache` resets it; `*embedding-cache-cap*` bounds its size). Transient API failures (HTTP 429/5xx, connection errors) are retried with exponential backoff; permanent 4xx errors signal immediately.
 
 ## Quick Start
 

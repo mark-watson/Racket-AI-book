@@ -80,6 +80,8 @@ Tool calls are *returned*, not executed — execution is the caller's job (`exec
 
 HTTP failures map onto an exception hierarchy mirroring `litelm`: `exn:fail:llm:authentication` (401/403), `exn:fail:llm:rate-limit` (429), `exn:fail:llm:not-found` (404), `exn:fail:llm:context-window` (400 mentioning "context"), all under `exn:fail:llm:api` (readers: `exn:fail:llm:api-status`, `exn:fail:llm:api-body`).
 
+Newer OpenAI models reject `max_tokens`; when a 400 names `max_completion_tokens` instead, the OpenAI-compatible path retries once with the renamed parameter automatically.
+
 ### File structure
 
 | File | Contents |

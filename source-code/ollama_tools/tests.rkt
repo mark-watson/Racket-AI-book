@@ -11,6 +11,7 @@
 
 (require rackunit)
 (require json)
+(require "../llmapis/llmapis.rkt")
 (require "tools.rkt")
 (require "custom-tools.rkt")
 
@@ -88,6 +89,26 @@
      (hash 'function (hash 'name "calculate"
                            'arguments (hash 'expression "2 + 2")))))
   (check-equal? (hash-ref result-hash-args 'content) "2 + 2 = 4"))
+
+(test-case "registry adapts to uniform llm-tools"
+  (define adapted (registry->llm-tools '("calculate" "get_weather" "list_directory")))
+  (check-equal? (length adapted) 3)
+  (define calc (first adapted))
+  (check-equal? (llm-tool-name calc) "calculate")
+  (define params (llm-tool-parameters calc))
+  (check-equal? (length params) 1)
+  (check-equal? (llm-param-name (first params)) "expression")
+  (check-true (llm-param-required? (first params)))
+  ;; required flags carry over
+  (define weather-loc
+    (findf (lambda (p) (string=? (llm-param-name p) "location"))
+           (llm-tool-parameters (second adapted))))
+  (check-true (llm-param-required? weather-loc))
+  ;; parameterless tools adapt to an empty spec
+  (check-equal? '() (llm-tool-parameters (third adapted)))
+  ;; unknown names still error
+  (check-exn exn:fail?
+             (lambda () (registry->llm-tools '("no_such_tool")))))
 
 (test-case "unknown tools produce a tool message, never an exception"
   (define result

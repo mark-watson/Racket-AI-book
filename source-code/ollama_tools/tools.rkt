@@ -13,11 +13,13 @@
 (require json)
 (require racket/date)
 (require net/uri-codec)
+(require "../llmapis/llmapis.rkt")
 
 (provide register-tool
          get-tool
          call-ollama-with-tools
          make-tool-schemas
+         registry->llm-tools
          handle-tool-call
          get-current-datetime
          get-weather
@@ -172,7 +174,7 @@
  search-wikipedia)
 
 ;;; -----------------------------------------------------------------------------
-;;; Ollama API Communication
+;;; Uniform-API communication (via llmapis.rkt)
 
 (define (make-tool-schemas tool-names)
   "Build tool schemas for the Ollama API request."
@@ -185,20 +187,40 @@
                                'parameters (hash-ref tool 'parameters)))
           (error (format "Unknown tool: ~a" name))))))
 
-(define (call-ollama-api messages tools)
-  "Call the Ollama chat API with tools.
-   MESSAGES: list of message hashes with 'role and 'content
-   TOOLS: list of tool schemas"
-  (let* ([data (hash 'model (*default-model*)
-                     'messages messages
-                     'tools tools
-                     'stream #f)]
-         [json-data (jsexpr->string data)]
-         [response (post (string-append (*ollama-host*) "/api/chat")
-                        #:data json-data
-                        #:headers (hash 'content-type "application/json"))]
-         [result (response-json response)])
-    result))
+(define (ollama-model-name model)
+  "Uniform-API model address: names with a slash pass through, bare
+Ollama tags route to the local Ollama provider."
+  (if (regexp-match? #rx"/" model)
+      model
+      (string-append "ollama/" model)))
+
+(define (ollama-api-base)
+  "Uniform-API base URL derived from *ollama-host*."
+  (string-append (string-trim (*ollama-host*) "/" #:left? #f) "/v1"))
+
+(define (registry->llm-tools tool-names)
+  "Adapt registered tools (by name) to uniform-API llm-tool structs.
+Registry handlers already take one args hash, which is exactly the
+llm-tool calling convention, so they are reused as-is."
+  (for/list ([name tool-names])
+    (define tool (get-tool name))
+    (unless tool (error (format "Unknown tool: ~a" name)))
+    (define params (hash-ref tool 'parameters (hash)))
+    (define props (hash-ref params 'properties (hash)))
+    (define required (hash-ref params 'required '()))
+    (make-llm-tool
+     (hash-ref tool 'name)
+     (hash-ref tool 'description "")
+     (for/list ([(key spec) (in-hash props)])
+       (define pname (if (symbol? key) (symbol->string key) (format "~a" key)))
+       ;; NOTE: '#:required / '#:enum are quoted data elements of the
+       ;; spec list (make-llm-tool parses them), not keyword arguments.
+       (list pname
+             (hash-ref spec 'type "string")
+             (hash-ref spec 'description "")
+             '#:required (and (member pname required) #t)
+             '#:enum (hash-ref spec 'enum #f)))
+     (hash-ref tool 'handler))))
 
 (define (handle-tool-call tool-call)
   "Execute a tool call from the LLM response."
@@ -228,31 +250,15 @@
   "Call Ollama with tools and handle the tool calling loop.
    PROMPT: the user's prompt
    TOOL-NAMES: list of tool names to make available
-   MODEL: optional model override
+   MODEL: optional model override (a bare Ollama tag or a full
+   \"provider/model\" address)
 
    Returns the final response text after any tool calls are processed."
-  (parameterize ([*default-model* model])
-    (let* ([tools (make-tool-schemas tool-names)]
-           [messages (list (hash 'role "user" 'content prompt))])
-      (let loop ([msgs messages]
-                 [max-iterations 10])
-        (if (<= max-iterations 0)
-            "Max iterations reached"
-            (let* ([response (call-ollama-api msgs tools)]
-                   [message (hash-ref response 'message (hash))]
-                   [tool-calls (hash-ref message 'tool_calls #f)])
-              (if tool-calls
-                  ;; Process tool calls and continue
-                  (let* ([tool-results (for/list ([tc tool-calls])
-                                         (handle-tool-call tc))]
-                         [assistant-msg (hash 'role "assistant"
-                                              'content (hash-ref message 'content #f)
-                                              'tool_calls tool-calls)]
-                         [new-msgs (append msgs (list assistant-msg)
-                                           tool-results)])
-                    (loop new-msgs (- max-iterations 1)))
-                  ;; No tool calls, return the content
-                  (hash-ref message 'content "No response"))))))))
+  (llm-response-content
+   (llm-chat-with-tools (ollama-model-name model)
+                        prompt
+                        (registry->llm-tools tool-names)
+                        #:api-base (ollama-api-base))))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Example Usage (commented out for library use)

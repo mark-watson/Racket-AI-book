@@ -1,21 +1,22 @@
 #lang racket
 
-;;; embeddings.rkt — Gemini embedding integration
+;;; embeddings.rkt — embedding integration via the uniform llmapis.rkt API
 ;;; Copyright (C) 2026 Mark Watson <markw@markwatson.com>
 ;;; Apache 2 License
 
 ;;; Uses the Gemini gemini-embedding-001 model for computing document
 ;;; and query embeddings (text-embedding-004 was retired from the
 ;;; v1beta API). This model is inexpensive and available on the free tier.
-;;; The API key is sent in the x-goog-api-key header, never in the URL.
+;;; The API key comes from GEMINI_API_KEY or GOOGLE_API_KEY, read by the
+;;; uniform API itself.
 
-(require net/http-easy)
-(require json)
+(require "../llmapis/llmapis.rkt")
 
 (provide *rag-verbose*
          debug-log
          (struct-out exn:fail:http)
          call-with-retries
+         ensure-provider-prefix
          *retry-sleep-fn*
          *embedding-model*
          *embedding-dimension*
@@ -33,6 +34,16 @@
          vector-magnitude
          cosine-similarity
          normalize-vector)
+
+;;; ---- Uniform-API model names ----
+;;; Bare model ids ("gemini-embedding-001") keep working: they are routed
+;;; to the default PROVIDER. Names already carrying a "provider/model"
+;;; prefix pass through, so any provider can be used.
+
+(define (ensure-provider-prefix model [provider "gemini"])
+  (if (regexp-match? #rx"/" model)
+      model
+      (string-append provider "/" model)))
 
 ;;; ---- Verbosity control ----
 
@@ -55,10 +66,14 @@
 (define (%transient? e)
   ; True when E is worth retrying: HTTP 429/5xx, or a connection-level
   ; failure. Permanent 4xx client errors (bad request, bad API key,
-  ; wrong model name) signal immediately.
+  ; wrong model name) signal immediately. Both the legacy exn:fail:http
+  ; and the uniform API's exn:fail:llm:api carry a status code.
   (cond
     [(exn:fail:http? e)
      (let ([status (exn:fail:http-status e)])
+       (or (= status 429) (>= status 500)))]
+    [(exn:fail:llm:api? e)
+     (let ([status (exn:fail:llm:api-status e)])
        (or (= status 429) (>= status 500)))]
     [(exn:fail:network? e) #t]
     [else #f]))
@@ -103,14 +118,7 @@
 ; loss. Set before building or loading a corpus.
 
 (define *embedding-batch-limit* (make-parameter 100))
-; Maximum texts per batchEmbedContents request; the API rejects more.
-
-(define *embedding-api-url*
-  "https://generativelanguage.googleapis.com/v1beta/models/")
-
-(define (get-google-api-key)
-  (or (getenv "GOOGLE_API_KEY")
-      (error "GOOGLE_API_KEY environment variable is not set")))
+; Maximum texts per batched uniform-API embedding request.
 
 ;;; ---- Embedding cache ----
 
@@ -139,95 +147,28 @@
     (hash-clear! (*embedding-cache*)))
   (hash-set! (*embedding-cache*) (embedding-cache-key text) vec))
 
-;;; ---- HTTP helpers ----
-
-(define (%post-json url payload)
-  ; POST PAYLOAD (a jsexpr) to URL with the API key header, raising
-  ; exn:fail:http on non-2xx responses so call-with-retries can
-  ; classify transient vs permanent failures.
-  (define resp
-    (post url
-          #:headers (hash 'Content-Type "application/json"
-                          'x-goog-api-key (get-google-api-key))
-          #:json payload))
-  (define code (response-status-code resp))
-  (when (>= code 400)
-    (raise (exn:fail:http
-            (format "HTTP ~a from embedding API: ~a" code (response-body resp))
-            (current-continuation-marks)
-            code)))
-  (bytes->string/utf-8 (response-body resp)))
-
-;;; ---- Low-level API calls (with error checking and retries) ----
-
-(define (%make-embedding-request text)
-  ; Build one EmbedContentRequest for TEXT as a jsexpr.
-  (define req
-    (hash 'model (string-append "models/" (*embedding-model*))
-          'content (hash 'parts (list (hash 'text text)))))
-  ; gemini-embedding-001 honors the deprecated top-level
-  ; outputDimensionality field; newer models honor embedContentConfig.
-  ; Send both so either model works.
-  (if (*embedding-dimension*)
-      (hash-set* req
-                 'outputDimensionality (*embedding-dimension*)
-                 'embedContentConfig (hash 'outputDimensionality (*embedding-dimension*)))
-      req))
-
-(define (%decode-embedding-response response-string)
-  ; Decode an embedContent response, checking for API errors.
-  (define decoded (string->jsexpr response-string))
-  (when (hash-has-key? decoded 'error)
-    (error "Gemini embedding API error: ~a" response-string))
-  (define embedding-obj (hash-ref decoded 'embedding (hash)))
-  (define values-list (hash-ref embedding-obj 'values #f))
-  (unless values-list
-    (error "Gemini embedding response contained no embedding vector: ~a"
-           response-string))
-  values-list)
+;;; ---- Low-level API calls via the uniform API (with retries) ----
 
 (define (%fetch-embedding text)
-  ; Compute an embedding vector for TEXT via the embedContent endpoint.
-  ; Returns a vector of flonums. Retries transient failures.
-  (define api-url
-    (string-append *embedding-api-url* (*embedding-model*) ":embedContent"))
-  (define req (%make-embedding-request text))
-  (define payload
-    (hash 'content (hash-ref req 'content)
-          'model (hash-ref req 'model)))
-  (define payload*
-    (if (*embedding-dimension*)
-        (hash-set* payload
-                   'outputDimensionality (*embedding-dimension*)
-                   'embedContentConfig (hash 'outputDimensionality (*embedding-dimension*)))
-        payload))
-  (list->vector
-   (map exact->inexact
-        (%decode-embedding-response
-         (call-with-retries (lambda () (%post-json api-url payload*)))))))
+  ; Compute an embedding vector for TEXT. Returns a list of numbers
+  ; (get-embedding coerces to a flonum vector). Retries transient
+  ; failures; llm-embedding raises exn:fail:llm:api classified by
+  ; %transient? above.
+  (call-with-retries
+   (lambda ()
+     (first (llm-embedding (ensure-provider-prefix (*embedding-model*))
+                           text
+                           #:dimensions (*embedding-dimension*))))))
 
 (define (%post-batch-request texts)
-  ; POST one batchEmbedContents request for TEXTS (at most
-  ; *embedding-batch-limit* of them) and return the decoded list of
-  ; embedding vectors in the same order.
-  (define api-url
-    (string-append *embedding-api-url* (*embedding-model*) ":batchEmbedContents"))
-  (define payload
-    (hash 'requests (map %make-embedding-request texts)))
-  (define response-string
-    (call-with-retries (lambda () (%post-json api-url payload))))
-  (define decoded (string->jsexpr response-string))
-  (when (hash-has-key? decoded 'error)
-    (error "Gemini batch embedding API error: ~a" response-string))
-  (define embeddings (hash-ref decoded 'embeddings '()))
-  (unless (= (length embeddings) (length texts))
-    (error "batchEmbedContents returned ~a embeddings for ~a texts: ~a"
-           (length embeddings) (length texts) response-string))
-  (for/list ([embedding-obj embeddings])
-    (define values-list (hash-ref embedding-obj 'values #f))
-    (unless values-list
-      (error "Embedding without values: ~a" response-string))
-    values-list))
+  ; Embed TEXTS (at most *embedding-batch-limit* of them) with one
+  ; batched uniform-API call and return the list of embedding vectors
+  ; in the same order.
+  (call-with-retries
+   (lambda ()
+     (llm-embedding (ensure-provider-prefix (*embedding-model*))
+                    texts
+                    #:dimensions (*embedding-dimension*)))))
 
 (define *batch-request-fn* (make-parameter %post-batch-request))
 ; Function of one argument (a list of texts, at most
@@ -236,8 +177,8 @@
 
 (define (%fetch-embeddings-batch texts)
   ; Compute embeddings for all TEXTS, splitting into batches of at most
-  ; *embedding-batch-limit* texts per batchEmbedContents request (the
-  ; API cap). Returns a list of vectors in the same order as TEXTS.
+  ; *embedding-batch-limit* texts per batched request. Returns a list
+  ; of vectors in the same order as TEXTS.
   (let loop ([remaining texts])
     (if (null? remaining)
         '()
@@ -273,8 +214,8 @@
 (define (get-embeddings texts)
   ; Compute embeddings for a list of TEXTS. When the default embedding
   ; function is in use, all cache misses are fetched with batched
-  ; batchEmbedContents API calls (at most *embedding-batch-limit* texts
-  ; per request) instead of one HTTP round trip per text.
+  ; uniform-API calls (at most *embedding-batch-limit* texts per
+  ; request) instead of one HTTP round trip per text.
   (when (eq? (*embedding-fn*) %fetch-embedding)
     (define misses
       (remove-duplicates
