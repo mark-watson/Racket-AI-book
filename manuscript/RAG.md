@@ -42,19 +42,19 @@ The code is in the directory `Racket-AI-book/source-code/RAG` and is split into 
 
 | File | Purpose |
 |---|---|
-| `embeddings.rkt` | Gemini embedding API, batching, caching, retry, vector math |
+| `embeddings.rkt` | Embeddings through the uniform API, batching, caching, retry, vector math |
 | `vector-store.rkt` | In-memory store: chunking, save/load, cosine similarity search |
 | `agents.rkt` | The four agents and the orchestrating pipeline |
 | `main.rkt` | Public API, the `test` demo, and an interactive REPL |
-| `tests.rkt` | 15 offline unit tests (no network needed) |
+| `tests.rkt` | 16 offline unit tests (no network needed) |
 
-Before we walk through the code, a note on configuration. The system uses one environment variable, `GOOGLE_API_KEY`, and nothing else. It calls `gemini-embedding-001` for embeddings and `gemini-3-flash-preview` for all LLM calls.
+Before we walk through the code, a note on configuration. The system uses one environment variable, `GOOGLE_API_KEY` (or `GEMINI_API_KEY`), and nothing else. All LLM contact goes through the uniform API in `source-code/llmapis/llmapis.rkt`: it calls `gemini-embedding-001` for embeddings and `gemini-3-flash-preview` for all generation. Model names are uniform `"provider/model"` addresses, so passing `#:model "openai/gpt-5-mini"` to any agent call switches providers with no other changes.
 
 ## Embeddings and Vector Math
 
-The `embeddings.rkt` module handles all contact with the Gemini embedding API. Documents are split into chunks of about 500 characters with 50 characters of overlap, each chunk is embedded once, and the vectors are kept in a hash table so repeated runs do not re-embed text. The cache is bounded by `*embedding-cache-cap*` and clears itself when full; this is deliberately simple, and a production system would use a proper LRU cache.
+The `embeddings.rkt` module handles all embedding contact through the uniform API in `source-code/llmapis/llmapis.rkt`. Documents are split into chunks of about 500 characters with 50 characters of overlap, each chunk is embedded once, and the vectors are kept in a hash table so repeated runs do not re-embed text. The cache is bounded by `*embedding-cache-cap*` and clears itself when full; this is deliberately simple, and a production system would use a proper LRU cache.
 
-The public entry points are `get-embedding` for one string and `get-embeddings` for a list. The list version is the one that matters for speed: all cache misses are sent in `batchEmbedContents` requests of at most 100 texts each, which is the API limit. This is why the demo below takes seconds instead of minutes.
+The public entry points are `get-embedding` for one string and `get-embeddings` for a list. The list version is the one that matters for speed: all cache misses go out in batched uniform-API embedding calls of at most 100 texts each. This is why the demo below takes seconds instead of minutes.
 
 ```racket
 (define (get-embeddings texts)
@@ -74,7 +74,7 @@ The public entry points are `get-embedding` for one string and `get-embeddings` 
   (map get-embedding texts))
 ```
 
-Network calls are wrapped by `call-with-retries`, which retries HTTP 429 and 5xx errors with exponential backoff and fails fast on 4xx errors. This keeps a flaky network from throwing away a whole query.
+Network calls are wrapped by `call-with-retries`, which retries HTTP 429 and 5xx errors with exponential backoff and fails fast on 4xx errors. The classifier covers both the legacy `exn:fail:http` errors and the uniform API's `exn:fail:llm:api` errors, which carry the same status codes. This keeps a flaky network from throwing away a whole query.
 
 The vector math is three small functions. `dot-product` checks that both vectors have the same length, because a length mismatch almost always means the embedding model was changed after the corpus was built, and silently truncating would corrupt every score. `vector-magnitude` computes the L2 norm, and `cosine-similarity` divides the dot product by the two magnitudes.
 
@@ -143,6 +143,20 @@ Retrieval scores every chunk in a corpus against a query embedding and returns t
 ## The Agents
 
 The interesting logic is in `agents.rkt`. Every LLM call goes through `rag-generate`, which applies the retry wrapper and signals an error if the model returns nothing. The model is stored in the parameter `*rag-model*` and can be overridden per call with a keyword argument.
+
+Generation itself goes through the uniform API. The default `*generate-fn*` is `gemini-generate`, now a thin wrapper around `llm-completion`. Bare model ids keep working because `ensure-provider-prefix` routes them to Gemini, while a `"provider/model"` name switches providers with no other changes:
+
+```racket
+(define (gemini-generate prompt #:model [model (*rag-model*)])
+  ; Call the LLM through the uniform llmapis.rkt API; returns text.
+  ; Raises exn:fail:llm:api on HTTP errors so call-with-retries can
+  ; retry. Bare model ids route to Gemini; "provider/model" names use
+  ; that provider.
+  (or (llm-response-content
+       (llm-completion (ensure-provider-prefix model)
+                       #:messages prompt))
+      "No response"))
+```
 
 ### Agent 1: Query Rewriter
 
@@ -344,7 +358,7 @@ This prints a `RAG>` prompt and answers questions until you type `quit`.
 
 ## Testing Without the Network
 
-Everything that talks to the outside world is behind a parameter. `*embedding-fn*` produces embedding vectors, `*batch-request-fn*` posts one batch of texts to Gemini, and `*generate-fn*` calls the LLM. In `tests.rkt` all three are replaced with stubs using `parameterize`, so the entire suite runs offline:
+Everything that talks to the outside world is behind a parameter. `*embedding-fn*` produces embedding vectors, `*batch-request-fn*` embeds one batch of texts through the uniform API, and `*generate-fn*` calls the LLM. In `tests.rkt` all three are replaced with stubs using `parameterize`, so the entire suite runs offline:
 
 ```racket
 (parameterize ([*embedding-fn* (lambda (text) '(1.0 0.0 0.0))]
@@ -353,7 +367,7 @@ Everything that talks to the outside world is behind a parameter. `*embedding-fn
   ...)
 ```
 
-The suite has 15 tests. They cover the chunker (including the forward-progress guard), the query-line parser (digits inside queries survive; list prefixes of any number are stripped), vector math (including the error on dimension mismatch), retrieval ranking, deduplication across sources, batched query embedding, batch splitting at the 100-text API cap, cache eviction, retry behavior, verdict parsing, save/load round-trip with corruption checks, and the full pipeline with a stubbed LLM (sufficient on the first try, insufficient then sufficient, and the skipped sufficiency check at the last iteration). Run them with:
+The suite has 16 tests. They cover the chunker (including the forward-progress guard), the query-line parser (digits inside queries survive; list prefixes of any number are stripped), vector math (including the error on dimension mismatch), retrieval ranking, deduplication across sources, batched query embedding, batch splitting at the 100-text API cap, cache eviction, retry behavior (including the new classification test for uniform-API errors), verdict parsing, save/load round-trip with corruption checks, and the full pipeline with a stubbed LLM (sufficient on the first try, insufficient then sufficient, and the skipped sufficiency check at the last iteration). Run them with:
 
 ```bash
 racket tests.rkt
@@ -362,7 +376,7 @@ racket tests.rkt
 You should see:
 
 ```
-15 success(es) 0 failure(s) 0 error(s) 15 test(s) run
+16 success(es) 0 failure(s) 0 error(s) 16 test(s) run
 ```
 
 ## Wrap Up

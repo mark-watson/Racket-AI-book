@@ -13,9 +13,9 @@ RAG enables the LLM to access and leverage external text data sources, which is 
 ## Example Implementation
 
 In the following short Racket example program (file **Racket-AI-book/source-code/embeddingsdb
-/embeddingsdb.rkt**) I implement some ideas of a RAG architecture. At file load time the text files in the subdirectory **data** are read, split into "chunks", and each chunk along with its parent file name and OpenAI text embedding is stored in a local SQLite database. When a user enters a query, the OpenAI embedding is calculated, and this embedding is matched against the embeddings of all chunks using the dot product of two 1536 element embedding vectors. The "best" chunks are concatenated together and this "context" text is passed to GPT-4 along with the user's original query. Here I describe the code in more detail:
+/embeddingsdb.rkt**) I implement some ideas of a RAG architecture. At file load time the text files in the subdirectory **data** are read, split into "chunks", and each chunk along with its parent file name and uniform-API text embedding is stored in a local SQLite database. When a user enters a query, the OpenAI embedding is calculated, and this embedding is matched against the embeddings of all chunks using the dot product of two 1536 element embedding vectors. The "best" chunks are concatenated together and this "context" text is passed to the chat model along with the user's original query. Here I describe the code in more detail:
 
-The provided Racket code uses a local SQLite database and OpenAI's APIs for calculating text embeddings and for text completions.
+The provided Racket code uses a local SQLite database and the uniform `llmapis.rkt` API for calculating text embeddings and for text completions (OpenAI models by default; the `*embeddingsdb-chat-model*` and `*embeddingsdb-embedding-model*` parameters switch models).
 
 **Utility Functions:**
 
@@ -35,12 +35,12 @@ The provided Racket code uses a local SQLite database and OpenAI's APIs for calc
 
 - `insert-document` inserts a document and its associated information into the database.
 - `get-document-by-document-path` and `all-documents` are utility functions for querying documents from the database.
-- `create-document` reads a document from a file path, breaks it into chunks, computes embeddings for each chunk via a function `embeddings-openai`, and inserts these into the database.
+- `create-document` reads a document from a file path, breaks it into chunks, computes embeddings for each chunk via `llm-embedding` from the uniform API (model `openai/text-embedding-ada-002` unless `*embeddingsdb-embedding-model*` is rebound), and inserts these into the database.
 
 **Semantic Matching and Interaction:**
 
 - `execute-to-list` and `dot-product` are utility functions for database queries and vector operations.
-- `semantic-match` performs a semantic search by calculating the dot product of embeddings of the query and documents in the database. It then aggregates contexts of documents with a similarity score above a certain threshold, and sends a new query constructed with these contexts to OpenAI for further processing.
+- `semantic-match` performs a semantic search by calculating the dot product of embeddings of the query and documents in the database. It then aggregates contexts of documents with a similarity score above a certain threshold, and sends a new query constructed with these contexts to the chat model (`openai/gpt-5-mini` unless `*embeddingsdb-chat-model*` is rebound) for further processing.
 - `QA` is a wrapper around `semantic-match` for querying.
 - `CHAT` initiates a loop for user interaction where each user input is processed through `semantic-match` to generate a response, maintaining a context of the previous chat.
 
@@ -48,16 +48,25 @@ The provided Racket code uses a local SQLite database and OpenAI's APIs for calc
 
 - `test` function creates documents by reading from specified file paths, and performs some queries using the `QA` function.
 
-The code uses a local SQLite database to store and manage document embeddings and the OpenAI API for generating embeddings and performing semantic searches based on user queries. Two functions are exported in case you want to use this example as a library: **create-document** and **QA**.
+The code uses a local SQLite database to store and manage document embeddings and the uniform `llmapis.rkt` API for generating embeddings and performing semantic searches based on user queries. Four functions and two model parameters are exported in case you want to use this example as a library: **create-document**, **QA**, **CHAT**, and **semantic-match**, plus `*embeddingsdb-chat-model*` and `*embeddingsdb-embedding-model*`.
 
 ```racket
 #lang racket
 
 (require db)
-(require llmapis)
+(require "../llmapis/llmapis.rkt")
 (require racket/runtime-path)
 
-(provide create-document QA CHAT semantic-match)
+(provide create-document QA CHAT semantic-match
+         *embeddingsdb-chat-model*
+         *embeddingsdb-embedding-model*)
+
+;; Models used through the uniform llmapis.rkt API. Rebind (e.g. to
+;; "ollama/qwen3:1.7b" and an Ollama embedding model) to run locally.
+(define *embeddingsdb-chat-model*
+  (make-parameter "openai/gpt-5-mini"))
+(define *embeddingsdb-embedding-model*
+  (make-parameter "openai/text-embedding-ada-002"))
 
 ; Function to convert list of floats to string representation
 (define (floats->string floats)
@@ -139,7 +148,8 @@ The code uses a local SQLite database to store and manage document embeddings an
     (for-each
      (lambda (content)
        (with-handlers ([exn:fail? (lambda (ex) (void))])
-         (let ((embedding (embeddings-openai content)))
+         (let ((embedding (first (llm-embedding (*embeddingsdb-embedding-model*)
+                                                content))))
            (insert-document fpath content embedding))))
      contents)))
 
@@ -154,7 +164,7 @@ The code uses a local SQLite database to store and manage document embeddings an
 
 
 (define (semantic-match query custom-context [cutoff 0.7])
-  (let ((emb (embeddings-openai query))
+  (let ((emb (first (llm-embedding (*embeddingsdb-embedding-model*) query)))
         (ret '()))
     (for-each
      (lambda (doc)
@@ -167,7 +177,7 @@ The code uses a local SQLite database to store and manage document embeddings an
     (printf "~%semantic-search: ret=~a~%" ret)
     (let* ((context (string-join (reverse ret) " . "))
            (query-with-context (string-join (list context custom-context "Question:" query) " ")))
-      (question-openai query-with-context))))
+      (llm-ask (*embeddingsdb-chat-model*) query-with-context))))
 
 (define (QA query [quiet #f])
   (let ((answer (semantic-match query "")))
@@ -198,7 +208,7 @@ The code uses a local SQLite database to store and manage document embeddings an
 (define-runtime-path data-dir "data")
 
 (define (test)
-  "Test code for Semantic Document Search Using OpenAI GPT APIs and local vector database"
+  "Test code for Semantic Document Search using the uniform llmapis.rkt API and local vector database"
   (create-document (path->string (simplify-path (build-path data-dir "sports.txt"))))
   (create-document (path->string (simplify-path (build-path data-dir "chemistry.txt"))))
   (QA "What is the history of the science of chemistry?")
@@ -233,13 +243,13 @@ Today, chemistry is an interdisciplinary science that encompasses various fields
 In summary, the history of the science of chemistry spans centuries, starting from ancient civilizations to the present day, with numerous discoveries and advancements shaping our understanding of the composition, properties, and transformations of matter.
 ```
 
-This output is the combination of data found in the text files in the directory **Racket-AI-book/source-code/embeddingsdb/data** and the data that OpenAI GPT-4 was trained on. Since the local "document" file **chemistry.txt** is very short, most of this output is derived from the innate knowledge GPT-4 has from its training data.
+This output is the combination of data found in the text files in the directory **Racket-AI-book/source-code/embeddingsdb/data** and the data that the OpenAI chat model was trained on. Since the local "document" file **chemistry.txt** is very short, most of this output is derived from the innate knowledge the chat model has from its training data.
 
 In order to show that this example is also using data in the local "document" text files, I manually edited the file **data/chemistry.txt** adding the following made-up organic compound:
 
     ZorroOnian Alcohol is another organic compound with the formula C 6 H 10 O.
     
-GPT-4 was never trained on my made-up data so it has no idea what the non-existent compound ZorroOnian Alcohol is. The following answer is retrieved via RAG from the local document data (for brevity, most of the output for adding the local document files to the embedding index is not shown):
+The model was never trained on my made-up data so it has no idea what the non-existent compound ZorroOnian Alcohol is. The following answer is retrieved via RAG from the local document data (for brevity, most of the output for adding the local document files to the embedding index is not shown):
 
 ```
 > (create-document

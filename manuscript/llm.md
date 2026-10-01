@@ -1,8 +1,8 @@
-# Using the Google Gemini, OpenAI, Anthropic, Mistral, and Local Hugging Face Large Language Model APIs in Racket
+# Using the Google Gemini, OpenAI, Anthropic, Mistral, and Local Large Language Model APIs in Racket
 
 Large Language Models (LLMs) have supercharged AI capabilities, affected the job market for many *knowledge work* careers, and placed huge demands on electrical power infrastructure.
 
-In the development of practical AI systems, LLMs like those provided by OpenAI, Anthropic, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here after covering background material in the next session.
+In the development of practical AI systems, LLMs like those provided by OpenAI, Google, Anthropic, Mistral, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here after covering background material in the next session.
 
 ## The Cambrian Explosion in Language Technology: A Historical Trajectory
 
@@ -26,141 +26,341 @@ Despite the success of LSTMs, a fundamental architectural bottleneck remained. B
 
 ## Commercial and Open Weight LLMs
 
-The OpenAI and Anthropic commercial APIs serve as gateways to some of the most advanced language models available today. By accessing these APIs, developers can harness the power of these models for a variety of applications. Here, we delve deeper into the distinctive features and capabilities that these APIs offer, which could be harnessed through a Racket interface.
+The commercial APIs from OpenAI, Google, Anthropic, and Mistral serve as gateways to some of the most advanced language models available today. By accessing these APIs, developers can harness the power of these models for a variety of applications.
 
-OpenAI provides an API for developers to access models like GPT-5. The OpenAI API is designed with simplicity and ease of use in mind, making it a favorable choice for developers. It provides endpoints for different types of interactions, be it text completion, translation, or semantic search among others. We will use the completion API in this chapter. The robustness and versatility of the OpenAI API make it a valuable asset for anyone looking to integrate advanced language understanding and generation capabilities into their applications.
+OpenAI provides an API for developers to access models like GPT-5. The OpenAI API provides endpoints for different types of interactions, be it text completion, translation, or semantic search among others.
 
-On the other hand, Anthropic is a newer entrant in the field but with a strong emphasis on building models that are not only powerful but also understandable and steerable. The Anthropic API serves as a portal to access their language models. While the detailed offerings and capabilities might evolve, the core ethos of Anthropic is to provide models that developers can interact with in a more intuitive and controlled manner. This aligns with a growing desire within the AI community for models that are not black boxes, but instead, offer a level of interpretability and control that makes them safer and more reliable to use in different contexts. We will use the Anthropic completion API.
+Google Gemini provides fast and capable models such as `gemini-flash-latest` and `gemini-2.5-flash-lite`, accessible through both Google's native API (with Google Search grounding) and an OpenAI-compatible endpoint.
 
-What if you want the total control of running open LLMs on your own computers? The company [Hugging Face](https://huggingface.co) maintains a huge repository of pre-trained models.  Some of these models are licensed for research only but many are licensed (e.g., using Apache 2) for any commercial use.  Many of the Hugging Face models are derived from Meta and other companies. We will use the [llama.cpp server](https://github.com/ggerganov/llama.cpp/tree/master) at the end of this chapter to run our own LLM on a laptop and access it via Racket code.
+Anthropic focuses on building steerable and interpretable models like the Claude family (e.g. `claude-sonnet-4-6`), offering native tool use and search capabilities through its Messages API.
 
-Lastly, this chapter will delve into practical examples showing the synergy between systems developed in Racket and the LLMs. Whether it’s automating creative writing, conducting semantic analysis, or building intelligent chatbots, the fusion of Racket with OpenAI, Anthropic, and Hugging Face's LLMs provides many opportunities for you, dear reader, to write innovative software that utilizes the power of LLMs.
+Mistral AI provides efficient open-weight and hosted models such as `mistral-small` and `mistral-embed`.
 
+What if you want the total control of running open LLMs on your own computers? The company [Hugging Face](https://huggingface.co) maintains a huge repository of pre-trained models. Some of these models are licensed for research only but many are licensed (e.g., using Apache 2) for commercial use. You can easily run models locally on your laptop using tools like [llama.cpp](https://github.com/ggerganov/llama.cpp) or [Ollama](https://ollama.ai).
 
 ## Introduction to the Applications of LLMs
 
-The utility of LLMs extends across a broad spectrum of applications including but not limited to text generation, translation, summarization, question answering, and sentiment analysis. Their ability to understand and process natural language makes them indispensable tools in modern AI-driven solutions. However, with great power comes great responsibility. The deployment of LLMs raises imperative considerations regarding ethics, bias, and the potential for misuse. Moreover, the black-box nature of these models presents challenges in interpretability and control, which are active areas of research in the quest to make LLMs more understandable and safe. The advent of LLMs has undeniably propelled the field of NLP to new heights, yet the journey towards fully responsible and transparent utilization of these powerful models is an ongoing endeavor. I recommend reading material at [Center for Humane Technology](https://www.humanetech.com/key-issues) for issues of the safe use of AI. You might also be interested in a book I wrote in April 2023 [Safe For Humans AI: A "humans-first" approach to designing and building AI systems](https://leanpub.com/safe-for-humans-AI/read) (link for reading my book free online).
+The utility of LLMs extends across a broad spectrum of applications including text generation, translation, summarization, question answering, semantic search, and autonomous agents with tool calling. However, with great power comes great responsibility. The deployment of LLMs raises imperative considerations regarding ethics, bias, and the potential for misuse. Moreover, the black-box nature of these models presents challenges in interpretability and control, which are active areas of research. I recommend reading material at [Center for Humane Technology](https://www.humanetech.com/key-issues) for issues of the safe use of AI. You might also be interested in my book [Safe For Humans AI: A "humans-first" approach to designing and building AI systems](https://leanpub.com/safe-for-humans-AI/read) (free to read online).
 
-## Using the OpenAI APIs in Racket
+---
 
-We will now have some fun using Racket Scheme and OpenAI's APIs. The combination of Racket's language features and programming environment with OpenAI's linguistic models opens up many possibilities for developing sophisticated AI-driven applications.
+## A Uniform API for LLMs in Racket: `llmapis.rkt`
 
-Our goal is straightforward interaction with OpenAI's APIs. The communication between your Racket code and OpenAI's models is orchestrated through well-defined API requests and responses, allowing for a seamless exchange of data. The following sections will show the technical aspects of interfacing Racket with OpenAI's APIs, showcasing how requests are formulated, transmitted, and how the JSON responses are handled. Whether your goal is to automate content generation, perform semantic analysis on text data, or build intelligent systems capable of engaging in natural language interactions, the code snippets and explanations provided will serve as a valuable resource in understanding and leveraging the power of AI through Racket and OpenAI's APIs.
+In early experiments with LLM APIs, developers typically wrote custom HTTP clients for each provider: one function for OpenAI, another for Anthropic, another for Google Gemini, and separate routines for local Ollama or llama.cpp instances. Each provider exposed slightly different endpoint paths, authentication headers, request payloads, parameter names (`max_tokens` vs `max_completion_tokens`), and JSON schemas for tool calling.
 
-The Racket code listed below defines two functions, **question** and **completion**, aimed at interacting with the OpenAI API to leverage the GPT-5 Turbo model for text generation. The function **question** accepts a **prompt** argument and constructs a JSON payload following the OpenAI's chat models schema. It constructs a value for **prompt-data** string containing a user message that instructs the model to "Answer the question" followed by the provided prompt. The **auth** lambda function within **question** is utilized to set necessary headers for the HTTP request, including the authorization header populated with the OpenAI API key obtained from the environment variable **OPENAI_API_KEY**. The function **post** from the **net/http-easy** library is employed to issue a POST request to the OpenAI API endpoint "https://api.openai.com/v1/chat/completions" with the crafted JSON payload and authentication headers. The response from the API is then parsed as JSON, and the content of the message from the first choice is extracted and returned.
+Switching an application from OpenAI to Gemini or to a local model required changing function names, restructuring request payloads, and rewriting error handling. Furthermore, manipulating JSON strings manually in Scheme code is tedious and error-prone.
 
-The function **completion**, on the other hand, serves a specific use case of continuing text from a given **prompt**. It reformats the prompt to prepend the phrase "Continue writing from the following text: " to the provided text, and then calls the function **question** with this modified prompt. This setup encapsulates the task of text continuation in a separate function, making it straightforward for developers to request text extensions from the OpenAI API by merely providing the initial text to the function **completion**. Through these functions, the code provides a structured mechanism to generate responses or text continuations.
+To eliminate this friction, the `source-code/llmapis/` directory contains a **uniform API** in `llmapis.rkt`. Modeled on the Common Lisp `litelm` library, `llmapis.rkt` establishes a single, idiomatic Racket entry point for all LLM providers:
 
-*This example was updated August 2024 when OpenAI released the new GPT-5 model.*
+- **Uniform Addressing:** Models are addressed with a `"provider/model-name"` string (for example `"openai/gpt-5-mini"`, `"gemini/gemini-flash-latest"`, `"ollama/qwen3:1.7b"`, `"mistral/mistral-small"`, `"deepseek/deepseek-chat"`, or `"anthropic/claude-sonnet-4-6"`).
+- **No JSON in User Code:** Messages, options, and tool definitions use Racket lists, keywords, and transparent structs. The uniform API handles all wire-format translation behind the scenes.
+- **Racket Functions as Tools:** Tools are ordinary Racket functions taking an argument hash. You wrap them with `make-llm-tool`, pass them to the model, and the library translates them to the provider's tool schema.
+- **Automated Agentic Loop:** `llm-chat-with-tools` runs the complete request/execute/reply conversation loop automatically until the model produces a final text response.
+- **Pluggable Providers:** Standard providers are pre-configured, and new OpenAI-compatible providers (such as Groq, Together AI, or OpenRouter) can be registered at runtime with `define-provider`.
+- **Structured Error Hierarchy:** HTTP failures map to an exception hierarchy (`exn:fail:llm:authentication`, `exn:fail:llm:rate-limit`, `exn:fail:llm:not-found`, `exn:fail:llm:context-window`, `exn:fail:llm:api`), complete with automatic parameter fallbacks (e.g. retrying with `max_completion_tokens` on newer OpenAI models).
+
+### Quick Start with the Uniform API
+
+Using `llmapis.rkt` is straightforward. Here are common patterns:
 
 ```racket
 #lang racket
 
-(require net/http-easy)
-(require racket/set)
- (require racket/pretty)
+(require "llmapis.rkt")
 
-(provide question-openai completion-openai embeddings-openai)
+;; 1. One-shot question answering (returns a plain string)
+(displayln (llm-ask "openai/gpt-5-mini" "What is the capital of France?"))
+(displayln (llm-ask "gemini/gemini-flash-latest" "What is 2 + 2?"))
 
-(define (helper-openai prefix prompt)
-  (let* ((prompt-data
-          (string-join
-           (list
-            (string-append
-             "{\"messages\": [ {\"role\": \"user\","
-             " \"content\": \"" prefix ": "
-             prompt
-             "\"}], \"model\": \"gpt-5-mini\"}"))))
-         (auth (lambda (uri headers params)
-                 (values
-                  (hash-set*
-                   headers
-                   'authorization
-                   (string-join
-                    (list
-                     "Bearer "
-                     (getenv "OPENAI_API_KEY")))
-                   'content-type "application/json")
-                  params)))
-         (p
-          (post
-           "https://api.openai.com/v1/chat/completions"
-           #:auth auth
-           #:data prompt-data))
-         (r (response-json p)))
-    ;;(pretty-print r)
-    (hash-ref
-     (hash-ref (first (hash-ref r 'choices)) 'message)
-     'content)))
+;; Local models require no API keys:
+(displayln (llm-ask "ollama/qwen3:1.7b" "What is recursion in Scheme?"))
+(displayln (llm-ask "llama-local/local-model" "What is 2 + 2?"))
 
+;; 2. Full chat completion (returns an llm-response struct)
+(define resp
+  (llm-completion "openai/gpt-5-mini"
+                  #:messages '(("system" "You are a concise programming tutor.")
+                               ("user" "Explain tail recursion in two sentences."))))
 
-(define (question-openai prompt)
-  (helper-openai "Answer the question: " prompt))
+(printf "Answer: ~a\n" (llm-response-content resp))
+(printf "Tokens: ~a\n" (llm-response-usage resp))
 
-(define (completion-openai prompt)
-  (helper-openai "Continue writing from the following text: "
-    prompt))
+;; 3. Vector embeddings across providers
+(define emb
+  (llm-embedding "openai/text-embedding-ada-002" "Practical Artificial Intelligence"))
+(printf "Embedding dimension: ~a\n" (length (first emb)))
 
-(define (embeddings-openai text)
-    (let* ((prompt-data
-            (string-join
-             (list
-              (string-append
-               "{\"input\": \"" text "\","
-               " \"model\": \"text-embedding-ada-002\"}"))))
-           (auth (lambda (uri headers params)
-                 (values
-                  (hash-set*
-                   headers
-                   'authorization
-                   (string-join
-                    (list
-                     "Bearer "
-                     (getenv "OPENAI_API_KEY")))
-                   'content-type "application/json")
-                  params)))
-         (p
-          (post
-           "https://api.openai.com/v1/embeddings"
-           #:auth auth
-           #:data prompt-data))
-         (r (response-json p)))
-     (hash-ref
-       (first (hash-ref r 'data))
-       'embedding)))
+;; 4. Tools as first-class Racket functions
+(define (get-weather args)
+  (format "sunny and 22C in ~a" (hash-ref args 'location "nowhere")))
+
+(define weather-tool
+  (make-llm-tool "get_weather"
+                 "Get the current weather for a location"
+                 '(("location" "string" "City name, e.g. Paris"))
+                 get-weather))
+
+;; Automated request/execute/reply tool loop:
+(define agent-resp
+  (llm-chat-with-tools "openai/gpt-5-mini"
+                       "What is the weather in Paris?"
+                       (list weather-tool)))
+
+(displayln (llm-response-content agent-resp))
+
+;; 5. Dynamically register any OpenAI-compatible provider at runtime
+(define-provider 'groq "https://api.groq.com/openai/v1"
+  #:env-keys '("GROQ_API_KEY"))
 ```
 
-The output looks like (output from the second example shortened for brevity):
+### Model Routing and Provider Registry
+
+The model string prefix routes each request to its provider. The provider table maintains base URLs, authentication environment variables, and the transport kind:
+
+| Provider | Model Prefix | Environment Variable(s) | Base URL | Kind |
+|---|---|---|---|---|
+| OpenAI | `openai/` | `OPENAI_API_KEY`, `OPENAI_KEY` | `https://api.openai.com/v1` | `openai-compatible` |
+| Google Gemini | `gemini/` | `GEMINI_API_KEY`, `GOOGLE_API_KEY` | `https://generativelanguage.googleapis.com/v1beta/openai` | `openai-compatible` |
+| Mistral AI | `mistral/` | `MISTRAL_API_KEY` | `https://api.mistral.ai/v1` | `openai-compatible` |
+| DeepSeek | `deepseek/` | `DEEPSEEK_API_KEY` | `https://api.deepseek.com/v1` | `openai-compatible` |
+| Fireworks AI | `fireworks-ai/` | `FIREWORKS_API_KEY` | `https://api.fireworks.ai/inference/v1` | `openai-compatible` |
+| Ollama (local) | `ollama/` | *(none needed)* | `http://localhost:11434/v1` | `openai-compatible` |
+| Anthropic | `anthropic/` | `ANTHROPIC_API_KEY` | `https://api.anthropic.com/v1` | `anthropic` |
+| llama.cpp (local) | `llama-local/` | *(none needed)* | `http://localhost:8080` | `llama-cpp` |
+
+Notice that Google Gemini is reached via its OpenAI-compatible endpoint (`/v1beta/openai`), and Ollama is reached via its OpenAI-compatible `/v1` endpoint. This allows six different cloud and local backends to share a single, battle-tested transport path. Anthropic uses its native Messages API adapter, and local `llama.cpp` uses its native `/completion` endpoint.
+
+Model names can contain slashes (for example, `"fireworks-ai/accounts/fireworks/models/deepseek-v3"`). The routing parser splits on the first slash:
+
+```racket
+(define (parse-model model #:provider [provider #f])
+  (cond [provider
+         (values (find-provider provider) model)]
+        [(and (string? model)
+              (regexp-match #rx"^([^/]+)/(.+)$" model))
+         => (lambda (m)
+              (values (find-provider (string->symbol (cadr m)))
+                      (caddr m)))]
+        [else
+         (llm-error "Model ~s must be of the form \"provider/model-name\"" model)]))
+```
+
+You can also pass `#:api-key` or `#:api-base` to any uniform API call to override defaults per invocation.
+
+### Messages and Roles
+
+Messages are represented as transparent `llm-message` structs:
+
+```racket
+(struct llm-message (role content tool-calls tool-call-id name) #:transparent)
+```
+
+The uniform API accepts multiple convenient representations and normalizes them with `normalize-messages`:
+
+- A plain string: `"What is 2+2?"` is treated as a user message.
+- A 2-element list: `'(system "You are a helpful assistant")` or `'("user" "Hello")`.
+- Keyword options: `'(assistant #f #:tool-calls (...))` or `'(tool "Result text" #:tool-call-id "call_123")`.
+- Helper constructors: `llm-user-message`, `llm-system-message`, `llm-assistant-message`, and `llm-tool-message`.
+
+When targeting OpenAI-compatible providers, `llm-translate-messages` formats messages as JSON objects. When targeting Anthropic, `llm-translate-messages-anthropic` extracts top-level system prompts and converts assistant tool calls and user tool results into Anthropic content blocks (`tool_use` and `tool_result`), merging consecutive same-role messages as required by the Anthropic API.
+
+### First-Class Racket Tools
+
+Tools in `llmapis.rkt` are defined directly as Racket functions that accept a single hash table of arguments (with symbol keys) and return a value:
+
+```racket
+(struct llm-param (name type description required? enum) #:transparent)
+(struct llm-tool (name description parameters proc) #:transparent)
+
+(define (make-llm-tool name description params proc)
+  (define n (if (symbol? name) (symbol->string name) name))
+  (llm-tool n description (map parse-param-spec params) proc))
+```
+
+Each parameter in `params` is specified as:
+
+```racket
+(list param-name type-string description-string [#:required bool] [#:enum list])
+```
+
+Parameters are required by default. For example:
+
+```racket
+(define (add-numbers args)
+  (+ (hash-ref args 'a 0) (hash-ref args 'b 0)))
+
+(define add-tool
+  (make-llm-tool "add_numbers"
+                 "Add two numbers together"
+                 '((a "number" "First addend")
+                   (b "number" "Second addend"))
+                 add-numbers))
+```
+
+From this definition, `llm-translate-tools` generates standard JSON Schema objects for OpenAI-compatible endpoints, and `llm-translate-tools-anthropic` generates Anthropic tool schemas.
+
+When the model decides to invoke a tool, `llm-completion` returns an `llm-response` containing a list of `llm-tool-call` structs. The tool calls can then be safely dispatched using `execute-tool-calls`:
+
+```racket
+(define (execute-tool-calls tools tool-calls)
+  (define registry
+    (if (hash? tools)
+        tools
+        (for/hash ([t (in-list (normalize-tools tools))])
+          (values (llm-tool-name t) t))))
+  (for/list ([call (in-list tool-calls)])
+    (define id (llm-tool-call-id call))
+    (define name (llm-tool-call-name call))
+    (define tool (hash-ref registry name #f))
+    (define args (llm-tool-call-arguments call))
+    (define result
+      (cond [(not tool)
+             (format "Error: unknown tool: ~a" name)]
+            [(and (llm-tool-call-arguments-raw call)
+                  (not (hash? (string->jsexpr-safe
+                               (llm-tool-call-arguments-raw call)))))
+             (format "Error: invalid JSON arguments for tool '~a'. Received: ~a"
+                     name (llm-tool-call-arguments-raw call))]
+            [else
+             (define missing
+               (for/list ([p (in-list (llm-tool-parameters tool))]
+                          #:when (and (llm-param-required? p)
+                                      (not (hash-has-key?
+                                            args
+                                            (string->symbol
+                                             (llm-param-name p))))))
+                 (llm-param-name p)))
+             (cond [(pair? missing)
+                     (format "Error: tool '~a' missing required argument(s): ~a"
+                             name (string-join missing ", "))]
+                   [else
+                    (with-handlers
+                        ([exn:fail?
+                          (lambda (e)
+                            (format "Error: tool '~a' raised: ~a"
+                                    name (exn-message e)))])
+                      (define v ((llm-tool-proc tool) args))
+                      (cond [(void? v) ""]
+                            [(string? v) v]
+                            [else (format "~a" v)]))])]))
+    (llm-tool-result id name result)))
+```
+
+Notice the defensive design: if the model calls an unknown tool, omits a required argument, passes invalid JSON, or the Racket tool handler throws an exception, `execute-tool-calls` converts the failure into an `"Error: ..."` feedback string for the model rather than raising an unhandled exception in your program. The model can then inspect the error message and correct its call on the next turn.
+
+### The Agentic Tool Loop
+
+The function `llm-chat-with-tools` orchestrates the complete interaction loop between the model and Racket tools:
+
+```racket
+(define (llm-chat-with-tools model messages tools
+                             #:max-iterations [max-iterations 10]
+                             #:tool-choice [tool-choice 'auto]
+                             #:temperature [temperature #f]
+                             #:max-tokens [max-tokens #f]
+                             #:top-p [top-p #f]
+                             #:system [system #f]
+                             #:provider [provider #f]
+                             #:api-key [api-key #f]
+                             #:api-base [api-base #f])
+  (let loop ([msgs (normalize-messages messages)]
+             [fuel max-iterations])
+    (define resp
+      (llm-completion model
+                      #:messages msgs
+                      #:tools tools
+                      #:tool-choice tool-choice
+                      #:temperature temperature
+                      #:max-tokens max-tokens
+                      #:top-p top-p
+                      #:system system
+                      #:provider provider
+                      #:api-key api-key
+                      #:api-base api-base))
+    (define calls (llm-response-tool-calls resp))
+    (if (or (null? calls) (<= fuel 1))
+        resp
+        (let ([results (execute-tool-calls tools calls)])
+          (loop (append msgs
+                        (cons (llm-assistant-message resp)
+                              (map llm-tool-message results)))
+                (sub1 fuel))))))
+```
+
+If you prefer manual control (for instance, to log intermediate turns or ask the user for approval before running a destructive tool), you can perform each step yourself using `llm-completion`, `execute-tool-calls`, `llm-assistant-message`, and `llm-tool-message`:
+
+```racket
+;; Step 1: Initial call with available tools
+(define step1
+  (llm-completion "openai/gpt-5-mini"
+                  #:messages "What is the weather in Paris?"
+                  #:tools (list weather-tool)))
+
+;; Step 2: Execute tool calls requested by the model
+(define results (execute-tool-calls (list weather-tool)
+                                   (llm-response-tool-calls step1)))
+
+;; Step 3: Feed assistant call and tool results back for the final answer
+(define step2
+  (llm-completion "openai/gpt-5-mini"
+                  #:messages (list (llm-user-message "What is the weather in Paris?")
+                                   (llm-assistant-message step1)
+                                   (llm-tool-message (first results)))
+                  #:tools (list weather-tool)))
+
+(displayln (llm-response-content step2))
+```
+
+### Error Handling Hierarchy and Automatic Fallbacks
+
+Errors are modeled after a clear hierarchy rooted at `exn:fail:llm`:
 
 ```
-> (question-openai "Mary is 30 and Harry is 25. Who is older?")
-"Mary is older than Harry."
-> (completion-openai "Frank bought a new sports car. Frank drove")
-Frank bought a new sports car. Frank drove it out of the dealership with a wide grin on his face. The sleek, aerodynamic design of the car hugged the road as he accelerated, feeling the power under his hands. The adrenaline surged through his veins, and he couldn't help but let out a triumphant shout as he merged onto the highway.
-
-As he cruised down the open road, the wind whipping through his hair, Frank couldn't help but reflect on how far he had come. It had been a lifelong dream of his to own a sports car, a symbol of success and freedom in his eyes. He had worked tirelessly, saving every penny, making sacrifices along the way to finally make this dream a reality.
-...
-> 
+exn:fail:llm
+└── exn:fail:llm:api  (fields: status body)
+    ├── exn:fail:llm:authentication      (HTTP 401, 403)
+    ├── exn:fail:llm:rate-limit          (HTTP 429)
+    ├── exn:fail:llm:not-found           (HTTP 404)
+    └── exn:fail:llm:context-window      (HTTP 400 mentioning "context")
 ```
 
-Here is more sample output sowing embeddings for a sentence (we will use embeddings in the next chapter). The OpenAI embedding model text-embedding-ada-002 produces a vector of length 1536 floats, only the first few are shown here:
+This lets application code handle specific conditions cleanly with Racket's `with-handlers`:
 
-```
-> (embeddings-openai "Frank bought a new sports car. Frank drove")
-(-0.0067744367 0.020329757 0.021399744 ...
-```
-
-We can also use "one shot prompting" to describe precisly how we want output formatted:
-
-```
-> (completion-openai "CONTEXT ONE SHOT EXAMPLE return function names and arguments as a Lisp list no commas separating the arguments. for example: 'Please sum the numbers 4 1 2 7' should produce (sum 4 1 2 7). Identify tool names in the following text, returning only the tool names with arguments separated by commas. List of available tools is (ADD, SUM) PROMPT Please add the numbers 5, 8 and 12, and also sum the numbers 3, 44, and 88.")
-(ADD 5 8 12)
-(SUM 3 44 88)
+```racket
+(with-handlers ([exn:fail:llm:rate-limit?
+                 (lambda (e) (displayln "Hit rate limit, backing off..."))]
+                [exn:fail:llm:authentication?
+                 (lambda (e) (displayln "Invalid API key!"))]
+                [exn:fail:llm:api?
+                 (lambda (e) (printf "API failed with status ~a\n" (exn:fail:llm:api-status e)))])
+  (llm-ask "openai/gpt-5-mini" "Hello"))
 ```
 
-## Using Google Gemini APIs in Racket
+In addition, newer OpenAI models reject the historical `max_tokens` field with an HTTP 400 error requiring `max_completion_tokens`. `llmapis.rkt` catches this automatically via `openai-max-tokens-fallback?` and transparently retries the request once with `max_completion_tokens`.
 
-This code provides a lightweight client that doesn't just generate text; it also leverages Gemini's ability to "ground" its answers using Google Search. This is particularly useful when you need your AI to have access to up-to-date information rather than just relying on its training data.
+---
+
+## Dedicated Provider Modules and Proprietary Features
+
+While `llmapis.rkt` handles general chat completions, function/tool calling, and text embeddings uniformly across all providers, certain cloud providers offer specialized features that fall outside standard chat endpoints.
+
+The `llmapis/` directory therefore preserves dedicated per-provider modules for these specialized extras:
+
+- `gemini.rkt`: Google Gemini with Google Search grounding and URL citation extraction.
+- `anthropic.rkt`: Anthropic Claude with native web search beta and citations.
+- `openai.rkt`: Direct OpenAI chat and embeddings.
+- `mistral.rkt`: Direct Mistral AI chat and embeddings.
+- `llama_local.rkt`: Local llama.cpp server client.
+- `ollama_ai_local.rkt`: Local Ollama client.
+- `main.rkt`: Local package export.
+
+Let us examine these modules.
+
+### Google Gemini with Search Grounding (`gemini.rkt`)
+
+Google's Gemini models support *search grounding*, allowing the model to query Google Search in real time and return authoritative web citations alongside its answer. This is vital when building applications that require up-to-the-minute information rather than static training data.
+
+The module `gemini.rkt` interacts with the native Google Generative Language API endpoint (`models/{model}:generateContent`):
 
 ```racket
 #lang racket
@@ -175,116 +375,90 @@ This code provides a lightweight client that doesn't just generate text; it also
          generate-with-search
          generate-with-search-and-citations)
 
-(define *gemini-model* "gemini-3-flash-preview")
+(define *gemini-model* "gemini-flash-latest")
+(define *gemini-max-tokens* 8192)
 
 (define *google-api-key*
   (or (getenv "GOOGLE_API_KEY")
       (error "GOOGLE_API_KEY environment variable is not set")))
 
-(define *interactions-url*
-  "https://generativelanguage.googleapis.com/v1beta/interactions")
+(define *base-url*
+  "https://generativelanguage.googleapis.com/v1beta/models")
 
 (define (auth-proc uri headers params)
   (values
    (hash-set* headers
               'x-goog-api-key *google-api-key*
-              'content-type "application/json"
-              'Api-Revision "2026-05-20")
+              'content-type "application/json")
    params))
 
-(define (call-interactions data)
-  (response-json
-   (post *interactions-url*
-         #:auth auth-proc
-         #:json data)))
+(define (call-generate-content model data)
+  (let ((url (string-append *base-url* "/" model ":generateContent")))
+    (response-json
+     (post url
+           #:auth auth-proc
+           #:json data))))
 
-(define (extract-text-from-steps response)
-  "Extract text from the last model_output step in an Interactions API response."
+(define (extract-text response)
+  "Extract text from a generateContent API response."
   (when (hash-has-key? response 'error)
-    (error "Gemini Interactions API error" (hash-ref response 'error)))
-  (let* ((steps (hash-ref response 'steps '())))
-    (for/last ([step steps]
-               #:when (equal? (hash-ref step 'type "") "model_output"))
-      (let* ((content (hash-ref step 'content '()))
-             (first-content (if (null? content) (hash) (car content))))
-        (hash-ref first-content 'text "No response")))))
+    (error "Gemini API error" (hash-ref response 'error)))
+  (let* ((candidates (hash-ref response 'candidates '()))
+         (first-cand (if (null? candidates) (hash) (car candidates)))
+         (content (hash-ref first-cand 'content (hash)))
+         (parts (hash-ref content 'parts '()))
+         (first-part (if (null? parts) (hash) (car parts))))
+    (hash-ref first-part 'text "No response")))
 
 (define (generate prompt [model *gemini-model*])
-  (let* ((data (hash 'model model 'input prompt))
-         (r (call-interactions data)))
-    (extract-text-from-steps r)))
+  (let* ((data (hash 'contents
+                     (list (hash 'parts
+                                  (list (hash 'text prompt))))))
+         (r (call-generate-content model data)))
+    (extract-text r)))
 
 (define (generate-with-search prompt [model *gemini-model*])
-  (let* ((data (hash 'model model
-                     'input prompt
-                     'tools (list (hash 'type "google_search"))))
-         (r (call-interactions data)))
-    (extract-text-from-steps r)))
+  (let* ((data (hash 'contents
+                     (list (hash 'parts
+                                  (list (hash 'text prompt))))
+                     'tools (list (hash 'googleSearch (hash)))))
+         (r (call-generate-content model data)))
+    (extract-text r)))
 
 (define (generate-with-search-and-citations prompt [model *gemini-model*])
-  (let* ((data (hash 'model model
-                     'input prompt
-                     'tools (list (hash 'type "google_search"))))
-         (r (call-interactions data))
-         (text (extract-text-from-steps r))
-         (steps (hash-ref r 'steps '()))
+  (let* ((data (hash 'contents
+                     (list (hash 'parts
+                                  (list (hash 'text prompt))))
+                     'tools (list (hash 'googleSearch (hash)))))
+         (r (call-generate-content model data))
+         (text (extract-text r))
+         (candidates (hash-ref r 'candidates '()))
+         (first-cand (if (null? candidates) (hash) (car candidates)))
+         (grounding (hash-ref first-cand 'groundingMetadata (hash)))
+         (grounding-chunks (hash-ref grounding 'groundingChunks '()))
          (citations
-          (for*/list ([step steps]
-                      #:when (equal? (hash-ref step 'type "") "model_output")
-                      [content-item (hash-ref step 'content '())]
-                      #:when (hash-has-key? content-item 'annotations)
-                      [annotation (hash-ref content-item 'annotations '())]
-                      #:when (equal? (hash-ref annotation 'type "") "url_citation"))
-            (cons (hash-ref annotation 'title "")
-                  (hash-ref annotation 'url "")))))
+          (for/list ([chunk grounding-chunks])
+            (let ((web (hash-ref chunk 'web (hash))))
+              (cons (hash-ref web 'title "")
+                    (hash-ref web 'uri ""))))))
     (values text citations)))
 ```
 
-Here we use the **net/http-easy** library for handling our web requests and the standard json library to parse the results. You will notice that I am pulling the GOOGLE_API_KEY from the system environment variables because it is always best practice to keep secrets out of your source code. The core workhorse here is the **call-interactions** function, which calls the newer Gemini Interactions API. We must supply the `Api-Revision` header (set to `2026-05-20` in `auth-proc`) for the Interactions API.
+In `generate-with-search-and-citations`, we supply `'tools (list (hash 'googleSearch (hash)))`. Gemini executes web queries and includes a `groundingMetadata` structure containing `groundingChunks`. The function returns both the generated markdown text and a list of `(title . url)` pairs:
 
-The most interesting part of this module is how we handle search grounding. In the generate-with-search-and-citations function, we pass a `google_search` tool definition in our request. This instructs the model to browse the web before formulating an answer. Parsing the response involves extracting text from the last `model_output` step, and drilling down into the step's content `annotations` to find `url_citation` entries. This allows us to return not just the generated text, but also a list of citations and URLs.
-
-Here is an example of using Gemini with grounding search with annotations (output is heavily edited for conciseness):
-
-```
+```racket
+> (require "gemini.rkt")
 > (let-values ([(text citations) (generate-with-search-and-citations "Latest AI news")])
-  (displayln text) (displayln citations))
-
-Here is a summary of the most significant AI news as of today, **March 9, 2026**, a day marked by major product launches, high-stakes legal battles, and massive infrastructure shifts.
-
-### **1. OpenAI: GPT-5.4 Launch and "Stargate" Turbulence**
-OpenAI has dominated the headlines this week with the official release of the **GPT-5.4 model series** (Standard, Thinking, and Pro variants).
-*   **"Digital Colleague" Features:** The new model introduces **native computer use**, allowing the AI to control mouse and keyboard inputs directly to navigate software. It also features a **1.05-million-token context window** and a reported 33% reduction in hallucinations compared to previous versions.
-*   **Backlash and Resignations:** Despite the technical success, OpenAI is facing internal and external turmoil over a **Pentagon deal** announced in late February. High-profile hardware lead **Caitlin Kalinowski** (formerly of Meta) resigned this weekend in protest, citing concerns over the lack of deliberation on lethal autonomy and domestic surveillance.
-*   **Infrastructure:** Reports emerged today that the ambitious **$500 billion "Stargate" data center** expansion in Texas with Oracle has stalled due to financing disagreements, though Meta and NVIDIA are reportedly stepping in to fill the capacity gap.
-
-### **3. Anthropic: Lawsuit Against the Trump Administration**
-Anthropic is currently in a "legal war" with the federal government.
-*   **Supply Chain Risk:** Following a refusal to remove ethical guardrails against autonomous weapons, the Pentagon designated Anthropic a **"supply chain risk."** 
-*   **The Lawsuit:** Anthropic filed two lawsuits today (March 9) against the Department of Defense and President Trump, calling the designation "arbitrary, capricious, and an abuse of power."
-*   **Product Update:** Amidst the legal drama, Anthropic’s **Claude Cowork** is gaining massive traction as a desktop agent for non-technical users, powered by the recently released **Sonnet 4.6** (1M context window).
-
-### **4. Meta: News Corp Deal and Privacy Scandals**
-Meta made a major dual-announcement today regarding content and compute.
-*   **News Corp Agreement:** Meta signed a multi-year licensing deal with **News Corp** to use premium US and UK news for training its next-generation Llama models.
-*   **Smart Glasses Lawsuit:** On the negative side, a class-action lawsuit was filed today following reports that human contractors in Kenya were reviewing **intimate first-person footage** (including private home life) captured by Ray-Ban Meta glasses to train vision AI systems.
-
-### **5. Hardware & Robotics: NVIDIA and GTC 2026**
-*   **NVIDIA & ABB:** NVIDIA announced a partnership with **ABB Robotics** to deploy "industrial-grade physical AI" using the Omniverse platform. 
-
-### **6. Regulation & Society**
-*   **EU AI Act Enforcement:** European MEPs are meeting this week to finalize measures protecting the creative sector from AI exploitation, specifically calling for mandatory remuneration for artists whose work is used in training data.
-
-((cbsnews.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEbLyiS8MiC2NtPtMDnfInqKRMzsjyo52qtS0-lMuAf3YdJh78LiR3lgcmlRNDLPLqSYaZij-9D9cw_Him2KtvqC6J-p70iPzMLkT4UdR8eHIaZXLOMh3VM4NVyLR4enYbL1n_SE_lbrNKAUnK9c102GCb6ZjwIyhQgjXt7pzU9erTNQDR4) (citynews.ca . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEoP2nQt9xDssAKQPCLObge0fVxVuNaZ2ei8Ywqhz9chtSGEkLgmvpaXbVDs8ANBa2fNk_Du-32rUHogciGtexI8ZmI74SopLgqghk0znPm7ZFQIyCCk-zPVzRPdPOut8wUIYvErNVyFuAiamjmdUcetHYTF0xSwua-CM0C6_a24ztX2B1UCTt1MO3okYgP31sKVdQYJQN6tc0_M52nljsVWWivRkZfRRWG7F9l3ZdIovGC2xo=) (ksat.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHLANhJ_bLjacJ7I2nht8Awd0UD_dNOaBOC1F-6wnDQP0I44DkWS4lQzmSilAIUUElNK0BVx8_BEMIcrQXkvW_kxJHhnhACBDi8hLttFr4HYVb0iuL45FSQwyuBS0JHeCHOWP2ejr0MkHbQBZezgC2gBodvs-cxlvhlVd87KLnhD7HsAF8RZWdKRLtM18TknbGmKrxQJHdNJ7_G6sqgcsUZBzTrfbpI3IFK865exx2XdCKTkbtsrA==) (petapixel.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGwo7X43lLUpS_LDnMeuDNxWlmgaKAO18XnVrUtKEXh3LvI6jiucRrD_G5TaO30QZGZZb_c35u5a7CCP7sQNwqnwIJOuNUciUTHVtirGYG8KwGCmuLba_nSS-63JOOdIsFvAA_ksNIAWyspRl9mdC8aHiLR98w8Ij59eKFTCg2A1YRm2S9BiHd0Xg3OwlPquS-zsEEpbXzBHSx8ntUwIYEadlVsEPt58G3_) (indianexpress.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFHKeqS01rew3SZFl1YGHiIDzHYxweks5oe0xQ5P0zF_YS3nShq6AZ31GUcRh0I9SjUkQtkxwO8jeMg76CXV48Ocn30wALicS49KqYg_ASRYn0ZUt991XpgY_kcQ4xbIvdTIBSCxIiwFpyf7duuBp7I_sJgl01wnAYToFLFdNr4B7lSYxwiRoWAGxaC4iPY6QtjzcbP4q-ZOUTkYcYlE5hTsLtNjj-rUS03D1Kp_7J2XTIvgWJJMlo=) (thestreet.com . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFCW6G9bDwcKLRzUTVwqHbIg264ibasILG8TeeIvsrYNplWLlIDywlUQWtj18qrDpH2XpUY3H5fTOkXb6Azyf_yEnf3PP6ZZJ5gugzD-xaB_aE9gqXNwgyciP1ScS2mjfRlSy3sTxAouJFUj6ruG2Cqixh43W2ELyNSS9z1s8wtVzaGF_cMY4pcUBQWZkJoU1mU5s6GauQLt7gnVBwklQ==) (nasa.gov . https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF9EzEVmarS1I7ieeSlqxgjaZ6EryOWG-LuStz-rEd2_-OHnHrhbBGJafYPh9DmAREKX7yzX_s6-OXD2qLBpB5Qxyu1yAazgFj0_Hiw5Kd4_DFI_S-8JMqHSTmOKL1sYqt7ToQZtQvESTknCShqDXvOnzvcYHX6_SHJLN_8W1b8r6fj4m-749ZQW8okx-hB_KU2cAySf23hNLee6yuVYTeDSd7z))
-> 
+    (displayln text)
+    (displayln citations))
+Here is a summary of the latest AI developments...
+(("TechCrunch: AI models update" . "https://techcrunch.com/...")
+ ("Arxiv: Attention mechanisms" . "https://arxiv.org/..."))
 ```
 
+### Anthropic Claude with Web Search (`anthropic.rkt`)
 
-## Using the Anthropic APIs in Racket
-
-The Racket code listed below defines two functions, **question** and **completion**, which facilitate interaction with the Anthropic API to access a language model named **claude-instant-1** for text generation purposes. The function **question** takes two arguments: a **prompt** and a **max-tokens** value, which are used to construct a JSON payload that will be sent to the Anthropic API. Inside the function, several Racket libraries are utilized for handling HTTP requests and processing data. A POST request is initiated to the Anthropic API endpoint "https://api.anthropic.com/v1/complete" with the crafted JSON payload. This payload includes the prompt text, maximum tokens to sample, and specifies the model to be used. The **auth** lambda function is used to inject necessary headers for authentication and specifying the API version. Upon receiving the response from the API, it extracts the **completion** field from the JSON response, trims any leading or trailing whitespace, and returns it.
-
-The function **completion** is defined to provide a more specific use-case scenario, where it is intended to continue text from a given **prompt**. It also accepts a **max-tokens** argument to limit the length of the generated text. The functions ** question-anthropic-with-search* and **question-anthropic-with-search-and-citations** use web search to enhance the context for prompts or queries.
+Anthropic provides the Messages API at `https://api.anthropic.com/v1/messages`. In addition to standard generation, `anthropic.rkt` demonstrates Anthropic's web search capability:
 
 ```racket
 #lang racket
@@ -359,93 +533,188 @@ The function **completion** is defined to provide a more specific use-case scena
     (values text citations)))
 ```
 
-We will try the same examples we used with OpenAI APIs in the previous section:
+Testing Anthropic in the Racket REPL:
 
 ```racket
-$ racket
 > (require "anthropic.rkt")
-> (let-values
-    ([(text citations)
-      (question-anthropic-with-search-and-citations "Latest AI news")])
-   (displayln text) (displayln citations))
-The integration of AI with defense agencies is generating heated discussions. Over 100 employees from both OpenAI and Google have signed a petition
-((New AI Model Releases News | March, 2026 (STARTUP EDITION) . https://blog.mean.ceo/new-ai-model-releases-news-march-2026/) (AI News | March, 2026 (STARTUP EDITION) . https://blog.mean.ceo/ai-news-march-2026/) (Open AI News | March, 2026 (STARTUP EDITION) . https://blog.mean.ceo/open-ai-news-march-2026/) (LLM News Today (March 2026) – Open Source LLM Updates & AI Model Releases . https://llm-stats.com/ai-news) (AI Updates Today (March 2026) – Latest AI Model Releases . https://llm-stats.com/llm-updates) (Latest AI News and AI Breakthroughs that Matter Most: 2026 & 2025 | News . https://www.crescendo.ai/news/latest-ai-news-and-updates) (In 2026, AI will move from hype to pragmatism | TechCrunch . https://techcrunch.com/2026/01/02/in-2026-ai-will-move-from-hype-to-pragmatism/) (AI News & Trends March 2026: Complete Monthly Digest . https://www.humai.blog/ai-news-trends-march-2026-complete-monthly-digest/) (Lenovo Scales Trusted AI-Powered Business Computing Through Modular Innovation and Enterprise Platforms - Lenovo StoryHub . https://news.lenovo.com/pressroom/press-releases/trusted-ai-powered-business-computing-modular-enterprise-mwc/) (Open Source AI News | March, 2026 (STARTUP EDITION) . https://blog.mean.ceo/open-source-ai-news-march-2026/))
 > (generate "What is the capital of France?" 50)
-The capital of France is **Paris**.
+"The capital of France is Paris."
 ```
 
-While I usually use the OpenAPI APIs, I always like to have alternatives when I am using 3rd party infrastructure, even for personal research projects. The Anthropic LLMs definitely have a different "feel" than the OpenAPI APIs, and I enjoy using both.
+### Direct OpenAI API (`openai.rkt`)
 
-
-## Using a Local Hugging Face Llama2-13b-orca Model with Llama.cpp Server
-
-Now we look at an approach to run LLMs locally on your own computers.
-
-Diving into AI unveils many ways where modern language models play a pivotal role in bridging the gap between machines and human language. Among the many open and public models, I chose Hugging Face's Llama2-13b-orca model because of its support for natural language processing tasks. To truly harness the potential of Llama2-13b-orca, an interface to Racket code is essential. This is where we use the Llama.cpp Server as a conduit between the local instance of the Hugging Face model and the applications that seek to utilize it. The combination of Llama2-13b-orca with the llama.cpp server code will meet our requirements for local deployment and ease of installation and use.
-
-### Installing and Running Llama.cpp server with a Llama2-13b-orca Model
-
-The **llama.cpp** server acts as a conduit for translating REST API requests to the respective language model APIs. By setting up and running the **llama.cpp** server, a channel of communication is established, allowing Racket code to interact with these language models in a seamless manner. There is also a Python library to encapsulate running models inside a Python program (a subject I leave to [my Python AI books](https://leanpub.com/u/markwatson)).
-
-I run the **llama.cpp** service easily on a M2 Mac with 16G of memory. Start by cloning the **llama.cpp** project and building it:
-
-```bash
-git clone https://github.com/ggerganov/llama.cpp.git
-make
-mkdir models
-```
-
-Then get a model file from [https://huggingface.co/TheBloke/OpenAssistant-Llama2-13B-Orca-8K-3319-GGUF](https://huggingface.co/TheBloke/OpenAssistant-Llama2-13B-Orca-8K-3319-GGUF) and copy to **./models** directory:
-
-```bash
-$ ls -lh models
-8.6G openassistant-llama2-13b-orca-8k-3319.Q5_K_M.gguf
-```
-
-Note that there are many different variations of this model that trade off quality for memory use. I am using one of the larger models. If you only have 8G of memory try a smaller model.
-
-Run the REST server:
-
-```bash
-./server -m models/openassistant-llama2-13b-orca-8k-3319.Q5_K_M.gguf -c 2048
-```
-
-We can test the REST server using the **curl** utility:
-
-```bash
- $ curl --request POST \
-    --url http://localhost:8080/completion \
-    --header "Content-Type: application/json" \
-    --data '{"prompt": "Answer the question: Mary is 30 years old and Sam is 25. Who is older and by how much?","n_predict": 128, "top_k": 1}'
-{"content":"\nAnswer: Mary is older than Sam by 5 years.","generation_settings":{"frequency_penalty":0.0,"grammar":"","ignore_eos":false,"logit_bias":[],"mirostat":0,"mirostat_eta":0.10000000149011612,"mirostat_tau":5.0,"model":"models/openassistant-llama2-13b-orca-8k-3319.Q5_K_M.gguf","n_ctx":2048,"n_keep":0,"n_predict":128,"n_probs":0,"penalize_nl":true,"presence_penalty":0.0,"repeat_last_n":64,"repeat_penalty":1.100000023841858,"seed":4294967295,"stop":[],"stream":false,"temp":0.800000011920929,"tfs_z":1.0,"top_k":1,"top_p":0.949999988079071,"typical_p":1.0},"model":"models/openassistant-llama2-13b-orca-8k-3319.Q5_K_M.gguf","prompt":"Answer the question: Mary is 30 years old and Sam is 25. Who is older and by how much?","stop":true,"stopped_eos":true,"stopped_limit":false,"stopped_word":false,"stopping_word":"","timings":{"predicted_ms":960.595,"predicted_n":13,"predicted_per_second":13.53327885321077,"predicted_per_token_ms":73.89192307692308,"prompt_ms":539.3580000000001,"prompt_n":27,"prompt_per_second":50.05951520140611,"prompt_per_token_ms":19.976222222222223},"tokens_cached":40,"tokens_evaluated":27,"tokens_predicted":13,"truncated":false}
-```
-
-The important part of the output is:
-
-```
-"content":"Answer: Mary is older than Sam by 5 years."
-```
-
-In the next section we will write a simple library to extract data from Llama.cpp server responses.
-
-
-### A Racket Library for Using a Local Llama.cpp server with a Llama2-13b-orca Model
-
-
-The following Racket code is designed to interface with a local instance of a Llama.cpp server to interact with a language model for generating text completions. This setup is particularly beneficial when there's a requirement to have a local language model server, reducing latency and ensuring data privacy. We start by requiring libraries for handling HTTP requests and responses. The functionality of this code is encapsulated in three functions: **helper**, **question-llama-local**, and **completion-llama-local**, each serving a unique purpose in the interaction with the Llama.cpp server.
-
-The **helper** function provides common functionality, handling the core logic of constructing the HTTP request, sending it to the Llama.cpp server, and processing the response. It accepts a **prompt** argument which forms the basis of the request payload. A JSON string is constructed with three key fields: **prompt**, **n_predict**, and **top_k**, which respectively contain the text prompt, the number of tokens to generate, and a parameter to control the diversity of the generated text. A debug line with `displayln` is used to output the constructed JSON payload to the console, aiding in troubleshooting. The function **post** is employed to send a POST request to the Llama.cpp server hosted locally on port 8080 at the **/completion** endpoint, with the constructed JSON payload as the request body. Upon receiving the response, it's parsed into a Racket hash data structure, and the **content** field, which contains the generated text, is extracted and returned.
-
-The **question-llama-local** and **completion-llama-local** functions serve as specialized interfaces to the **helper** function, crafting specific prompts aimed at answering a question and continuing a text, respectively. The **question-llama-local** function prefixes the provided question text with "Answer: " to guide the model's response, while the **completion-llama-local** function prefixes the provided text with a phrase instructing the model to continue from the given text. Both functions then pass these crafted prompts to the **helper** function, which in turn handles the interaction with the Llama.cpp server and extracts the generated text from the response.
-
-The following code is in the file **llama_local.rkt**:
+For developers wishing to inspect the raw wire communication with OpenAI, `openai.rkt` demonstrates direct POST requests using `net/http-easy`:
 
 ```racket
 #lang racket
 
 (require net/http-easy)
 (require racket/set)
-(require pprint)
+(require racket/pretty)
+
+(provide question-openai completion-openai embeddings-openai)
+
+(define (helper-openai prefix prompt)
+  (let* ((prompt-data
+          (string-join
+           (list
+            (string-append
+             "{\"messages\": [ {\"role\": \"user\","
+             " \"content\": \"" prefix ": "
+             prompt
+             "\"}], \"model\": \"gpt-5-mini\"}"))))
+         (auth (lambda (uri headers params)
+                 (values
+                  (hash-set*
+                   headers
+                   'authorization
+                   (string-join
+                    (list
+                     "Bearer "
+                     (getenv "OPENAI_API_KEY")))
+                   'content-type "application/json")
+                  params)))
+         (p
+          (post
+           "https://api.openai.com/v1/chat/completions"
+           #:auth auth
+           #:data prompt-data))
+         (r (response-json p)))
+    (hash-ref
+     (hash-ref (first (hash-ref r 'choices)) 'message)
+     'content)))
+
+(define (question-openai prompt)
+  (helper-openai "Answer the question: " prompt))
+
+(define (completion-openai prompt)
+  (helper-openai "Continue writing from the following text: " prompt))
+
+(define (embeddings-openai text)
+  (let* ((prompt-data
+          (string-join
+           (list
+            (string-append
+             "{\"input\": \"" text "\","
+             " \"model\": \"text-embedding-ada-002\"}"))))
+         (auth (lambda (uri headers params)
+                 (values
+                  (hash-set*
+                   headers
+                   'authorization
+                   (string-join
+                    (list
+                     "Bearer "
+                     (getenv "OPENAI_API_KEY")))
+                   'content-type "application/json")
+                  params)))
+         (p
+          (post
+           "https://api.openai.com/v1/embeddings"
+           #:auth auth
+           #:data prompt-data))
+         (r (response-json p)))
+    (hash-ref
+     (first (hash-ref r 'data))
+     'embedding)))
+```
+
+### Direct Mistral AI API (`mistral.rkt`)
+
+Mistral provides hosted European models via an OpenAI-compatible API at `https://api.mistral.ai/v1`:
+
+```racket
+#lang racket
+
+(require net/http-easy)
+(require racket/set)
+
+(provide question-mistral completion-mistral embeddings-mistral)
+
+(define (question-mistral prompt)
+  (let* ((prompt-data
+          (string-join
+           (list
+            (string-append
+             "{\"messages\": [ {\"role\": \"user\","
+             " \"content\": \"Answer the question: "
+             prompt
+             "\"}], \"model\": \"mistral-small\"}"))))
+         (auth (lambda (uri headers params)
+                 (values
+                  (hash-set*
+                   headers
+                   'authorization
+                   (string-join
+                    (list
+                     "Bearer "
+                     (getenv "MISTRAL_API_KEY")))
+                   'content-type "application/json")
+                  params)))
+         (p
+          (post
+           "https://api.mistral.ai/v1/chat/completions"
+           #:auth auth
+           #:data prompt-data))
+         (r (response-json p)))
+    (hash-ref
+     (hash-ref (first (hash-ref r 'choices)) 'message)
+     'content)))
+
+(define (completion-mistral prompt)
+  (question-mistral
+   (string-append "Continue writing from the following text: " prompt)))
+
+(define (embeddings-mistral text)
+  (let* ((prompt-data
+          (string-join
+           (list
+            (string-append
+             "{\"input\": [\"" text "\"],"
+             " \"model\": \"mistral-embed\"}"))))
+         (auth (lambda (uri headers params)
+                 (values
+                  (hash-set*
+                   headers
+                   'authorization
+                   (string-join
+                    (list
+                     "Bearer "
+                     (getenv "MISTRAL_API_KEY")))
+                   'content-type "application/json")
+                  params)))
+         (p
+          (post
+           "https://api.mistral.ai/v1/embeddings"
+           #:auth auth
+           #:data prompt-data))
+         (r (response-json p)))
+    (hash-ref
+     (first (hash-ref r 'data))
+     'embedding)))
+```
+
+### Running Local Models: `llama.cpp` (`llama_local.rkt`)
+
+Running models locally gives you complete privacy, zero API costs, and offline execution. The `llama.cpp` project provides an efficient C++ inference engine that runs quantized GGUF models on CPUs and Apple Silicon GPUs.
+
+To build and run the server:
+
+```bash
+git clone https://github.com/ggerganov/llama.cpp.git
+cd llama.cpp && make
+mkdir models
+# Download a GGUF model into models/
+./llama-server -m models/your-model.gguf --port 8080 -c 2048
+```
+
+The file `llama_local.rkt` interfaces with `llama-server`'s `/completion` endpoint:
+
+```racket
+#lang racket
+
+(require net/http-easy)
+(require racket/set)
 
 (provide question-llama-local completion-llama-local)
 
@@ -457,7 +726,6 @@ The following code is in the file **llama_local.rkt**:
              "{\"prompt\": \""
              prompt
              "\", \"n_predict\": 256, \"top_k\": 1}"))))
-         (ignore (displayln prompt-data))
          (p
           (post
            "http://localhost:8080/completion"
@@ -469,110 +737,31 @@ The following code is in the file **llama_local.rkt**:
   (helper (string-append "Answer: " question)))
 
 (define (completion-llama-local prompt)
-  (helper
-   (string-append
-    "Continue writing from the following text: "
-    prompt)))
+  (helper (string-append "Continue writing from the following text: " prompt)))
 ```
 
-We can try this in a Racket REPL (output of the second example is edited for brevity):
+### Running Local Models: Ollama (`ollama_ai_local.rkt`)
 
-```racket
-> (question-llama-local "Mary is 30 and Harry is 25. Who is older?")
-{"prompt": "Answer: Mary is 30 and Harry is 25. Who is older?", "n_predict": 256, "top_k": 1}
-"\nAnswer: Mary is older than Harry."
-> (completion-llama-local "Frank bought a new sports car. Frank drove")
-{"prompt": "Continue writing from the following text: Frank bought a new sports car. Frank drove", "n_predict": 256, "top_k": 1}
-" his new sports car to work every day. He was very happy with his new sports car. One day, while he was driving his new sports car, he saw a beautiful girl walking on the side of the road. He stopped his new sports car and asked her if she needed a ride. The beautiful girl said yes, so Frank gave her a ride in his new sports car. They talked about many things during the ride to work. When they arrived at work, Frank asked the beautiful girl for her phone number. She gave him her phone number, and he promised to call her later that day...."
-> (question-llama-local "Mary is 30 and Harry is 25. Who is older and by how much?")
-{"prompt": "Answer: Mary is 30 and Harry is 25. Who is older and by how much?", "n_predict": 256, "top_k": 1}
-"\nAnswer: Mary is older than Harry by 5 years."
-> 
-```
-
-## Using a Local Mistral-7B Model with Ollama.ai
-
-Now we look at another approach to run LLMs locally on your own computers. The [Ollama.ai project](https://ollama.ai) supplies a simple-to-install application for macOS and Linux (Windows support expected soon). When you download and run the application, it will install a command line tool **ollama** that we use here.
-
-
-### Installing and Running Ollama.ai server with a Mistral-7B Model
-
-The Mistral model is the best 7B LLM that I have used (as I write this chapter in October 2023). When you run the **ollama** command line tool it will download and cache for future use the requested model.
-
-For example, the first time we run **ollama** requesting the **mistral** LLM, you see that it is downloading the model:
+[Ollama](https://ollama.ai) is an easy way to run local open-weight models on macOS, Linux, and Windows. Once installed, pull a model from the terminal:
 
 ```bash
- $ ollama run mistral
-pulling manifest
-pulling 6ae280299950... 100% |███████████████████████████████████████████████| (4.1/4.1 GB, 13 MB/s)           
-pulling fede2d8d6c1f... 100% |██████████████████████████████████████████████████████| (29/29 B, 20 B/s)        
-pulling b96850d2e482... 100% |███████████████████████████████████████████████████| (307/307 B, 170 B/s)        
-verifying sha256 digest
-writing manifest
-removing any unused layers
-success
->>> Mary is 30 and Bill is 25. Who is older and by how much?
-Mary is older than Bill by 5 years.
-
->>> /?
-Available Commands:
-  /set         Set session variables
-  /show        Show model information
-  /bye         Exit
-  /?, /help    Help for a command
-
-Use """ to begin a multi-line message.
-
->>>
+ollama run mistral
+# or a compact model:
+ollama run qwen3:1.7b
 ```
 
-When you run the **ollama** command line tool, it also runs a REST API serve which we use later. The next time you run the **mistral** model, there is no download delay:
-
-```bash
-$ ollama run mistral
->>> ^D
-$ ollama run mistral
->>> If I am driving between Sedona Arizona and San Diego, what sites should I visit as a tourist?
-    
-There are many great sites to visit when driving from Sedona, Arizona to San Diego. Here are some 
-suggestions:
-
-* Grand Canyon National Park - A must-see attraction in the area, the Grand Canyon is a massive and 
-awe-inspiring natural wonder that offers countless opportunities for outdoor activities such as hiking, 
-camping, and rafting.
-* Yuma Territorial Prison State Historic Park - Located in Yuma, Arizona, this former prison was once the 
-largest and most secure facility of its kind in the world. Today, visitors can explore the site and learn 
-about its history through exhibits and guided tours.
-* Joshua Tree National Park - A unique and otherworldly landscape in southern California, Joshua Tree 
-National Park is home to a variety of natural wonders, including towering trees, giant boulders, and 
-scenic trails for hiking and camping.
-* La Jolla Cove - Located just north of San Diego, La Jolla Cove is a beautiful beach and tidal pool area 
-that offers opportunities for snorkeling, kayaking, and exploring marine life.
-* Balboa Park - A cultural and recreational hub in the heart of San Diego, Balboa Park is home to numerous
-museums, gardens, theaters, and other attractions that offer a glimpse into the city's history and culture.
-
->>> 
-```
-
-While we use the **mistral** LLM here, there are many more available models listed in the GitHub repository for Ollama.ai: [https://github.com/jmorganca/ollama](https://github.com/jmorganca/ollama).
-
-### A Racket Library for Using a Local Ollama.ai REST Server with a Mistral-7B Model
-
-The example code in the file **ollama_ai_local.rkt** is very similar to the example code in the last section. The main changes are a different REST service URI and the format of the returned JSON response:
+Ollama automatically starts a background HTTP service on port 11434. The file `ollama_ai_local.rkt` interfaces with Ollama's native `/api/generate` and `/api/embeddings` routes:
 
 ```racket
 #lang racket
 
 (require net/http-easy)
 (require racket/set)
-(require pprint)
 
 (provide question-ollama-ai-local completion-ollama-ai-local embeddings-ollama)
 
 (define (helper prompt . model-name)
-  (displayln (list "Model name: " model-name))
-  (let* ((model
-          (if (equal? model-name '()) "mistral" (first (first model-name))))
+  (let* ((model (if (null? model-name) "mistral" (first (first model-name))))
          (prompt-data
           (string-join
            (list
@@ -580,81 +769,109 @@ The example code in the file **ollama_ai_local.rkt** is very similar to the exam
              "{\"prompt\": \""
              prompt
              "\", \"model\": \"" model "\", \"stream\": false}"))))
-         ;;(ignore (displayln prompt-data))
          (p
           (post
            "http://localhost:11434/api/generate"
            #:data prompt-data))
          (r (response-json p)))
-    ;;(displayln r)
     (hash-ref r 'response)))
 
 (define (question-ollama-ai-local question . model-name)
   (helper (string-append "Answer: " question) model-name))
 
 (define (completion-ollama-ai-local prompt . model-name)
-  (helper
-   (string-append
-    "Continue writing from the following text: "
-    prompt)
-    model-name))
-
-;; EMBEDDINGS:
+  (helper (string-append "Continue writing from the following text: " prompt)
+          model-name))
 
 (define (embeddings-ollama text)
-    (let* ((prompt-data
-            (string-join
-             (list
-              (string-append
-               "{\"prompt\": \"" text "\","
-               " \"model\": \"mistral\"}"))))
-           (p
-            (post
-             "http://localhost:11434/api/embeddings"
-             #:data prompt-data))
-           (r (response-json p)))
-      (hash-ref r 'embedding)))
+  (let* ((prompt-data
+          (string-join
+           (list
+            (string-append
+             "{\"prompt\": \"" text "\","
+             " \"model\": \"mistral\"}"))))
+         (p
+          (post
+           "http://localhost:11434/api/embeddings"
+           #:data prompt-data))
+         (r (response-json p)))
+    (hash-ref r 'embedding)))
 ```
 
-The function **embeddings-ollama** can be used to create embedding vectors from text input. Embeddings are used for chat with local documents, web sites, etc. We will run the same examples we used in the last section for comparison:
+### The Re-export Module (`main.rkt`)
 
+The file `main.rkt` bundles the legacy provider exports into a single module:
+
+```racket
+#lang racket/base
+
+(require "anthropic.rkt")
+(require "llama_local.rkt")
+(require "ollama_ai_local.rkt")
+(require "openai.rkt")
+
+(provide question-anthropic-with-search question-anthropic-with-search-and-citations)
+(provide question-llama-local completion-llama-local embeddings-ollama)
+(provide question-ollama-ai-local completion-ollama-ai-local)
+(provide question-openai completion-openai embeddings-openai)
 ```
-> (question-ollama-ai-local "Mary is 30 and Harry is 25. Who is older and by how much?")
-{"prompt": "Answer: Mary is 30 and Harry is 25. Who is older and by how much?", "model": "mistral", "stream": false}
-"Answer: Mary is older than Harry by 5 years."
-> (completion-ollama-ai-local "Frank bought a new sports car. Frank drove")
-{"prompt": "Continue writing from the following text: Frank bought a new sports car. Frank drove", "model": "mistral", "stream": false}
-"Frank drove his new sports car around town, enjoying the sleek design and powerful engine. The car was a bright red, which caught the attention of everyone on the road. Frank couldn't help but smile as he cruised down the highway, feeling the wind in his hair and the sun on his face.\n\nAs he drove, Frank couldn't resist the urge to test out the car's speed and agility. He weaved through traffic, expertly maneuvering the car around curves and turns. The car handled perfectly, and Frank felt a rush of adrenaline as he pushed it to its limits.\n\nEventually, Frank found himself at a local track where he could put his new sports car to the test. He revved up the engine and took off down the straightaway, hitting top speeds in no time. The car handled like a dream, and Frank couldn't help but feel a sense of pride as he crossed the finish line.\n\nAfterwards, Frank parked his sports car and walked over to a nearby café to grab a cup of coffee. As he sat outside, sipping his drink and watching the other cars drive by, he couldn't help but think about how much he loved his new ride. It was the perfect addition to his collection of cars, and he knew he would be driving it for years to come."
-> 
-```
 
-While I often use larger and more capable proprietary LLMs like Claude 2.1 and GPT-4, smaller open models from Mistral are very capable and sufficient for most of my experiments embedding LLMs in application code. As I write this, you can run Mistral models locally and through commercially hosted APIs.
+---
 
+## Architecture and File Organization
 
-The following diagram shows the high-level architecture of the LLM API integrations developed in this chapter:
+The `source-code/llmapis/` directory is structured as follows:
+
+| File | Contents |
+|---|---|
+| `llmapis.rkt` | **Uniform API:** provider routing, message normalization, Racket-function tools, chat completion, embeddings, and agentic loop. |
+| `gemini.rkt` | Direct Google Gemini client: Google Search grounding and URL citation extraction via `generateContent`. |
+| `anthropic.rkt` | Direct Anthropic client: native Messages API with web search beta and citations. |
+| `openai.rkt` | Direct OpenAI client: chat completion and text embeddings. |
+| `mistral.rkt` | Direct Mistral AI client: chat completion and text embeddings. |
+| `ollama_ai_local.rkt` | Direct Ollama client: local text generation and embeddings. |
+| `llama_local.rkt` | Direct llama.cpp client: local text completion. |
+| `main.rkt` | Package entry point re-exporting per-provider modules. |
+| `test.rkt` | Smoke test and live demonstration of the uniform API. |
+
+The following diagram illustrates the architecture of the uniform API and its provider adapters:
 
 {width: "100%"}
 ![Architecture diagram](images/llm_architecture.jpg)
 
+### Installing as a Local Package
+
+You can install `llmapis` as a linked local Racket package so other projects in the book (such as `embeddingsdb`, `RAG`, and `pdf_chat`) can require it directly via `(require llmapis)`:
+
+```bash
+cd source-code/llmapis
+raco pkg remove llmapis               # if previously installed
+raco pkg install --scope user
+```
+
+When you edit code in `llmapis/`, compile the updated files in place:
+
+```bash
+raco make main.rkt llmapis.rkt
+```
+
+---
+
 ## Examples Using William J. Bowman’s Racket Language LLM
 
-I implemented the code in this chapter using REST API interfaces for LLM providers like OpenAI and Anthropic and also for running local models using Ollama.
+Since I wrote my initial LLM client libraries, William J. Bowman wrote an interesting new Racket language extension (`#lang llm`) that can be used interactively in DrRacket or imported as a library in standard `#lang racket` programs.
 
-Since I wrote my LLM client libraries, William J. Bowman wrote a very interesting new Racket language for LLMs that can be used with DrRacket’s language support for interactively experimenting with LLMs and alternatively used in Racket programs using the standard Racket language. I added three examples to the directory **Racket-AI-book/source-code/racket_llm_language**:
+The examples are located in **Racket-AI-book/source-code/racket_llm_language**:
 
+- `test_lang_mode_llm_openai.rkt` - uses `#lang llm`
+- `test_llm_openai.rkt` - uses `#lang racket`
+- `test_llm_ollama.rkt` - uses `#lang racket`
 
+The documentation for Bowman's LLM language is available at [https://docs.racket-lang.org/llm/index.html](https://docs.racket-lang.org/llm/index.html) and on GitHub at [https://github.com/wilbowma/llm-lang](https://github.com/wilbowma/llm-lang).
 
-- test_lang_mode_llm_openai.rkt - uses **#lang llm**
-- test_llm_openai.rkt - uses **#lang racket**
-- test_llm_ollama.rkt - uses **#lang racket**
+### Interactive `#lang llm` Example
 
-For the Ollama example, make sure you have Ollama installed and the **phi3:latest** model downloaded.
-
-The documentation for the LLM language can be found here: [ https://docs.racket-lang.org/llm/index.html](https://docs.racket-lang.org/llm/index.html) and the GitHub repository for the project can be found here: [ https://github.com/wilbowma/llm-lang]( https://github.com/wilbowma/llm-lang).
-
-### LLM Language Example
-
-In the listing of file **test_lang_mode_llm_openai.rkt** notice  that Racket statements are escaped using **@** and plain text is treated as a prompt to send to a LLM:
+In `test_lang_mode_llm_openai.rkt`, Racket expressions are escaped with `@`, and plain text is treated directly as a prompt sent to the LLM:
 
 ```racket
 #lang llm
@@ -664,7 +881,7 @@ In the listing of file **test_lang_mode_llm_openai.rkt** notice  that Racket sta
 What is 13 + 7?
 ```
 
-Evaluating this in a DrRacket buffer produces output like this:
+Evaluating this in a DrRacket buffer produces:
 
 ```
 Welcome to DrRacket, version 8.12 [cs].
@@ -677,17 +894,15 @@ The average radius of the Moon is approximately 1,737.4 kilometers (about 1,079.
 > 
 ```
 
-This makes a DrRacket edit buffer a convenient way to experiment with models. Also, once the example buffer is loaded, the DrRacket REPL can be used to enter LLM prompts since the REPL is also using **#lang llm**.
+### Using the LLM Language as a Library
 
-### Using the LLM Language as a Library Using the Standard Racket Language Mode
+To use Bowman's package as a library inside standard `#lang racket` programs, install the package:
 
-Here we look at examples for accessing the OpenAI **gpt4o-mini** model and the **phi3** model running locally on your laptop using Ollama.
+```bash
+raco pkg install llm
+```
 
-Install the llm package:
-
-    raco pkg install llm
-
-Here is the example file **test_llm_openai.rkt**:
+Here is `test_llm_openai.rkt`:
 
 ```racket
 #lang racket
@@ -697,16 +912,7 @@ Here is the example file **test_llm_openai.rkt**:
 (gpt4o-mini-send-prompt! "What is 13 + 7?" '())
 ```
 
-The output looks like this:
-
-```
-Welcome to DrRacket, version 8.12 [cs].
-Language: racket, with debugging; memory limit: 128 MB.
-"13 + 7 equals 20."
-> 
-```
-
-This is a simple way to use the OpenAI **gpt4o-mini** model in your Racket programs. A similar example supports local models running on Ollama; here is the example file **test_llm_ollama.rkt**:
+And for a local model running on Ollama, here is `test_llm_ollama.rkt`:
 
 ```racket
 #lang racket
@@ -716,7 +922,7 @@ This is a simple way to use the OpenAI **gpt4o-mini** model in your Racket progr
 (phi3-send-prompt! "What is 13 + 7? Be concise." '())
 ```
 
-That generates the output text:
+Output:
 
 ```
 Welcome to DrRacket, version 8.12 [cs].
@@ -724,20 +930,15 @@ Language: racket, with debugging; memory limit: 128 MB.
 "20."
 > (phi3-send-prompt! "Mary is 37 years old, Bill is 28, and Sam is 52. List the pairwise age differences. Be concise." '())
 "- Mary vs Bill: 9 years (37 - 28)\n\n- Mary vs Sam: 15 years (37 - 52)\n\n- Bill vs Sam: 24 years (52 - 28)"
-> (display  (phi3-send-prompt! "Mary is 37 years old, Bill is 28, and Sam is 52. List the pairwise age differences. Be concise." '()))
-- Mary vs Bill: 9 years (37 - 28)
-
-- Mary vs Sam: 15 years (37 - 52)
-
-- Bill vs Sam: 24 years (52 - 28)
-> 
 ```
 
-For general work and experimentation with LLMs I like the flexibility of using my own Racket LLM client code, but for the LLM package makes it simple to experiment with prompts and if you only need to generate text from a prompt the LLM package lets generate text using just two lines of Racket code that is using the standard **#language racket** language..
+Bowman's package is a great fit for quick interactive prompt engineering in DrRacket. For building production systems, vector stores, semantic search, and autonomous tool-calling agents, the uniform API in `llmapis.rkt` provides the necessary programmatic control, multi-provider routing, and tool integration.
+
+---
 
 ## Optional Practice Problems
 
-1. **Streaming API Responses**: The current HTTP requests in `llmapis` (e.g., in `openai.rkt` and `gemini.rkt`) block until the entire JSON response is received. Modify one of these client files to use streaming features of `net/http-easy`, displaying tokens/chunks to the console as they are received from the API.
-2. **Implement Conversation History**: Create a wrapper function in `llmapis` that maintains conversation state (a list of prior user and assistant turns) and sends the entire message history list to the chat completions API, allowing for multi-turn chat sessions.
-3. **Compare Models using Bowman's `#lang llm`**: Using the examples in `racket_llm_language`, configure `#lang llm` to connect to a new local model in Ollama (such as `llama3` or `gemma`). Write a standard Racket script that queries both `gpt4o-mini` and your new local model with the same prompts and logs the differences in their outputs.
-
+1. **Streaming API Responses:** The current HTTP requests in `llmapis.rkt` block until the complete JSON response is received. Using the streaming response features of `net/http-easy`, write an alternative completion procedure `llm-completion-stream` that accepts a callback procedure `(lambda (chunk-text) ...)` and streams tokens to the console as they arrive from the provider.
+2. **Multi-turn Conversation History in the REPL:** Using `llmapis.rkt` and the `llm-message` struct, implement an interactive terminal REPL function `(interactive-chat model)` that accumulates conversation turns across prompts. Verify that the model remembers information stated earlier in the conversation.
+3. **Register a Custom Provider:** Use `define-provider` to register another OpenAI-compatible provider (e.g. Groq, Together AI, or OpenRouter) with its base URL and API key environment variable. Define a custom Racket tool (such as a calculator or directory listing tool) using `make-llm-tool`, and invoke `llm-chat-with-tools` using your newly registered provider.
+4. **Tool Call Auditing and Approval Gate:** Modify the manual tool loop pattern shown in this chapter to prompt the user in the terminal `(y/n)` before executing any tool whose name begins with `"danger_"`. If the user declines, supply an appropriate `"User denied tool execution"` result string to the model.
