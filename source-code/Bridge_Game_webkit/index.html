@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Racket Rubber Bridge</title>
+<style>
+  :root {
+    --felt-color-1: #0f3d2f;
+    --felt-color-2: #09261d;
+    --gold: #dfb23f;
+    --gold-glow: rgba(223, 178, 63, 0.4);
+    --glass: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: radial-gradient(circle, var(--felt-color-1) 0%, var(--felt-color-2) 100%);
+    color: #f3f4f6;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Table Layout */
+  .table-container {
+    position: relative;
+    flex-shrink: 0;
+    width: 1320px;
+    height: 940px;
+    transform-origin: center center;
+    border-radius: 40px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 8px solid #2e1d0c;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0,0,0,0.5);
+    display: grid;
+    grid-template-columns: 260px 1fr 260px;
+    grid-template-rows: 180px 1fr 250px;
+    gap: 16px;
+    padding: 24px;
+  }
+
+  /* Seats */
+  .seat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .seat-label {
+    font-size: 0.85em;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 8px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.2);
+  }
+
+  .seat.active .seat-label {
+    color: #fff;
+    background: var(--gold);
+    box-shadow: 0 0 12px var(--gold-glow);
+  }
+
+  .score-panel { grid-column: 1; grid-row: 1; }
+  .auction-panel { grid-column: 3; grid-row: 1; }
+  .tricks-panel { grid-column: 1; grid-row: 3; }
+  .info-panel { grid-column: 3; grid-row: 3; }
+
+  .north-seat {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .west-seat {
+    grid-column: 1;
+    grid-row: 2;
+    justify-content: center;
+  }
+
+  .east-seat {
+    grid-column: 3;
+    grid-row: 2;
+    justify-content: center;
+  }
+
+  .south-seat {
+    grid-column: 2;
+    grid-row: 3;
+    justify-content: flex-end;
+  }
+
+  /* Center Board: Tricks & State Banners */
+  .center-board {
+    grid-column: 2;
+    grid-row: 2;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 24px;
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 64px;
+  }
+
+  /* Trick Area */
+  .trick-area {
+    position: relative;
+    width: 360px;
+    height: 330px;
+  }
+
+  .played-card-container {
+    position: absolute;
+    width: 90px;
+    height: 130px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .played-card-container.North {
+    top: 0;
+    left: 135px;
+  }
+
+  .played-card-container.South {
+    bottom: 18px;
+    left: 135px;
+  }
+
+  .played-card-container.West {
+    top: 96px;
+    left: 10px;
+  }
+
+  .played-card-container.East {
+    top: 96px;
+    right: 10px;
+  }
+
+  .player-tag {
+    position: absolute;
+    bottom: -18px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.7em;
+    font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    background: rgba(0,0,0,0.4);
+    border-radius: 4px;
+    padding: 1px 0;
+  }
+
+  /* Side Panels: Score & Bidding history */
+  .side-panel {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .panel-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gold);
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 6px;
+  }
+
+  /* Scorecard */
+  .scorecard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+  }
+
+  .scorecard-table th, .scorecard-table td {
+    padding: 6px;
+    text-align: center;
+    width: 50%;
+  }
+
+  .scorecard-table th {
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    border-bottom: 2px solid rgba(255,255,255,0.15);
+  }
+
+  .scorecard-table td.above {
+    height: 40px;
+    vertical-align: bottom;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .scorecard-table td.below {
+    height: 40px;
+    vertical-align: top;
+    border-top: 2px solid #f3f4f6;
+    color: white;
+    font-weight: 700;
+  }
+
+  .scorecard-meta {
+    font-size: 0.95em;
+    color: rgba(255,255,255,0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Tricks won: this deal and running rubber total */
+  .tricks-grid {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 10px;
+    text-align: center;
+  }
+
+  .tricks-head {
+    font-size: 0.7em;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .tricks-row-label {
+    text-align: left;
+    font-size: 0.8em;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .tricks-num {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .tricks-num.we { color: var(--gold); }
+  .tricks-num.them { color: #f3f4f6; }
+
+  .scorecard-meta span {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .scorecard-meta span strong {
+    color: rgba(255,255,255,0.85);
+  }
+
+  /* Bidding Auction Panel */
+  .bidding-history {
+    flex-grow: 1;
+    overflow-y: auto;
+    font-size: 0.85rem;
+  }
+
+  .bidding-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    text-align: center;
+  }
+
+  .bidding-header {
+    font-weight: 700;
+    color: rgba(255,255,255,0.4);
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .bidding-cell {
+    padding: 6px 2px;
+    border-radius: 4px;
+  }
+
+  .bidding-cell.pass { color: #10b981; }
+  .bidding-cell.dbl { color: #ef4444; font-weight: 700; }
+  .bidding-cell.rdbl { color: #3b82f6; font-weight: 700; }
+  .bidding-cell.bid { color: var(--gold); font-weight: 600; }
+
+  /* Bidding Board Modal (Human's turn) */
+  .bid-board {
+    position: absolute;
+    background: rgba(10, 25, 20, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 20px;
+    width: 420px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    animation: scaleIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes scaleIn {
+    from { transform: scale(0.9) opacity: 0; }
+    to { transform: scale(1) opacity: 1; }
+  }
+
+  .bid-board-title {
+    font-size: 0.95em;
+    font-weight: 700;
+    text-align: center;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  .bid-row {
+    display: grid;
+    grid-template-columns: 40px repeat(5, 1fr);
+    gap: 6px;
+    align-items: center;
+  }
+
+  .bid-row-label {
+    font-weight: 700;
+    font-size: 1.1em;
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+  }
+
+  .bid-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    padding: 8px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.15s ease;
+    font-size: 0.9em;
+  }
+
+  .bid-btn:hover:not(:disabled) {
+    background: var(--gold);
+    color: #051410;
+    border-color: var(--gold);
+    transform: scale(1.05);
+  }
+
+  .bid-btn:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+  }
+
+  .bid-special-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 12px;
+  }
+
+  .special-btn {
+    border: none;
+    padding: 10px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.9em;
+    transition: all 0.2s;
+  }
+
+  .btn-pass {
+    background: #10b981;
+    color: #022d20;
+  }
+  .btn-pass:hover:not(:disabled) { background: #059669; }
+
+  .btn-dbl {
+    background: #dc2626;
+    color: white;
+  }
+  .btn-dbl:hover:not(:disabled) { background: #b91c1c; }
+
+  .btn-rdbl {
+    background: #2563eb;
+    color: white;
+  }
+  .btn-rdbl:hover:not(:disabled) { background: #1d4ed8; }
+
+  .special-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+  }
+
+  /* Playing Card Visuals - classic pip layout */
+  .card {
+    width: 90px;
+    height: 130px;
+    background: linear-gradient(160deg, #ffffff 0%, #f5f1e6 100%);
+    border-radius: 6px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+    position: relative;
+    color: #1a1a1a;
+    font-family: 'Palatino', 'Palatino Linotype', 'Georgia', 'Book Antiqua', serif;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    transition: all 0.2s ease;
+    overflow: hidden;
+  }
+
+  .card.red {
+    color: #c1121f;
+  }
+
+  /* Corner pip (rank atop small suit) */
+  .card-corner {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  }
+
+  .card-corner.tl {
+    top: 5px;
+    left: 6px;
+  }
+
+  .card-corner.br {
+    bottom: 5px;
+    right: 6px;
+    transform: rotate(180deg);
+  }
+
+  .card-rank {
+    font-size: 21px;
+    letter-spacing: -0.5px;
+    font-weight: 700;
+  }
+
+  .card-corner-suit {
+    font-size: 20px;
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  /* Center pip area, inset from the corners */
+  .card-center {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 25px;
+    right: 25px;
+  }
+
+  .pip {
+    position: absolute;
+    font-size: 25px;
+    line-height: 1;
+    transform: translate(-50%, -50%);
+  }
+
+  .pip.inv {
+    transform: translate(-50%, -50%) rotate(180deg);
+  }
+
+  /* Ace: single very large center suit */
+  .card-ace {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 58px;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+
+  /* Face card (J/Q/K): framed letter + suit accent */
+  .card-face {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .card-face-letter {
+    font-family: 'Palatino', 'Palatino Linotype', 'Georgia', 'Book Antiqua', serif;
+    font-size: 32px;
+    font-weight: 700;
+    font-style: italic;
+    border: 1.5px solid currentColor;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+
+  .card-face-suit {
+    font-size: 24px;
+    margin-top: 4px;
+  }
+
+  /* Card back - patterned diamond weave */
+  .card.back {
+    background: linear-gradient(135deg, #7a1220 0%, #3a0810 100%);
+    border: 1px solid #f9fafb;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0,0,0,0.25);
+  }
+
+  .card.back::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    right: 4px;
+    border-radius: 3px;
+    border: 1px solid rgba(223, 178, 63, 0.35);
+    background:
+      repeating-linear-gradient(45deg, rgba(223, 178, 63, 0.18) 0, rgba(223, 178, 63, 0.18) 1px, transparent 1px, transparent 6px),
+      repeating-linear-gradient(-45deg, rgba(223, 178, 63, 0.18) 0, rgba(223, 178, 63, 0.18) 1px, transparent 1px, transparent 6px);
+  }
+
+  .card.back::after {
+    content: '\2660';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(223, 178, 63, 0.75);
+    font-size: 28px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  /* Fanning Hands */
+  .hand {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    position: relative;
+    width: 100%;
+    height: 120px;
+  }
+
+  .south-hand {
+    height: 200px;
+  }
+
+  .south-hand .card {
+    position: absolute;
+    left: calc(50% - 45px);
+    bottom: 20px;
+    transform-origin: bottom center;
+    transform: translateX(calc((var(--index) - (var(--total) - 1) / 2) * 50px)) rotate(calc((var(--index) - (var(--total) - 1) / 2) * 2deg)) translateY(calc(var(--offset) * 4px));
+  }
+
+  /* When it's South's turn to play, lift and highlight legal cards to make them larger */
+  .south-hand.south-turn .card.legal {
+    transform: translateX(calc((var(--index) - (var(--total) - 1) / 2) * 50px)) rotate(calc((var(--index) - (var(--total) - 1) / 2) * 2deg)) translateY(calc(var(--offset) * 4px - 18px)) scale(1.12);
+    z-index: 10;
+    border-color: rgba(223, 178, 63, 0.4);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4), 0 0 10px rgba(223, 178, 63, 0.2);
+  }
+
+  /* Hover state for legal cards on South's turn: even larger and glowing */
+  .south-hand.south-turn .card.legal:hover {
+    transform: translateX(calc((var(--index) - (var(--total) - 1) / 2) * 50px)) rotate(calc((var(--index) - (var(--total) - 1) / 2) * 2deg)) translateY(-36px) scale(1.28);
+    z-index: 100;
+    border-color: var(--gold);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.5), 0 0 20px var(--gold);
+    cursor: pointer;
+  }
+
+  /* When it's South's turn, make non-legal cards disabled/dimmed and non-interactive */
+  .south-hand.south-turn .card:not(.legal) {
+    filter: brightness(0.4) grayscale(0.5);
+    opacity: 0.5;
+    pointer-events: none; /* Disables hover/clicks */
+  }
+
+  /* Hidden Hand Styles */
+  .hidden-hand-cards {
+    display: flex;
+    gap: -45px;
+  }
+
+  .hidden-hand-cards .card {
+    width: 60px;
+    height: 86px;
+    margin-left: -45px;
+  }
+
+  .hidden-hand-cards .card.back::after {
+    font-size: 18px;
+  }
+
+  .hidden-hand-cards .card:first-child {
+    margin-left: 0;
+  }
+
+  /* Dummy Visible Hand */
+  .dummy-hand {
+    display: flex;
+    gap: 0;
+    justify-content: center;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 8px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+  }
+
+  .dummy-hand .card {
+    width: 78px;
+    height: 112px;
+    flex-shrink: 0;
+    margin-left: -30px;
+  }
+
+  .dummy-hand .card:first-child {
+    margin-left: 0;
+  }
+
+  .dummy-hand .card .card-rank {
+    font-size: 19px;
+  }
+
+  .dummy-hand .card .card-corner-suit {
+    font-size: 18px;
+  }
+
+  .dummy-hand .card .card-center {
+    left: 22px;
+    right: 22px;
+  }
+
+  .dummy-hand .card .pip {
+    font-size: 21px;
+  }
+
+  .dummy-hand .card .card-ace {
+    font-size: 50px;
+  }
+
+  .dummy-hand .card .card-face-letter {
+    font-size: 27px;
+    padding: 1px 6px;
+  }
+
+  .dummy-hand .card .card-face-suit {
+    font-size: 20px;
+  }
+
+  .dummy-hand .card.legal:hover {
+    transform: translateY(-8px) scale(1.05);
+    border-color: var(--gold);
+    box-shadow: 0 0 10px var(--gold);
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  .dummy-hand .card:not(.legal) {
+    filter: brightness(0.6);
+  }
+
+  /* Phase Banner / Announcements */
+  .announcement-banner {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    right: 24px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 10px 16px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95em;
+    font-weight: 500;
+  }
+
+  .announcement-text {
+    color: #f3f4f6;
+  }
+
+  .banner-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .banner-btn {
+    background: var(--gold);
+    color: #0f3d2f;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .banner-btn:hover {
+    transform: scale(1.05);
+    background: #ffdb6e;
+  }
+
+  .vul-pill {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8em;
+    font-weight: 700;
+  }
+  .vul-pill.none { background: rgba(255,255,255,0.15); color: #fff; }
+  .vul-pill.vul { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.4); }
+
+  /* Info status line */
+  .status-line {
+    font-weight: 600;
+    color: var(--gold);
+  }
+</style>
+</head>
+<body>
+
+<div class="table-container">
+  <!-- West Seat (Left Panel) -->
+  <div class="side-panel score-panel">
+    <div class="panel-title">Scorecard</div>
+    <table class="scorecard-table">
+      <thead>
+        <tr>
+          <th>N-S</th>
+          <th>E-W</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="above" id="ns-above">0</td>
+          <td class="above" id="ew-above">0</td>
+        </tr>
+        <tr>
+          <td class="below" id="ns-below">0</td>
+          <td class="below" id="ew-below">0</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <!-- Board Area (Seat layout + center trick area) -->
+  <div class="seat north-seat" id="seat-North">
+    <div class="seat-label" id="label-North">North (Partner)</div>
+    <div id="north-hand-container">
+      <!-- Dummy hand or hidden cards -->
+    </div>
+  </div>
+
+  <div class="seat west-seat" id="seat-West">
+    <div class="seat-label" id="label-West">West (AI)</div>
+    <div class="hidden-hand-cards" id="west-hand-container">
+      <!-- Hidden cards counts -->
+    </div>
+  </div>
+
+  <div class="center-board">
+    <div class="announcement-banner">
+      <div class="announcement-text" id="announcement-text">Bidding starts. North is dealer.</div>
+      <div class="banner-actions" id="banner-actions">
+        <!-- Next Deal, Reset buttons -->
+      </div>
+    </div>
+
+    <!-- The Bidding selector board -->
+    <div class="bid-board" id="bid-board">
+      <div class="bid-board-title">Your Bid (South)</div>
+      
+      <!-- Levels 1 to 7 -->
+      <div id="bid-rows-container">
+        <!-- Rows dynamically rendered by JS -->
+      </div>
+      
+      <!-- Special Bids (Pass, Dbl, Rdbl) -->
+      <div class="bid-special-row">
+        <button class="special-btn btn-pass" onclick="sendBid('PASS')">PASS</button>
+        <button class="special-btn btn-dbl" id="btn-dbl" onclick="sendBid('DBL')">DBL</button>
+        <button class="special-btn btn-rdbl" id="btn-rdbl" onclick="sendBid('RDBL')">RDBL</button>
+      </div>
+    </div>
+
+    <!-- Trick played cards -->
+    <div class="trick-area" id="trick-area">
+      <!-- Played cards placed here dynamically -->
+    </div>
+  </div>
+
+  <div class="seat east-seat" id="seat-East">
+    <div class="seat-label" id="label-East">East (AI)</div>
+    <div class="hidden-hand-cards" id="east-hand-container">
+      <!-- Hidden cards counts -->
+    </div>
+  </div>
+
+  <div class="seat south-seat" id="seat-South">
+    <div class="seat-label" id="label-South">South (You)</div>
+    <div class="hand south-hand" id="south-hand">
+      <!-- Fanned cards -->
+    </div>
+  </div>
+
+  <!-- East Seat (Right Panel): Bidding Auction Grid -->
+  <div class="side-panel auction-panel">
+    <div class="panel-title">Bidding Auction</div>
+    <div class="bidding-history">
+      <div class="bidding-grid" id="bidding-grid">
+        <div class="bidding-header">N</div>
+        <div class="bidding-header">E</div>
+        <div class="bidding-header">S</div>
+        <div class="bidding-header">W</div>
+        <!-- Bids dynamically appended here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom-left: tricks won this deal and running total for the rubber -->
+  <div class="side-panel tricks-panel">
+    <div class="panel-title">Tricks Won</div>
+    <div class="tricks-grid">
+      <div></div>
+      <div class="tricks-head">We (N-S)</div>
+      <div class="tricks-head">Them (E-W)</div>
+      <div class="tricks-row-label">This deal</div>
+      <div class="tricks-num we" id="tricks-ns">0</div>
+      <div class="tricks-num them" id="tricks-ew">0</div>
+      <div class="tricks-row-label">Rubber</div>
+      <div class="tricks-num we" id="total-tricks-ns">0</div>
+      <div class="tricks-num them" id="total-tricks-ew">0</div>
+    </div>
+  </div>
+
+  <!-- Bottom-right: deal info -->
+  <div class="side-panel info-panel">
+    <div class="panel-title">Deal Info</div>
+    <div class="scorecard-meta">
+      <span>Games: <strong id="score-games">0 - 0</strong></span>
+      <span>Vul: <strong id="score-vul">None</strong></span>
+      <span>Dealer: <strong id="score-dealer">North</strong></span>
+      <span>Deal #: <strong id="score-deal-num">1</strong></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let gameState = null;
+
+  // Standard pip positions (percentages within .card-center) for numbered cards 2-10.
+  // Bottom-half pips are marked inv (rotated 180deg) to mirror real card printing.
+  function pipPositions(n) {
+    const L = 22, R = 78, C = 50;
+    const T = 10, B = 90, M = 50;
+    switch (n) {
+      case 2:  return [{y:T,x:C},{y:B,x:C,inv:1}];
+      case 3:  return [{y:T,x:C},{y:M,x:C},{y:B,x:C,inv:1}];
+      case 4:  return [{y:T,x:L},{y:T,x:R},{y:B,x:L,inv:1},{y:B,x:R,inv:1}];
+      case 5:  return [{y:T,x:L},{y:T,x:R},{y:M,x:C},{y:B,x:L,inv:1},{y:B,x:R,inv:1}];
+      case 6:  return [{y:T,x:L},{y:T,x:R},{y:M,x:L},{y:M,x:R},{y:B,x:L,inv:1},{y:B,x:R,inv:1}];
+      case 7:  return [{y:T,x:L},{y:T,x:R},{y:30,x:C},{y:M,x:L},{y:M,x:R},{y:B,x:L,inv:1},{y:B,x:R,inv:1}];
+      case 8:  return [{y:T,x:L},{y:T,x:R},{y:30,x:C},{y:M,x:L},{y:M,x:R},{y:70,x:C,inv:1},{y:B,x:L,inv:1},{y:B,x:R,inv:1}];
+      case 9:  return [{y:T,x:L},{y:T,x:R},{y:34,x:L},{y:34,x:R},{y:M,x:C},{y:66,x:L,inv:1},{y:66,x:R,inv:1},{y:B,x:L,inv:1},{y:B,x:R,inv:1}];
+      case 10: return [{y:T,x:L},{y:T,x:R},{y:26,x:C},{y:42,x:L},{y:42,x:R},{y:58,x:L,inv:1},{y:58,x:R,inv:1},{y:74,x:C,inv:1},{y:B,x:L,inv:1},{y:B,x:R,inv:1}];
+      default: return [];
+    }
+  }
+
+  // Render card element with classic playing card face
+  function createCardElement(code, isLegal = false, isBack = false) {
+    const cardDiv = document.createElement('div');
+    if (isBack) {
+      cardDiv.className = 'card back';
+      return cardDiv;
+    }
+
+    const suit = code.slice(-1);
+    const val = code.slice(0, -1);
+    const isRed = suit === 'H' || suit === 'D';
+
+    cardDiv.className = `card ${isRed ? 'red' : ''} ${isLegal ? 'legal' : ''}`;
+
+    const suitSymbol = { 'S': '♠', 'H': '♥', 'D': '♦', 'C': '♣' }[suit] || suit;
+
+    let centerHTML = '';
+    if (val === 'A') {
+      centerHTML = `<div class="card-ace">${suitSymbol}</div>`;
+    } else if (val === 'K' || val === 'Q' || val === 'J') {
+      centerHTML = `
+        <div class="card-face">
+          <div class="card-face-letter">${val}</div>
+          <div class="card-face-suit">${suitSymbol}</div>
+        </div>`;
+    } else {
+      const n = parseInt(val, 10);
+      centerHTML = pipPositions(n).map(p =>
+        `<span class="pip${p.inv ? ' inv' : ''}" style="top:${p.y}%;left:${p.x}%">${suitSymbol}</span>`
+      ).join('');
+    }
+
+    cardDiv.innerHTML = `
+      <div class="card-corner tl">
+        <div class="card-rank">${val}</div>
+        <div class="card-corner-suit">${suitSymbol}</div>
+      </div>
+      <div class="card-center">${centerHTML}</div>
+      <div class="card-corner br">
+        <div class="card-rank">${val}</div>
+        <div class="card-corner-suit">${suitSymbol}</div>
+      </div>
+    `;
+
+    return cardDiv;
+  }
+
+  // Parse bid string code to comparable index (1C = 0, 7NT = 34)
+  function getBidIndex(bidStr) {
+    if (!bidStr || bidStr === "Pass" || bidStr === "Dbl" || bidStr === "Rdbl") return -1;
+    const level = parseInt(bidStr.charAt(0));
+    const strain = bidStr.slice(1);
+    const strainIdx = { 'C': 0, 'D': 1, 'H': 2, 'S': 3, 'NT': 4 }[strain];
+    return (level - 1) * 5 + strainIdx;
+  }
+
+  // Invoke backend command via JS Bridge
+  async function invokeBackend(command, payload) {
+    try {
+      const response = await window.webkit_racket.invoke(command, payload);
+      if (response && response.error) {
+        console.error("Backend error:", response.error);
+        alert(response.error);
+        return null;
+      }
+      return response;
+    } catch(e) {
+      console.error("FFI call failed:", e);
+      return null;
+    }
+  }
+
+  // Set up the bidding panel rows and disabled states
+  function updateBidBoard() {
+    const container = document.getElementById('bid-rows-container');
+    container.innerHTML = '';
+
+    // Find current highest bid
+    let highestIdx = -1;
+    let highestBid = null;
+    if (gameState.bidHistory && gameState.bidHistory.length > 0) {
+      // Find last bid that is a suit/NT bid
+      for (let i = 0; i < gameState.bidHistory.length; i++) {
+        const entry = gameState.bidHistory[i];
+        const idx = getBidIndex(entry.beBid);
+        if (idx > highestIdx) {
+          highestIdx = idx;
+          highestBid = entry.beBid;
+        }
+      }
+    }
+
+    const strains = ['C', 'D', 'H', 'S', 'NT'];
+    const symbols = { 'C': '♣', 'D': '♦', 'H': '♥', 'S': '♠', 'NT': 'NT' };
+
+    for (let level = 1; level <= 7; level++) {
+      const row = document.createElement('div');
+      row.className = 'bid-row';
+      
+      const label = document.createElement('div');
+      row.className = 'bid-row';
+      label.className = 'bid-row-label';
+      label.textContent = level;
+      row.appendChild(label);
+
+      strains.forEach(strain => {
+        const btn = document.createElement('button');
+        btn.className = 'bid-btn';
+        btn.innerHTML = symbols[strain];
+        const bidCode = `${level}${strain}`;
+        const thisIdx = getBidIndex(bidCode);
+        
+        if (thisIdx <= highestIdx) {
+          btn.disabled = true;
+        }
+
+        btn.onclick = () => sendBid(bidCode);
+        row.appendChild(btn);
+      });
+
+      container.appendChild(row);
+    }
+
+    // Double & Redouble enabling rules:
+    const dblBtn = document.getElementById('btn-dbl');
+    const rdblBtn = document.getElementById('btn-rdbl');
+    dblBtn.disabled = true;
+    rdblBtn.disabled = true;
+
+    if (gameState.bidHistory && gameState.bidHistory.length > 0) {
+      // Traverse backwards to find last non-pass bid
+      let lastBid = null;
+      let lastBidSide = null;
+      let isDoubled = gameState.doubled;
+
+      for (let i = 0; i < gameState.bidHistory.length; i++) {
+        const bid = gameState.bidHistory[i].beBid;
+        const player = gameState.bidHistory[i].bePlayer;
+        if (bid !== "Pass") {
+          lastBid = bid;
+          lastBidSide = (player === "North" || player === "South") ? 0 : 1;
+          break;
+        }
+      }
+
+      if (lastBid && lastBid !== "Dbl" && lastBid !== "Rdbl") {
+        if (lastBidSide !== 0 && isDoubled === 0) {
+          dblBtn.disabled = false;
+        }
+      }
+      if (lastBid && isDoubled === 1) {
+        if (lastBidSide === 0) {
+          rdblBtn.disabled = false;
+        }
+      }
+    }
+  }
+
+  // Render Trick in center of board
+  function updateTrickArea() {
+    const trickArea = document.getElementById('trick-area');
+    trickArea.innerHTML = '';
+
+    let trickToRender = [];
+    if (gameState.currentTrick && gameState.currentTrick.length > 0) {
+      trickToRender = gameState.currentTrick;
+    } else if (gameState.lastCompletedTrick && gameState.lastCompletedTrick.length > 0) {
+      trickToRender = gameState.lastCompletedTrick;
+    }
+
+    trickToRender.forEach(played => {
+      const p = played.pcPlayer;
+      const card = played.pcCard;
+      
+      const container = document.createElement('div');
+      container.className = `played-card-container ${p}`;
+      
+      const cardEl = createCardElement(card);
+      container.appendChild(cardEl);
+
+      const tag = document.createElement('div');
+      tag.className = 'player-tag';
+      tag.textContent = p;
+      container.appendChild(tag);
+      
+      trickArea.appendChild(container);
+    });
+  }
+
+  // Populate Bidding history side-grid
+  function updateBiddingHistoryGrid() {
+    const grid = document.getElementById('bidding-grid');
+    // Clear previous cell entries (keeping headers)
+    const cells = grid.querySelectorAll('.bidding-cell');
+    cells.forEach(c => c.remove());
+
+    const dealer = gameState.dealer;
+    const order = ['North', 'East', 'South', 'West'];
+    let dealerIdx = order.indexOf(dealer);
+
+    // Padding cells before first bid
+    for (let i = 0; i < dealerIdx; i++) {
+      const pad = document.createElement('div');
+      pad.className = 'bidding-cell';
+      grid.appendChild(pad);
+    }
+
+    if (gameState.bidHistory) {
+      gameState.bidHistory.forEach(entry => {
+        const cell = document.createElement('div');
+        const bid = entry.beBid;
+        cell.textContent = bid;
+        
+        if (bid === "Pass") {
+          cell.className = 'bidding-cell pass';
+        } else if (bid === "Dbl") {
+          cell.className = 'bidding-cell dbl';
+        } else if (bid === "Rdbl") {
+          cell.className = 'bidding-cell rdbl';
+        } else {
+          cell.className = 'bidding-cell bid';
+        }
+        grid.appendChild(cell);
+      });
+    }
+  }
+
+  // Main UI updater
+  function renderUI(state) {
+    if (!state) return;
+    gameState = state;
+
+    // Reset seat highlights
+    document.querySelectorAll('.seat').forEach(s => s.classList.remove('active'));
+    if (gameState.activeActor) {
+      const activeSeat = document.getElementById(`seat-${gameState.activeActor}`);
+      if (activeSeat) activeSeat.classList.add('active');
+    }
+
+    // Phase handling
+    const bidBoard = document.getElementById('bid-board');
+    if (gameState.phase === "Bidding" && gameState.activeActor === "South") {
+      bidBoard.style.display = 'flex';
+      updateBidBoard();
+    } else {
+      bidBoard.style.display = 'none';
+    }
+
+    // 1. South hand
+    const southHandDiv = document.getElementById('south-hand');
+    southHandDiv.innerHTML = '';
+    if (gameState.phase === "Playing" && gameState.activeActor === "South") {
+      southHandDiv.classList.add('south-turn');
+    } else {
+      southHandDiv.classList.remove('south-turn');
+    }
+    const sCards = gameState.hands.hlSouth;
+    sCards.forEach((code, idx) => {
+      const isLegal = gameState.legalCards && gameState.legalCards.includes(code);
+      const cardEl = createCardElement(code, isLegal);
+      cardEl.style.setProperty('--index', idx);
+      cardEl.style.setProperty('--total', sCards.length);
+      const offset = Math.abs(idx - (sCards.length - 1) / 2);
+      cardEl.style.setProperty('--offset', offset);
+      
+      if (isLegal) {
+        cardEl.onclick = () => playCard(code);
+      }
+      southHandDiv.appendChild(cardEl);
+    });
+
+    // 2. North hand (Partner / Dummy)
+    const northHandDiv = document.getElementById('north-hand-container');
+    northHandDiv.innerHTML = '';
+    if (gameState.dummyVisible && gameState.dummy === "North") {
+      // Render dummy hand open
+      const nHand = document.createElement('div');
+      nHand.className = 'dummy-hand';
+      const nCards = gameState.hands.hlNorth;
+      nCards.forEach(code => {
+        const isLegal = gameState.legalCards && gameState.legalCards.includes(code);
+        const cardEl = createCardElement(code, isLegal);
+        if (isLegal) {
+          cardEl.onclick = () => playCard(code);
+        }
+        nHand.appendChild(cardEl);
+      });
+      northHandDiv.appendChild(nHand);
+    } else {
+      // Hidden cards back fanned
+      const hCards = document.createElement('div');
+      hCards.className = 'hidden-hand-cards';
+      const count = gameState.hands.hlNorth.length;
+      for(let i=0; i<count; i++) {
+        hCards.appendChild(createCardElement('', false, true));
+      }
+      northHandDiv.appendChild(hCards);
+    }
+
+    // 3. West / East (Hidden)
+    const westHandDiv = document.getElementById('west-hand-container');
+    westHandDiv.innerHTML = '';
+    const wCount = gameState.hands.hlWest.length;
+    for(let i=0; i<wCount; i++) {
+      westHandDiv.appendChild(createCardElement('', false, true));
+    }
+
+    const eastHandDiv = document.getElementById('east-hand-container');
+    eastHandDiv.innerHTML = '';
+    const eCount = gameState.hands.hlEast.length;
+    for(let i=0; i<eCount; i++) {
+      eastHandDiv.appendChild(createCardElement('', false, true));
+    }
+
+    // 4. Update Trick area
+    updateTrickArea();
+
+    // 5. Side scorecard
+    const rb = gameState.rubberState;
+    document.getElementById('ns-above').textContent = rb.nsAbove;
+    document.getElementById('ew-above').textContent = rb.ewAbove;
+    document.getElementById('ns-below').textContent = rb.nsBelow;
+    document.getElementById('ew-below').textContent = rb.ewBelow;
+    document.getElementById('tricks-ns').textContent = gameState.tricksNs;
+    document.getElementById('tricks-ew').textContent = gameState.tricksEw;
+    document.getElementById('total-tricks-ns').textContent = gameState.totalTricksNs;
+    document.getElementById('total-tricks-ew').textContent = gameState.totalTricksEw;
+    document.getElementById('score-games').textContent = `${rb.nsGames} - ${rb.ewGames}`;
+    
+    let vulStr = "None";
+    if (rb.nsVulnerable && rb.ewVulnerable) vulStr = "Both";
+    else if (rb.nsVulnerable) vulStr = "N-S Only";
+    else if (rb.ewVulnerable) vulStr = "E-W Only";
+    document.getElementById('score-vul').innerHTML = 
+      `<span class="vul-pill ${vulStr === 'None' ? 'none' : 'vul'}">${vulStr}</span>`;
+      
+    document.getElementById('score-dealer').textContent = gameState.dealer;
+    document.getElementById('score-deal-num').textContent = gameState.dealNum;
+
+    // 6. Update Bidding auction grids
+    updateBiddingHistoryGrid();
+
+    // 7. Update status banner text & action buttons
+    const textEl = document.getElementById('announcement-text');
+    const actionsEl = document.getElementById('banner-actions');
+    actionsEl.innerHTML = '';
+
+    if (gameState.phase === "Bidding") {
+      if (gameState.activeActor === "South") {
+        textEl.innerHTML = '<span class="status-line">Your turn to bid!</span>';
+      } else {
+        textEl.textContent = `Bidding phase. ${gameState.activeActor} is contemplating...`;
+      }
+    } else if (gameState.phase === "Playing") {
+      const contr = gameState.contract;
+      const decl = gameState.declarer;
+      const dbl = gameState.doubled === 1 ? " (Doubled)" : gameState.doubled === 2 ? " (Redoubled)" : "";
+      const lead = gameState.activeActor;
+      const isLeadHuman = lead === "South" || (lead === "North" && gameState.dummyVisible && gameState.dummy === "North");
+
+      let playText = `Contract: <strong>${contr}</strong> by ${decl}${dbl}. `;
+      if (gameState.lastCompletedTrick && gameState.lastCompletedTrick.length > 0 && (!gameState.currentTrick || gameState.currentTrick.length === 0)) {
+        playText += `<span class="status-line">${gameState.trickLead} wins the trick!</span>`;
+      } else if (isLeadHuman) {
+        playText += `<span class="status-line">Your turn to play! (Select card from ${lead === 'South' ? 'South' : 'North/Dummy'})</span>`;
+      } else {
+        playText += `Playing phase. ${lead}'s turn to play.`;
+      }
+      textEl.innerHTML = playText;
+    } else if (gameState.phase === "Scoring") {
+      const tricksNs = gameState.tricksNs;
+      const tricksEw = gameState.tricksEw;
+      const decl = gameState.declarer;
+      const decSide = (decl === "North" || decl === "South") ? 0 : 1;
+      const level = parseInt(gameState.contract.charAt(0));
+      const needed = level + 6;
+      const won = decSide === 0 ? tricksNs : tricksEw;
+      const diff = won - needed;
+      
+      let resText = `Deal complete. Tricks won: N-S: ${tricksNs}, E-W: ${tricksEw}. `;
+      if (diff >= 0) {
+        resText += `Declarer ${decl} made ${gameState.contract} (diff: +${diff}).`;
+      } else {
+        resText += `Declarer ${decl} went down ${Math.abs(diff)} trick(s).`;
+      }
+      textEl.textContent = resText;
+
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'banner-btn';
+      nextBtn.textContent = 'Next Deal';
+      nextBtn.onclick = triggerNextDeal;
+      actionsEl.appendChild(nextBtn);
+    } else if (gameState.phase === "Done") {
+      // Rubber finished!
+      const nsTotal = rb.nsAbove + (rb.nsGames >= 2 ? (rb.ewGames === 0 ? 700 : 500) : 0);
+      const ewTotal = rb.ewAbove + (rb.ewGames >= 2 ? (rb.nsGames === 0 ? 700 : 500) : 0);
+      const winner = nsTotal > ewTotal ? "N-S" : "E-W";
+      
+      textEl.innerHTML = `<strong>RUBBER OVER!</strong> ${winner} wins. Final Scores: N-S: ${nsTotal}, E-W: ${ewTotal}`;
+
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'banner-btn';
+      resetBtn.textContent = 'New Rubber';
+      resetBtn.onclick = triggerReset;
+      actionsEl.appendChild(resetBtn);
+    }
+
+    // Trigger AI turn if needed
+    checkAndTriggerAi();
+  }
+
+  // AI Turn Detection and Timer Controls
+  let aiTimeout = null;
+
+  function isAiTurn(state) {
+    if (state.phase !== "Playing") return false;
+    const actor = state.activeActor;
+    if (!actor) return false;
+    if (actor === "South") return false;
+
+    // North dummy play check:
+    // If North is dummy, and declarer side is 0 (N-S), then human plays North dummy
+    const isNorthDummy = (actor === "North" && state.dummy === "North");
+    const isNsDeclarer = (state.declarer === "North" || state.declarer === "South");
+    if (isNorthDummy && isNsDeclarer) {
+      return false; // South human plays dummy
+    }
+
+    return true; // Any other actor (East, West, or North if E-W won contract) is AI
+  }
+
+  async function triggerAiPlay() {
+    aiTimeout = null;
+    const state = await invokeBackend('ai-play-single', {});
+    if (state) {
+      renderUI(state);
+    }
+  }
+
+  function checkAndTriggerAi() {
+    if (aiTimeout) {
+      clearTimeout(aiTimeout);
+      aiTimeout = null;
+    }
+    if (isAiTurn(gameState)) {
+      aiTimeout = setTimeout(triggerAiPlay, 2000);
+    }
+  }
+
+  // FFI action triggering
+  async function triggerNextDeal() {
+    if (aiTimeout) {
+      clearTimeout(aiTimeout);
+      aiTimeout = null;
+    }
+    const state = await invokeBackend('next-deal', {});
+    renderUI(state);
+  }
+
+  async function triggerReset() {
+    if (confirm("Reset current rubber and deal a new one?")) {
+      if (aiTimeout) {
+        clearTimeout(aiTimeout);
+        aiTimeout = null;
+      }
+      const state = await invokeBackend('reset-game', {});
+      renderUI(state);
+    }
+  }
+
+  async function sendBid(bidStr) {
+    const state = await invokeBackend('bid', { "bid": bidStr });
+    renderUI(state);
+  }
+
+  async function playCard(cardStr) {
+    const state = await invokeBackend('play-card', { "card": cardStr });
+    renderUI(state);
+  }
+
+  // Initialize
+  async function initializeApp() {
+    const state = await invokeBackend('get-state', {});
+    if (state) {
+      renderUI(state);
+    }
+  }
+
+  // Scale the fixed-size board to fill the window
+  function fitBoard() {
+    const board = document.querySelector('.table-container');
+    const scale = Math.min(window.innerWidth / 1340, window.innerHeight / 960);
+    board.style.transform = `scale(${scale})`;
+  }
+  window.addEventListener('resize', fitBoard);
+  fitBoard();
+
+  // Start after FFI bridge is ready
+  setTimeout(initializeApp, 300);
+</script>
+</body>
+</html>
