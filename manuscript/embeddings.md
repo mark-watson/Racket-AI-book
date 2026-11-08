@@ -1,4 +1,4 @@
-# Retrieval Augmented generation of text using embeddings
+# Retrieval augmented generation of text using embeddings
 
 Retrieval-Augmented Generation (RAG) is a framework that combines the strengths of pre-trained language models (LLMs) with retrievers. Retrievers are system components for accessing knowledge from external sources of text data. In RAG a retriever selects relevant documents or passages from a corpus, and a generator produces a response based on both the retrieved information and the input query. The process typically follows these steps that we will use in the example Racket code:
 
@@ -8,7 +8,7 @@ Retrieval-Augmented Generation (RAG) is a framework that combines the strengths 
 - **Joint Encoding**: The query and document representations are combined, often concatenated or mixed via attention mechanisms.
 - **Generation**: A generator, usually LLM, is used to produce a response based on the joint representation.
 
-RAG enables the LLM to access and leverage external text data sources, which is crucial for tasks that require information beyond what the LLM has been trained on. It's a blend of retrieval-based and generation-based approaches, aimed at boosting the factual accuracy and informativeness of generated responses. 
+RAG gives a model a way to read text it was never trained on. You retrieve passages from your own corpus, put them in the prompt, and let the model answer from those. The point is accuracy. An answer drawn from text that exists beats whatever the weights happen to remember. 
 
 ## Example implementation
 
@@ -223,7 +223,7 @@ The code uses a local SQLite database to store and manage document embeddings an
 
 ```
 
-Let's look at a few examples form a Racket REPL:
+A few examples from a Racket REPL:
 
 ```
 > (QA "What is the history of the science of chemistry?")

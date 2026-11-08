@@ -2,7 +2,7 @@
 
 Large Language Models (LLMs) have supercharged AI capabilities, affected the job market for many *knowledge work* careers, and placed huge demands on electrical power infrastructure.
 
-In the development of practical AI systems, LLMs like those provided by OpenAI, Google, Anthropic, Mistral, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here after covering background material in the next session.
+LLMs from OpenAI, Google, Anthropic, Mistral, and Hugging Face now do a lot of the work in practical AI systems: tagging, summarizing, extracting, answering. They are deep networks trained on text, and they carry an enormous amount of it in their weights. This chapter is about calling them from Racket. It starts with enough background to make the APIs make sense.
 
 ## The Cambrian explosion in language technology: A historical trajectory
 
@@ -16,7 +16,7 @@ After using simpler neural networks in the 1980s (I personally used neural model
 \mathrm{vec}(\text{King}) - \mathrm{vec}(\text{Man}) + \mathrm{vec}(\text{Woman}) \approx \mathrm{vec}(\text{Queen}).
 ```
 
-This was a crucial step towards models that could capture the meaning and relationships of words, rather than just their statistical co-occurrence (i.e., which words often appear together in text). Much of my paid work in the 1980s involved applications of neural networks but I mostly moved on to other technologies until the deep learning revolution in 2012 and after personal experiments with word embeddings and later sentence and paragraph embeddings I went all-in on deep learning leading to managing a deep learning team at Capital One.
+That was the step that let models carry meaning and relationships instead of just recording which words sit near which other words. Most of my paid work in the 1980s involved neural networks, but I moved on to other things until 2012. Some experiments with word embeddings, and later sentence and paragraph embeddings, pulled me back in, and I ended up managing a deep learning team at Capital One.
  
 To process sequences of these word vectors, we turned to Recurrent Neural Networks (RNNs). An RNN processes a sequence one element at a time, maintaining an internal "hidden state" that acts as a memory, theoretically allowing information from earlier in the sequence to influence the processing of later elements. This architecture seemed a natural fit for language. However, in practice, standard RNNs were plagued by the vanishing gradient problem and inability to handle long sequences or characters in text, effectively preventing the model from learning dependencies between words that were far apart. A key breakthrough that temporarily surmounted this challenge was the Long Short-Term Memory (LSTM) network.
  

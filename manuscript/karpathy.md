@@ -12,7 +12,7 @@ In this chapter, we will explore a complete, dependency-free port of MicroGPT wr
 
 ## Demystifying the core components
 
-To build a functioning, end-to-end language model from scratch, we need to orchestrate several interacting systems. Our Racket implementation elegantly encapsulates these systems into a single, cohesive file. Let us break down the architecture into its primary constituents: the autograd engine, model parameter initialization, the Transformer architecture, the training loop, and the inference generator. Understanding each of these pieces is crucial for grasping the holistic behavior of a language model.
+A working language model needs five parts that talk to each other: an autograd engine, parameter initialization, the Transformer itself, the training loop, and the generator that samples text. All five fit in one file here. Read them in order and the model stops being a black box.
 
 ### The autograd engine
 
@@ -73,7 +73,7 @@ The `gp` function serves as the central processing unit of the model. It impleme
 
 ### Training the model: Learning from data
 
-The `run-train` function orchestrates the intricate dance of the learning process. The model trains by reading lines of text (in our specific example, from a file called `names.txt`) processing it character by character. 
+`run-train` is the loop that actually learns. It reads the training file line by line (in this case `names.txt`) and feeds the model one character at a time. 
 
 The training loop proceeds iteratively over many steps:
 1. **The Forward Pass:** The model ingests a sequence of characters and attempts to predict the subsequent character for every position in the sequence simultaneously.

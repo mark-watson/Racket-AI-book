@@ -127,7 +127,7 @@ Language: racket, with debugging; memory limit: 128 MB.
 
 ## Racket structure types
 
-A structure type is like a list that has named list elements. When you define a structure the Racket system writes getter and setter methods to access and change structure attribute values. Racket also generates a constructor function with the structure name. Let's look at a simple example in a Racket REPL of creating a structure with mutable elements:
+A structure type is a fixed set of named fields. Defining one makes Racket write the accessors, the mutators, and a constructor named after the structure. Here is a small example with mutable fields:
 
 ```racket
 > (struct person (name age email) #:mutable)

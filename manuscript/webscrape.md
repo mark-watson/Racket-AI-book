@@ -71,7 +71,7 @@ Different element types are **html**, **head**, **p**, **h1**, **h2**, etc. If y
 "
 ```
 
-Now we will extract HTML anchor links:
+Extracting the anchor links takes one call:
 
 ```racket
 > (se-path*/list '(href) lst) ;; get all links from HTML as a lisp

@@ -46,7 +46,7 @@ perspectives, and this chapter implements all five:
 
 ## The mathematics of the five perspectives
 
-### I. the Para category and lenses
+### I. The Para category and lenses
 
 In the Para construction, a neural-network layer is a *parametric morphism*
 `f : A \to B`$: it consumes an input from `A`$ and produces an output in `B`$,
@@ -65,7 +65,7 @@ the "get" direction; the backward pass is the "put" direction:
 f^* : P \times A \times \nabla B \to \nabla P \times \nabla A.
 ```
 
-The crucial theorem is that lenses compose. Chaining layers composes their
+The theorem worth remembering is that lenses compose. Chaining layers composes their
 forward passes, and backpropagation is nothing but composing the pullbacks in
 the *reverse* order — a covariant functor on the gradient category. The SGD
 update `\theta \leftarrow \theta - \eta \nabla_\theta L`$ is then simply an
@@ -86,7 +86,7 @@ random variables, sampling `W \sim \mathcal{N}(\mu, \sigma^2 I)`$ at every
 forward pass; the spread of many forward passes measures epistemic
 uncertainty.
 
-### III. invariance, equivariance, and colimits
+### III. Invariance, equivariance, and colimits
 
 A layer `f`$ is *equivariant* under a group `G`$ when `f(g \cdot x) = g \cdot f(x)`$
 for every `g \in G`$: the symmetry of the input is preserved by the layer.
@@ -116,7 +116,7 @@ inconsistent ones reveal disagreement. Finally, `\Omega`$ carries a **Heyting
 algebra** (intuitionistic logic); on `[0,1]`$ it collapses to
 `p \wedge q = \min(p,q)`$, `p \vee q = \max(p,q)`$, `\neg p = 1 - p`$.
 
-### V. natural transformations
+### V. Natural transformations
 
 Given two functors `F`$ and `G`$, a **natural transformation** `\eta : F \Rightarrow G`$
 is a family of morphisms `\eta_X : F(X) \to G(X)`$ that commutes with every
@@ -386,7 +386,7 @@ predictive mean, and their standard deviation as a measure of epistemic
 uncertainty: high `\sigma`$-estimate means the model is unsure about this
 input.
 
-### III. invariance, equivariance, and k-means
+### III. Invariance, equivariance, and k-means
 
 Permutation-invariant pooling is one line: `(apply + xs)` — the colimit over
 the set diagram, invariant because addition is commutative. The k-means
@@ -432,7 +432,7 @@ unlucky) falls back to the zero vector rather than crashing. The `k-means`
 loop alternates assignment and centroid update until centroids stop moving —
 the fixed point is the categorical colimit structure in action.
 
-### IV. topos: Subobject classifier, sheaf gluing, Heyting algebra
+### IV. Topos: Subobject classifier, sheaf gluing, Heyting algebra
 
 `subobject-classify` is the characteristic morphism realized: it evaluates the
 trained model to get the probability `\chi_S(x) \in [0,1] \cong \Omega`$ and
@@ -469,7 +469,7 @@ min/max/complement definitions from the theory section.
 (define (heyting-implies p q)    (heyting-or (heyting-not p) q))
 ```
 
-### V. natural transformation: Knowledge distillation
+### V. Natural transformation: Knowledge distillation
 
 The distillation adapter is a linear map with sigmoid squashing: `\eta_X`$
 takes a teacher hidden representation and produces the student representation.
