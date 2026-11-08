@@ -1,10 +1,10 @@
-# A Quick Racket Tutorial
+# A quick Racket tutorial
 
 If you are an experienced Racket developer then feel free to skip this chapter! I wrote this tutorial to cover just the aspects of using Racket that you, dear reader, will need to understand, modify, and generally reuse the example programs in this book.
 
 I assume that you have read the section **Racket Essentials** in the [The Racket Guide](https://docs.racket-lang.org/guide/) written by Matthew Flatt, Robert Bruce Findler, and the PLT group. Here I just cover some basics of getting started so you can enjoy the later code examples without encountering "road blocks."
 
-## Installing Packages
+## Installing packages
 
 The DrRacket IDE lets you interactively install packages. I prefer using the command line so, for example, I would install SQlite support using:
 
@@ -18,7 +18,7 @@ We can then require the code in this package in our Racket programs:
 
 Note that when the argument to **require** is a symbol (not a string) then modules are searched and loaded from your system. When the argument is a string like "utils.rkt" that a module is loaded from a file in the current directory.
 
-## Installing Local Packages In Place
+## Installing local packages in place
 
 In a later chapter **Natural Language Processing (NLP)** we define a fairly complicated local package. This package has one unusual requirement that you may or may not need in your own projects: My NLP library requires static linguistic data files that are stored in the directory **Racket-AI-book/source-code/nlp/data**. If I am in the directory **Racket-AI-book/source-code/nlp** working on the Racket code, it is simple enough to just open the files in **./data/...**.
 
@@ -49,7 +49,7 @@ loading lex-hash......done.
 ```
 
 
-## Mapping Over Lists
+## Mapping over lists
 
 We will be using functions that take other functions as arguments. Here we define a function **1+** that has one function argument **n** and returns **n + 1** as the value for a function call:
 
@@ -80,7 +80,7 @@ Does the evaluation of the last expression confuse you? Let's take a closer look
 - Final Result: The results of each addition are collected into a new list, producing the final output: '(100 102 104 106 108).
 
 
-## Hash Tables
+## Hash tables
 
 The following listing shows the file **misc_code/hash_tests.rkt**:
 
@@ -125,7 +125,7 @@ Language: racket, with debugging; memory limit: 128 MB.
 > 
 ```
 
-## Racket Structure Types
+## Racket structure types
 
 A structure type is like a list that has named list elements. When you define a structure the Racket system writes getter and setter methods to access and change structure attribute values. Racket also generates a constructor function with the structure name. Let's look at a simple example in a Racket REPL of creating a structure with mutable elements:
 
@@ -148,7 +148,7 @@ If you don't add **#:mutable** to a **struct** definition, then no **set-NAME-AT
 Racket also supports object oriented programming style classes with methods. I don't use classes in the book examples so you, dear reader, can read the official Racket [documentation on classes](https://docs.racket-lang.org/guide/classes.html) if you want to use Racket in a non-functional way.
 
 
-## Simple HTTP GET and POST Operations 
+## Simple HTTP GET and POST operations 
 
 We will be using HTTP GET and POST instructions in later chapters for web scraping and accessing remote APIs, such as those for OpenAI GPT-4, Hugging Face, etc. We will see more detail later but for now, you can try a simple example:
 
@@ -214,9 +214,9 @@ LI text:
   "          ")
 ```
 
-## Using Racket ~/.racketrc Initialization File
+## Using Racket ~/.racketrc initialization file
 
-In my Racket workflow I don’t usually use **~/.racketrc** to define initial forms that are automatically loaded when starting the **racket** command line tool or the **DrRacket** application. That said I do like to use **~/.racketrc** for temporary initialization forms when working on a specific project to increase the velocity of interactive development.
+In my Racket workflow I don't usually use **~/.racketrc** to define initial forms that are automatically loaded when starting the **racket** command line tool or the **DrRacket** application. That said I do like to use **~/.racketrc** for temporary initialization forms when working on a specific project to increase the velocity of interactive development.
 
 Here is an example use:
 
@@ -238,6 +238,6 @@ The following diagram shows the key Racket concepts and tools covered in this tu
 {width: "100%"}
 ![Architecture diagram](images/tutorial_architecture.jpg)
 
-## Tutorial Wrap Up
+## Tutorial wrap up
 
 The rest of this book is comprised of example Racket programs that I have written for my own enjoyment that I hope will also be useful to you, dear reader. Please refer to the [https://docs.racket-lang.org/guide/](The Racket Guide) for more technical detail on effectively using the Racket language and ecosystem.

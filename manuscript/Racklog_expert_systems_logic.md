@@ -1,4 +1,4 @@
-# Logic Programming with Racklog: Two Classic Problems Revisited
+# Logic programming with Racklog: Two classic problems Revisited
 
 In the previous chapter we used OPS5, a *forward-chaining* production
 rule system, to solve two classic problems: analyzing a poker hand and
@@ -8,7 +8,7 @@ logic programming library embedded in Racket. Keeping the problems
 identical lets us focus on what actually changed: the reasoning
 strategy.
 
-## Forward Chaining vs. Backward Chaining
+## Forward chaining vs. backward chaining
 
 A production system like OPS5 reasons **forward**. Facts sit in a
 working memory. Rules continuously pattern-match against those facts,
@@ -38,7 +38,7 @@ implemented as Racket macros and procedures, so a logic program lives
 inside a normal `#lang racket` file and can call, and be called by,
 regular Racket code.
 
-## Problem One: Analyzing a Card Hand
+## Problem one: Analyzing a card hand
 
 Recall the draw poker example. The hand we analyze is exactly the one
 we gave OPS5:
@@ -177,7 +177,7 @@ that control is implicit: the order in which solutions are found
 depends on clause order and Racklog's depth-first search, something we
 will see matter more in the next example.
 
-## Problem Two: The Monkey and the Bananas
+## Problem two: The monkey and the bananas
 
 The monkey problem is a *planning* problem, and it is where the two
 paradigms diverge most. Recall the scenario: a monkey is on a couch at
@@ -357,7 +357,7 @@ solution found is minimal. For this tiny state space (three locations,
 a handful of `on`/`holds` combinations) plain depth-first search
 answers instantly, so we keep the simpler program.
 
-## Wrapping Up
+## Wrapping up
 
 Same problems, two tools, two philosophies:
 

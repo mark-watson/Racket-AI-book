@@ -1,4 +1,4 @@
-# Reinforcement Learning in Racket: Bandits, Q-Learning, Policy Gradients and DQN
+# Reinforcement learning in Racket: Bandits, Q-learning, policy gradients and DQN
 
 Supervised learning needs a label for every input. Reinforcement learning
 (RL) needs only a reward, and often a delayed one: the agent acts, the
@@ -300,7 +300,7 @@ linear policy is balancing the pole indefinitely. A linear policy is
 enough for CartPole because the task really is almost linear: push in the
 direction the pole is falling, harder when it is falling faster.
 
-## Part 4: Deep Q-Networks
+## Part 4: Deep Q-networks
 
 The last example replaces the Q table with a neural network so that
 Q-learning can handle continuous states. `neural_net.rkt` provides the

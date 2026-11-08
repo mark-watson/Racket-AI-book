@@ -1,4 +1,4 @@
-# Deep Learning in Racket with Malt: From XOR to a Two-Tower Recommendation System
+# Deep learning in Racket with Malt: From XOR to a two-tower recommendation system
 
 ## Why neural networks and why XOR first?
 
@@ -581,7 +581,7 @@ would be to score with a `dot-product` of the two embeddings, the classic
 matrix-factorization head, which matches the bilinear structure of the data
 exactly.
 
-## Interlude: the bug that made the model learn nothing
+## Interlude: The bug that made the model learn nothing
 
 The first version of the recommender trained to MAE 0.25 and predicted the
 same constant (~0.72) for every product; essentially the mean rating. The

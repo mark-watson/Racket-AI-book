@@ -1,10 +1,10 @@
-# Using the Google Gemini, OpenAI, Anthropic, Mistral, and Local Large Language Model APIs in Racket
+# Using the Google Gemini, OpenAI, Anthropic, Mistral, and local large language model APIs in Racket
 
 Large Language Models (LLMs) have supercharged AI capabilities, affected the job market for many *knowledge work* careers, and placed huge demands on electrical power infrastructure.
 
 In the development of practical AI systems, LLMs like those provided by OpenAI, Google, Anthropic, Mistral, and Hugging Face have emerged as pivotal tools for numerous applications including natural language processing, generation, and understanding. These models, powered by deep learning architectures, encapsulate a wealth of knowledge and computational capabilities. As a Racket Scheme enthusiast embarking on the journey of intertwining the elegance of Racket with the power of these modern language models, you are opening a gateway to a realm of possibilities that we begin to explore here after covering background material in the next session.
 
-## The Cambrian Explosion in Language Technology: A Historical Trajectory
+## The Cambrian explosion in language technology: A historical trajectory
 
 The sudden and widespread emergence of LLMs in the early 2020s represents a watershed moment in the history of computing, a technological inflection point with profound implications for science, industry, and society.
 
@@ -24,7 +24,7 @@ To process sequences of these word vectors, we turned to Recurrent Neural Networ
 
 Despite the success of LSTMs, a fundamental architectural bottleneck remained. Both RNNs and LSTMs are inherently sequential processors; they must compute the hidden state for token `t`$ before they can compute it for token `t+1`$. This sequential dependency made it impossible to fully parallelize the computation across the tokens in a sequence, creating a significant performance barrier on modern hardware like GPUs. solution arrived in 2017 with a landmark paper from researchers at Google titled "Attention Is All You Need". The paper introduced the Transformer architecture, which dispensed with recurrence entirely and relied instead on a mechanism called "self-attention." The attention mechanism, first developed by Bahdanau et al. in 2014 for machine translation, allows a model to dynamically weigh the importance of different parts of the input sequence when producing an output.
 
-## Commercial and Open Weight LLMs
+## Commercial and open weight LLMs
 
 The commercial APIs from OpenAI, Google, Anthropic, and Mistral serve as gateways to some of the most advanced language models available today. By accessing these APIs, developers can harness the power of these models for a variety of applications.
 
@@ -38,13 +38,13 @@ Mistral AI provides efficient open-weight and hosted models such as `mistral-sma
 
 What if you want the total control of running open LLMs on your own computers? The company [Hugging Face](https://huggingface.co) maintains a huge repository of pre-trained models. Some of these models are licensed for research only but many are licensed (e.g., using Apache 2) for commercial use. You can easily run models locally on your laptop using tools like [llama.cpp](https://github.com/ggerganov/llama.cpp) or [Ollama](https://ollama.ai).
 
-## Introduction to the Applications of LLMs
+## Introduction to the applications of LLMs
 
 The utility of LLMs extends across a broad spectrum of applications including text generation, translation, summarization, question answering, semantic search, and autonomous agents with tool calling. However, with great power comes great responsibility. The deployment of LLMs raises imperative considerations regarding ethics, bias, and the potential for misuse. Moreover, the black-box nature of these models presents challenges in interpretability and control, which are active areas of research. I recommend reading material at [Center for Humane Technology](https://www.humanetech.com/key-issues) for issues of the safe use of AI. You might also be interested in my book [Safe For Humans AI: A "humans-first" approach to designing and building AI systems](https://leanpub.com/safe-for-humans-AI/read) (free to read online).
 
 ---
 
-## A Uniform API for LLMs in Racket: `llmapis.rkt`
+## A uniform API for LLMs in Racket: `llmapis.rkt`
 
 In early experiments with LLM APIs, developers typically wrote custom HTTP clients for each provider: one function for OpenAI, another for Anthropic, another for Google Gemini, and separate routines for local Ollama or llama.cpp instances. Each provider exposed slightly different endpoint paths, authentication headers, request payloads, parameter names (`max_tokens` vs `max_completion_tokens`), and JSON schemas for tool calling.
 
@@ -59,7 +59,7 @@ To eliminate this friction, the `source-code/llmapis/` directory contains a **un
 - **Pluggable Providers:** Standard providers are pre-configured, and new OpenAI-compatible providers (such as Groq, Together AI, or OpenRouter) can be registered at runtime with `define-provider`.
 - **Structured Error Hierarchy:** HTTP failures map to an exception hierarchy (`exn:fail:llm:authentication`, `exn:fail:llm:rate-limit`, `exn:fail:llm:not-found`, `exn:fail:llm:context-window`, `exn:fail:llm:api`), complete with automatic parameter fallbacks (e.g. retrying with `max_completion_tokens` on newer OpenAI models).
 
-### Quick Start with the Uniform API
+### Quick start with the uniform API
 
 Using `llmapis.rkt` is straightforward. Here are common patterns:
 
@@ -113,7 +113,7 @@ Using `llmapis.rkt` is straightforward. Here are common patterns:
   #:env-keys '("GROQ_API_KEY"))
 ```
 
-### Model Routing and Provider Registry
+### Model routing and provider registry
 
 The model string prefix routes each request to its provider. The provider table maintains base URLs, authentication environment variables, and the transport kind:
 
@@ -147,7 +147,7 @@ Model names can contain slashes (for example, `"fireworks-ai/accounts/fireworks/
 
 You can also pass `#:api-key` or `#:api-base` to any uniform API call to override defaults per invocation.
 
-### Messages and Roles
+### Messages and roles
 
 Messages are represented as transparent `llm-message` structs:
 
@@ -164,7 +164,7 @@ The uniform API accepts multiple convenient representations and normalizes them 
 
 When targeting OpenAI-compatible providers, `llm-translate-messages` formats messages as JSON objects. When targeting Anthropic, `llm-translate-messages-anthropic` extracts top-level system prompts and converts assistant tool calls and user tool results into Anthropic content blocks (`tool_use` and `tool_result`), merging consecutive same-role messages as required by the Anthropic API.
 
-### First-Class Racket Tools
+### First-class Racket tools
 
 Tools in `llmapis.rkt` are defined directly as Racket functions that accept a single hash table of arguments (with symbol keys) and return a value:
 
@@ -248,7 +248,7 @@ When the model decides to invoke a tool, `llm-completion` returns an `llm-respon
 
 Notice the defensive design: if the model calls an unknown tool, omits a required argument, passes invalid JSON, or the Racket tool handler throws an exception, `execute-tool-calls` converts the failure into an `"Error: ..."` feedback string for the model rather than raising an unhandled exception in your program. The model can then inspect the error message and correct its call on the next turn.
 
-### The Agentic Tool Loop
+### The agentic tool loop
 
 The function `llm-chat-with-tools` orchestrates the complete interaction loop between the model and Racket tools:
 
@@ -311,7 +311,7 @@ If you prefer manual control (for instance, to log intermediate turns or ask the
 (displayln (llm-response-content step2))
 ```
 
-### Error Handling Hierarchy and Automatic Fallbacks
+### Error handling hierarchy and automatic fallbacks
 
 Errors are modeled after a clear hierarchy rooted at `exn:fail:llm`:
 
@@ -340,7 +340,7 @@ In addition, newer OpenAI models reject the historical `max_tokens` field with a
 
 ---
 
-## Dedicated Provider Modules and Proprietary Features
+## Dedicated provider modules and proprietary features
 
 While `llmapis.rkt` handles general chat completions, function/tool calling, and text embeddings uniformly across all providers, certain cloud providers offer specialized features that fall outside standard chat endpoints.
 
@@ -356,7 +356,7 @@ The `llmapis/` directory therefore preserves dedicated per-provider modules for 
 
 Let us examine these modules.
 
-### Google Gemini with Search Grounding (`gemini.rkt`)
+### Google Gemini with search grounding (`gemini.rkt`)
 
 Google's Gemini models support *search grounding*, allowing the model to query Google Search in real time and return authoritative web citations alongside its answer. This is vital when building applications that require up-to-the-minute information rather than static training data.
 
@@ -456,7 +456,7 @@ Here is a summary of the latest AI developments...
  ("Arxiv: Attention mechanisms" . "https://arxiv.org/..."))
 ```
 
-### Anthropic Claude with Web Search (`anthropic.rkt`)
+### Anthropic Claude with web search (`anthropic.rkt`)
 
 Anthropic provides the Messages API at `https://api.anthropic.com/v1/messages`. In addition to standard generation, `anthropic.rkt` demonstrates Anthropic's web search capability:
 
@@ -694,7 +694,7 @@ Mistral provides hosted European models via an OpenAI-compatible API at `https:/
      'embedding)))
 ```
 
-### Running Local Models: `llama.cpp` (`llama_local.rkt`)
+### Running local models: `llama.cpp` (`llama_local.rkt`)
 
 Running models locally gives you complete privacy, zero API costs, and offline execution. The `llama.cpp` project provides an efficient C++ inference engine that runs quantized GGUF models on CPUs and Apple Silicon GPUs.
 
@@ -740,7 +740,7 @@ The file `llama_local.rkt` interfaces with `llama-server`'s `/completion` endpoi
   (helper (string-append "Continue writing from the following text: " prompt)))
 ```
 
-### Running Local Models: Ollama (`ollama_ai_local.rkt`)
+### Running local models: Ollama (`ollama_ai_local.rkt`)
 
 [Ollama](https://ollama.ai) is an easy way to run local open-weight models on macOS, Linux, and Windows. Once installed, pull a model from the terminal:
 
@@ -798,7 +798,7 @@ Ollama automatically starts a background HTTP service on port 11434. The file `o
     (hash-ref r 'embedding)))
 ```
 
-### The Re-export Module (`main.rkt`)
+### The re-export module (`main.rkt`)
 
 The file `main.rkt` bundles the legacy provider exports into a single module:
 
@@ -818,7 +818,7 @@ The file `main.rkt` bundles the legacy provider exports into a single module:
 
 ---
 
-## Architecture and File Organization
+## Architecture and file Organization
 
 The `source-code/llmapis/` directory is structured as follows:
 
@@ -839,7 +839,7 @@ The following diagram illustrates the architecture of the uniform API and its pr
 {width: "100%"}
 ![Architecture diagram](images/llm_architecture.jpg)
 
-### Installing as a Local Package
+### Installing as a local package
 
 You can install `llmapis` as a linked local Racket package so other projects in the book (such as `embeddingsdb`, `RAG`, and `pdf_chat`) can require it directly via `(require llmapis)`:
 
@@ -857,7 +857,7 @@ raco make main.rkt llmapis.rkt
 
 ---
 
-## Examples Using William J. Bowman’s Racket Language LLM
+## Examples using William J. Bowman's Racket language LLM
 
 Since I wrote my initial LLM client libraries, William J. Bowman wrote an interesting new Racket language extension (`#lang llm`) that can be used interactively in DrRacket or imported as a library in standard `#lang racket` programs.
 
@@ -869,7 +869,7 @@ The examples are located in **Racket-AI-book/source-code/racket_llm_language**:
 
 The documentation for Bowman's LLM language is available at [https://docs.racket-lang.org/llm/index.html](https://docs.racket-lang.org/llm/index.html) and on GitHub at [https://github.com/wilbowma/llm-lang](https://github.com/wilbowma/llm-lang).
 
-### Interactive `#lang llm` Example
+### Interactive `#lang llm` example
 
 In `test_lang_mode_llm_openai.rkt`, Racket expressions are escaped with `@`, and plain text is treated directly as a prompt sent to the LLM:
 
@@ -894,7 +894,7 @@ The average radius of the Moon is approximately 1,737.4 kilometers (about 1,079.
 > 
 ```
 
-### Using the LLM Language as a Library
+### Using the LLM language as a library
 
 To use Bowman's package as a library inside standard `#lang racket` programs, install the package:
 
@@ -936,7 +936,7 @@ Bowman's package is a great fit for quick interactive prompt engineering in DrRa
 
 ---
 
-## Optional Practice Problems
+## Optional practice problems
 
 1. **Streaming API Responses:** The current HTTP requests in `llmapis.rkt` block until the complete JSON response is received. Using the streaming response features of `net/http-easy`, write an alternative completion procedure `llm-completion-stream` that accepts a callback procedure `(lambda (chunk-text) ...)` and streams tokens to the console as they arrive from the provider.
 2. **Multi-turn Conversation History in the REPL:** Using `llmapis.rkt` and the `llm-message` struct, implement an interactive terminal REPL function `(interactive-chat model)` that accumulates conversation turns across prompts. Verify that the model remembers information stated earlier in the conversation.

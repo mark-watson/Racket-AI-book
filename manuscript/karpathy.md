@@ -1,6 +1,6 @@
 # Building a MicroGPT in Racket
 
-In the next chapters we will use production-grade Large Language Models like GPT-5, Gemini, Claude, etc. Here we look at optional material: Karpathy’s MicroGPT re-implemented in Racket. Dear reader, this chapter has the practical value of introducing you to the low level ideas for implementing LLMs. Feel free to skip this chapter for now and proceed to the following LLM application-oriented chapters.
+In the next chapters we will use production-grade Large Language Models like GPT-5, Gemini, Claude, etc. Here we look at optional material: Karpathy's MicroGPT re-implemented in Racket. Dear reader, this chapter has the practical value of introducing you to the low level ideas for implementing LLMs. Feel free to skip this chapter for now and proceed to the following LLM application-oriented chapters.
 
 ## Introduction
 
@@ -10,11 +10,11 @@ To understand how these massive systems operate, it can be beneficial to strip a
 
 In this chapter, we will explore a complete, dependency-free port of MicroGPT written entirely in Racket. Racket is a general-purpose programming language in the Lisp-Scheme family, known for its powerful macro system and "language-oriented programming" philosophy. Its functional nature, expressive syntax, and excellent tool support make it a uniquely powerful tool for exploring complex algorithmic architectures. By stepping away from the heavy machinery of modern Python frameworks like PyTorch, TensorFlow, or JAX, we are forced to construct the foundational components from scratch. We will build an automatic differentiation engine (autograd), construct neural network layers, implement the multi-head self-attention mechanism, and design the training loop. This hands-on approach not only demystifies how modern AI systems learn but also beautifully demonstrates the expressive power and mathematical elegance of Racket.
 
-## Demystifying the Core Components
+## Demystifying the core components
 
 To build a functioning, end-to-end language model from scratch, we need to orchestrate several interacting systems. Our Racket implementation elegantly encapsulates these systems into a single, cohesive file. Let us break down the architecture into its primary constituents: the autograd engine, model parameter initialization, the Transformer architecture, the training loop, and the inference generator. Understanding each of these pieces is crucial for grasping the holistic behavior of a language model.
 
-### The Autograd Engine
+### The autograd engine
 
 At the heart of any modern neural network training process is the ability to automatically compute the gradients of the loss function with respect to the model's millions (or in this case, hundreds) of parameters. This is achieved through a technique known as reverse-mode automatic differentiation. 
 
@@ -30,7 +30,7 @@ Once a forward pass through the network is complete and a scalar loss value is c
 
 This dependency-free approach, heavily inspired by Karpathy's `micrograd`, clearly illustrates that automatic differentiation is fundamentally just an automated, programmatic application of the chain rule over a directed acyclic graph.
 
-### Model Parameters and Initialization
+### Model parameters and initialization
 
 A neural network is essentially an enormous collection of parameters—weights and biases—that are iteratively optimized over time. In our Racket implementation, these parameters are stored in a centralized hash table called `*state-dict*`. 
 
@@ -42,7 +42,7 @@ The `init-mod` function defines the architectural shape of our MicroGPT. We init
 
 Each parameter is initialized using a Gaussian distribution (`random-gauss`). This small amount of random noise provides the network with an asymmetrical starting state, breaking symmetry and allowing gradient descent to effectively navigate the loss landscape. Crucially, every weight generated is a `val` structure, ensuring that every calculation utilizing these weights is automatically tracked by the autograd engine.
 
-### The Transformer Architecture
+### The Transformer architecture
 
 The `gp` function serves as the central processing unit of the model. It implements the forward pass of a decoder-only Transformer. As data flows through this function, it undergoes a series of sophisticated transformations:
 
@@ -71,7 +71,7 @@ The `gp` function serves as the central processing unit of the model. It impleme
 5. **Residual Connections:** You will notice in the code that the outputs of the attention layer and the MLP layer are added back to their respective inputs (`set! x (map u+ x xr)`). These residual connections create "shortcuts" for gradients to flow backward through the network, mitigating the vanishing gradient problem and enabling the training of deeper architectures.
 6. **Language Modeling Head:** Finally, the refined representations are projected back into the vocabulary space. The output is a set of raw scores, or "logits," representing the model's prediction for what the next token in the sequence should be.
 
-### Training the Model: Learning from Data
+### Training the model: Learning from data
 
 The `run-train` function orchestrates the intricate dance of the learning process. The model trains by reading lines of text—in our specific example, from a file called `names.txt`—processing it character by character. 
 
@@ -99,7 +99,7 @@ The training loop proceeds iteratively over many steps:
 
 By executing this loop over hundreds or thousands of steps, the model incrementally adjusts its internal weights. It slowly learns to assign higher probabilities to the correct sequences of characters, thereby absorbing the underlying statistical structure of the training data.
 
-### Inference: Hallucinating New Data
+### Inference: Hallucinating new data
 
 Once the model has completed its training phase and internalized the patterns of the dataset, we can use it to generate novel text via the `run-inference` function. 
 
@@ -115,7 +115,7 @@ Racket, with its unparalleled flexibility and expressive syntax, proves to be an
 
 In the following section, you will find the complete source code for our dependency-free MicroGPT. Reading carefully through this program listing will help solidify the theoretical concepts discussed in this chapter and provide you with a robust, transparent foundation for further experimentation and exploration in the fascinating world of language modeling.
 
-## Complete Source Code Listing for `microgpt.rkt`
+## Complete source code listing for `microgpt.rkt`
 
 ```racket
 #lang racket
@@ -427,7 +427,7 @@ In the following section, you will find the complete source code for our depende
   (run-microgpt))
 ```
 
-Let’s run the code:
+Let's run the code:
 
 ```bash
 $ racket microgpt.rkt
@@ -463,13 +463,13 @@ The following diagram shows the high-level architecture of the MicroGPT Transfor
 {width: "100%"}
 ![Architecture diagram](images/karpathy_architecture.jpg)
 
-## Wrap Up
+## Wrap up
 
 This concludes our exploration of MicroGPT implemented from scratch in Racket. By studying the complete source code listing provided above, you have seen firsthand how the abstract mathematical concepts of reverse-mode automatic differentiation, self-attention, and autoregressive language modeling translate into concrete, functional code.
 
 I highly encourage you to load `microgpt.rkt` into your own Racket REPL or DrRacket and run it. Try experimenting with the hyperparameters—adjust the `*n-layer*`, `*n-embd*`, or `*n-head*` variables and observe how they impact both the training time and the quality of the hallucinated outputs. You can also swap out the `names.txt` dataset for your own text files to see how the model adapts to entirely different linguistic patterns. By actively tinkering with this minimalistic implementation, you will cement your understanding of how modern generative AI truly works under the hood.
 
-## Optional Practice Problems
+## Optional practice problems
 
 1. **Implement GELU Activation**: The current Multi-Layer Perceptron (MLP) implementation in `microgpt.rkt` uses a standard ReLU activation function. Replace it with a GELU (Gaussian Error Linear Unit) activation function, which is commonly used in modern GPT models, and observe how it affects convergence.
 2. **Add Weight Decay**: Enhance the optimizer implementation to support weight decay (L2 regularization). Update the parameter update step to scale down parameters by a small factor before applying the gradients.

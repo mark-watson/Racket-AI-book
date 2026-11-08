@@ -1,4 +1,4 @@
-# Natural Language Processing
+# Natural language processing
 
 I have a Natural Language Processing (NLP) library that I wrote in Common Lisp. Here we will use code that I wrote in pure Scheme and converted to Racket.
 
@@ -484,13 +484,13 @@ The following diagram shows the high-level architecture of the NLP library devel
 {width: "100%"}
 ![Architecture diagram](images/nlp_architecture.jpg)
 
-## NLP Wrap Up
+## NLP wrap up
 
 The NLP library is still a work in progress so please check for updates to this *live eBook* and the GitHub repository for this book:
 
 [https://github.com/mark-watson/Racket-AI-book/source-code](https://github.com/mark-watson/Racket-AI-book/source-code)
 
-## Optional Practice Problems
+## Optional practice problems
 
 1. **Dynamic Lexicon Updates**: The Part-of-Speech tagger loads its word lexicon from static files. Implement a function `add-to-lexicon!` that allows developers to dynamically register new words and their corresponding tags at runtime without modifying the source data files.
 2. **Enhance Named Entity Recognition (NER)**: Heuristics in `names.rkt` extract sequences of proper nouns (`NNP`). Extend these rules to correctly handle titles (e.g., "Dr.", "Professor") and middle initials (e.g., "George W. Bush") when extracting complete names.

@@ -1,8 +1,8 @@
-# Interfacing with External Programs: A Lightpanda Browser Client
+# Interfacing with external programs: A Lightpanda browser client
 
 In this chapter, we build a complete Racket library that interfaces with an external program: the Lightpanda headless web browser. This example demonstrates practical techniques for subprocess management, string processing, and building reusable APIs in Racket. Directions for installing the Lightpanda command line tool can be found in the [Lightpanda documentation](https://lightpanda.io/docs/open-source/installation).
 
-## The Problem: JavaScript-Rendered Web Content
+## The problem: JavaScript-rendered web content
 
 Modern web pages often require JavaScript execution to display their content. Traditional HTTP clients like `net/http-easy` (used in the Web Scraping chapter) only fetch static HTML, missing the dynamic content rendered by JavaScript. Lightpanda is a headless browser that runs from the command line and outputs fully rendered pages.
 
@@ -11,7 +11,7 @@ Our goal: create a Racket interface that:
 2. Captures its output (HTML, Markdown, or semantic tree)
 3. Provides helper functions for common operations like link extraction
 
-## Project Structure
+## Project structure
 
 The source code for this chapter is in the directory **Racket-AI-book/source-code/lightpanda**. The project layout follows the standard Racket package convention:
 
@@ -61,7 +61,7 @@ Racket parameters (created with `make-parameter`) are the idiomatic equivalent o
 (lightpanda-binary "/usr/local/bin/lightpanda")
 ```
 
-## Running External Programs with `subprocess`
+## Running external programs with `subprocess`
 
 Racket provides `subprocess` in `racket/system` for launching external processes. Our internal helper locates the executable on the system path and executes it directly using argument lists, ensuring safe argument passing and proper cleanup of resources using `dynamic-wind`:
 
@@ -103,7 +103,7 @@ Key Racket features used:
 - `with-handlers` — Gracefully catches exceptions, reporting error details to `stderr` and returning `#f`.
 - `dynamic-wind` — Guarantees resource cleanup by closing input and output ports regardless of how the evaluation finishes.
 
-## HTML Parsing: Extracting Links
+## HTML parsing: Extracting links
 
 For link extraction, instead of brittle regular expressions, we use Racket's HTML parsing libraries (`html-parsing` and `xml/path`) to parse HTML into an X-expression and query it:
 
@@ -127,7 +127,7 @@ The following diagram shows the high-level architecture of the Lightpanda browse
 {width: "100%"}
 ![Architecture diagram](images/lightpanda_architecture.jpg)
 
-## The Main API Function
+## The main API function
 
 The central function constructs the command line arguments list and invokes the helper:
 
@@ -164,7 +164,7 @@ Key techniques:
 - `append` — Combines several lists into a single flat argument list.
 - `(lightpanda-binary)` — Invokes the configuration parameter.
 
-## Helper Functions
+## Helper functions
 
 Higher-level helpers make common operations easy:
 
@@ -201,7 +201,7 @@ Higher-level helpers make common operations easy:
 
 Note that `extract-links` is *not* listed in `provide` — Racket's module system makes it private by default. This is cleaner than the Common Lisp `%`-prefix convention: in Racket, privacy is enforced by the language rather than by naming convention.
 
-## Usage Examples
+## Usage examples
 
 After installing with `raco pkg install --scope user` (from the source directory), or by running the file directly:
 
@@ -240,7 +240,7 @@ Found 14 link(s):
   ...
 ```
 
-## Key Racket Takeaways
+## Key Racket takeaways
 
 1. **`subprocess`** — Portable subprocess execution; returns four values (process, stdout, stdin, stderr)
 2. **`make-parameter`** — Thread-safe dynamic configuration with `parameterize` for scoped overrides
@@ -251,7 +251,7 @@ Found 14 link(s):
 
 This pattern — shelling out to a specialized tool and processing its output — is a powerful technique. You can wrap any command-line tool this way: databases, image processors, compilers, or your own scripts. The result is a Racket API that hides the implementation details while providing access to the tool's capabilities.
 
-## Optional Practice Problems
+## Optional practice problems
 
 1. **Verify Binary Installation**: Implement a function `verify-lightpanda-path` that validates if the configured `lightpanda-binary` path exists using `find-executable-path`. If the binary cannot be resolved, raise a clear user-facing error message with advice on installation.
 2. **Support Dynamic Fetch Options**: Extend the `fetch-url` function to support additional command-line parameters that Lightpanda offers (for example, setting a custom `--user_agent` or specifying custom `--headers`).

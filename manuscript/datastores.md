@@ -3,7 +3,7 @@
 For my personal research projects the only datastores that I often use are the embedded relational database and Resource Description Framework (RDF) datastores that might be local to my laptop or public Knowledge Graphs like DBPedia and WikiData. The use of RDF data and the SPARQL query language is part of the fields of the semantic web and linked data.
 
 
-## Accessing Public RDF Knowledge Graphs - a DBPedia Example
+## Accessing public RDF Knowledge Graphs - a DBPedia example
 
 I will not cover RDF data and the SPARQL query language in great detail here. Rather, please reference the following link to read the RDF and SPARQL tutorial data in my Common Lisp book: [Loving Common Lisp, or the Savvy Programmer's Secret Weapon](https://leanpub.com/lovinglisp/read#leanpub-auto-semantic-web-and-linked-data).
 
@@ -137,7 +137,7 @@ In practice, I start exploring data on DBPedia using the SPARQL query web app [h
 In addition to using DBPedia I often also use the WikiData public Knowledge Graph and local RDF data stores hosted on my laptop with Apache Jena. I might add examples for these two use cases in future versions of this *live eBook*.
 
 
-## SQlite
+## SQLite
 
 Using SQlite in Racket is simple so we will just look at a single example. We will be using the Racket source file **sqlite.rkt** in the directory **Racket-AI-book/source-code/misc_code** for the code snippets in this REPL:
 
@@ -168,7 +168,7 @@ The following diagram shows the high-level architecture of the datastore integra
 {width: "100%"}
 ![Architecture diagram](images/datastores_architecture.jpg)
 
-## Optional Practice Problems
+## Optional practice problems
 
 1. **Extend the SQLite Example**: Modify the SQLite code to support updating an existing person's age or email, and writing a query function to retrieve a person by their name.
 2. **Dynamic SPARQL Variable Handling**: The `gd` function in `sparql.rkt` is limited to handling up to 4 return variables. Rewrite `gd` to support an arbitrary number of variables using a general list-zipping function.

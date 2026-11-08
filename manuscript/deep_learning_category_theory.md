@@ -1,4 +1,4 @@
-# Category-Theory Deep Learning in Racket
+# Category-theory deep learning in Racket
 
 Deep learning is usually taught as a pile of engineering tricks: activation
 functions, backprop, dropout, weight decay. This chapter takes the opposite
@@ -46,7 +46,7 @@ perspectives, and this chapter implements all five:
 
 ## The mathematics of the five perspectives
 
-### I. The Para category and lenses
+### I. the Para category and lenses
 
 In the Para construction, a neural-network layer is a *parametric morphism*
 `f : A \to B`$: it consumes an input from `A`$ and produces an output in `B`$,
@@ -87,7 +87,7 @@ random variables, sampling `W \sim \mathcal{N}(\mu, \sigma^2 I)`$ at every
 forward pass; the spread of many forward passes measures epistemic
 uncertainty.
 
-### III. Invariance, equivariance, and colimits
+### III. invariance, equivariance, and colimits
 
 A layer `f`$ is *equivariant* under a group `G`$ when `f(g \cdot x) = g \cdot f(x)`$
 for every `g \in G`$: the symmetry of the input is preserved by the layer.
@@ -99,7 +99,7 @@ is a colimit computation: each cluster centroid is the colimit (average) of
 the points in its cluster, and point-to-centroid assignment is the universal
 morphism.
 
-### IV. Toposes: subobject classifiers and sheaves
+### IV. Toposes: Subobject classifiers and sheaves
 
 A topos is a category rich enough to do logic inside it. Its key ingredient is
 the **subobject classifier** `\Omega`$: a special object with a "true" arrow
@@ -117,7 +117,7 @@ inconsistent ones reveal disagreement. Finally, `\Omega`$ carries a **Heyting
 algebra** (intuitionistic logic); on `[0,1]`$ it collapses to
 `p \wedge q = \min(p,q)`$, `p \vee q = \max(p,q)`$, `\neg p = 1 - p`$.
 
-### V. Natural transformations
+### V. natural transformations
 
 Given two functors `F`$ and `G`$, a **natural transformation** `\eta : F \Rightarrow G`$
 is a family of morphisms `\eta_X : F(X) \to G(X)`$ that commutes with every
@@ -194,7 +194,7 @@ libraries it needs:
 `racket/format` supplies `~r` for rounded number formatting, and
 `racket/random` supplies `random-seed` so the demos are reproducible.
 
-### I. Para category: layers as lenses
+### I. Para category: Layers as lenses
 
 The heart of the framework is a representation of a layer as a lens. Three
 structs encode the categorical objects: `layer-params` (the parameter space
@@ -336,7 +336,7 @@ the model (`acc-m`) and accumulates loss (`acc-loss`). Lazy Racket trivia: the
 fold is a `for/fold`, which is tail-recursive because each iteration's next
 model state is produced by `train-step` before the loop continues.
 
-### II. Markov categories: stochastic morphisms
+### II. Markov categories: Stochastic morphisms
 
 First, dropout as a stochastic lens. `make-dropout-lens` returns a function
 that samples a Bernoulli mask, scales by `1/p`$ (inverted dropout keeps the
@@ -387,7 +387,7 @@ predictive mean, and their standard deviation as a measure of epistemic
 uncertainty: high `\sigma`$-estimate means the model is unsure about this
 input.
 
-### III. Invariance, equivariance, and k-means
+### III. invariance, equivariance, and k-means
 
 Permutation-invariant pooling is one line: `(apply + xs)` — the colimit over
 the set diagram, invariant because addition is commutative. The k-means
@@ -433,7 +433,7 @@ unlucky) falls back to the zero vector rather than crashing. The `k-means`
 loop alternates assignment and centroid update until centroids stop moving —
 the fixed point is the categorical colimit structure in action.
 
-### IV. Topos: subobject classifier, sheaf gluing, Heyting algebra
+### IV. topos: Subobject classifier, sheaf gluing, Heyting algebra
 
 `subobject-classify` is the characteristic morphism realized: it evaluates the
 trained model to get the probability `\chi_S(x) \in [0,1] \cong \Omega`$ and
@@ -470,7 +470,7 @@ min/max/complement definitions from the theory section.
 (define (heyting-implies p q)    (heyting-or (heyting-not p) q))
 ```
 
-### V. Natural transformation: knowledge distillation
+### V. natural transformation: Knowledge distillation
 
 The distillation adapter is a linear map with sigmoid squashing: `\eta_X`$
 takes a teacher hidden representation and produces the student representation.

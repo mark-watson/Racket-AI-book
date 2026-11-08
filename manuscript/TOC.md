@@ -1,4 +1,4 @@
-# Table of Contents
+# Table of contents
 
 - [Preface](preface.md)
 - [Chapter 1: Quick Racket Tutorial](tutorial.md)

@@ -1,1 +1,1 @@
-# Rule Based Symbolic AI Systems
+# Rule based symbolic AI systems

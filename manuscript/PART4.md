@@ -1,1 +1,1 @@
-# Deep Learning, Natural Language Processing and Knowledge Graphs
+# Deep learning, natural language processing and Knowledge Graphs

@@ -1,6 +1,6 @@
-# Computing Pi and e: Fourteen Classical Algorithms in Exact Arithmetic
+# Computing pi and e: Fourteen classical algorithms in exact arithmetic
 
-## The Oldest Calculation in Mathematics
+## The oldest calculation in mathematics
 
 Few numbers have occupied mathematicians as persistently as `\pi`$, the ratio of a
 circle's circumference to its diameter, and `e`$, the base of the natural
@@ -47,7 +47,7 @@ RackUnit test suite pins the fast algorithms against published digit tables and
 checks the structural guarantees of the slow ones. The code is in the files
 `math.rkt` and `math-tests.rkt`.
 
-## A Tour of the Algorithms
+## A tour of the algorithms
 
 Before looking at the code, it helps to have the formulas in front of you and to
 know what kind of behavior to expect from each one.
@@ -153,7 +153,7 @@ produces a sequence of exact rational convergents, each buying roughly one more
 digit. The program also keeps the partial sums of the series as exact rationals,
 so you can see `e`$ as a single enormous fraction.
 
-## The Program at a Glance
+## The program at a glance
 
 The code lives in `math.rkt`. Rather than a collection of loose scripts, the
 program is built around a **method registry**: each algorithm is described by a
@@ -190,7 +190,7 @@ which is also the vocabulary for everything that follows:
 The rest of this section walks through the complete listing of `math.rkt` in
 seven parts, following the section banners already in the file.
 
-## Part 1: File Header and Exports
+## Part 1: File header and exports
 
 The file opens with a usage comment that doubles as the manual for the command
 line interface, followed by the `provide` list. Notice that the exports include
@@ -239,7 +239,7 @@ user sees.
          run-method)
 ```
 
-## Part 2: The Fixed-Point Number Helpers
+## Part 2: The fixed-point number helpers
 
 This is the foundation everything else stands on. An `fp` value packages an
 exact integer (or, for the continued fraction method, an exact rational) with a
@@ -332,7 +332,7 @@ against the decimal expansion.
     (values (cons (string-ref "0123456789abcdef" d) acc) next)))
 ```
 
-## Part 3: The Pi Algorithms
+## Part 3: The pi algorithms
 
 Here is the first remarkable thing about the code: every algorithm is a direct
 transliteration of its formula into integer arithmetic. Look at `pi-leibniz`.
@@ -532,7 +532,7 @@ The BBP section is the one place flonums appear. `modpow16` computes
 accumulates only the fractional part of each partial sum. The trade-off is
 explicit: we gave up exactness, and in return we can teleport to digit `d`$.
 
-## Part 4: The Algorithms for e
+## Part 4: The algorithms for e
 
 The three classical views of `e`$ translate just as directly. `e-series`
 accumulates `1/k!`$ by dividing the previous term by `k`$ and stops when the
@@ -618,7 +618,7 @@ instead of scaled integers. That small difference is why the `fp` struct allows
 `v` to be a rational with `s = 0`$: the formatting machinery can treat both
 representations uniformly.
 
-## Part 5: Reference Values and the Registry Scaffolding
+## Part 5: Reference values and the registry scaffolding
 
 The verification story starts here. `reference-value` computes a trusted high
 precision value of either constant, using the Chudnovsky series for `\pi`$ and
@@ -731,7 +731,7 @@ function. Working at higher precision than you display is the standard defense
 against truncation artifacts in the intermediate arithmetic: the guard digits
 absorb the accumulated integer divisions so that the displayed digits are clean.
 
-## Part 6: The Method Registry
+## Part 6: The method registry
 
 Each entry pairs the raw algorithm with everything the user interface needs: the
 formula as a display string, a plain language convergence note, input defaults
@@ -1012,7 +1012,7 @@ Archimedes' method can certify. The `bbp` entry is the only one whose outcome
 has `#f` for the value and a string in the `hex` field, a difference the
 reporting code checks for explicitly.
 
-## Part 7: Reporting, the Console UI, and the Command Line
+## Part 7: Reporting, the console UI, and the command line
 
 The final stretch of the file turns outcomes into printed reports and wires up
 the two front ends. `verification-lines` is the interesting piece: for ordinary
@@ -1385,7 +1385,7 @@ name, avoiding a nested `if`. And `module+ main` is Racket's way of separating
 interface, because the `main` submodule only runs when the file is executed
 directly.
 
-## The Test Suite
+## The test suite
 
 Tests for numerical code need trusted data, and the most trustworthy data
 available for this problem is the published digit expansion of the constants
@@ -1697,7 +1697,7 @@ single method runs to a usable outcome at its default inputs. If you add a
 fifteenth method and forget a compare input or exceed a cap, this suite fails
 immediately and tells you which method is misconfigured.
 
-## Running the Code
+## Running the code
 
 The program needs only Racket itself, with no external packages. Running the
 file with no arguments starts the interactive menu; the `--list`, `--compare`,
@@ -1818,7 +1818,7 @@ $ racket math-tests.rkt
 246 success(es) 0 failure(s) 0 error(s) 246 test(s) run
 ```
 
-## Interpreting the Results
+## Interpreting the results
 
 The comparison table is the payoff of the entire chapter, because it makes the
 theoretical convergence rates from the opening section visible as measured
@@ -1865,7 +1865,7 @@ separates, with binary splitting pulling ahead of the AGM's repeated full
 precision square roots. The compare table is a convergence demonstration, not a
 benchmark.
 
-## Wrap Up
+## Wrap up
 
 This chapter used two of the oldest computational problems in mathematics as a
 vehicle for three transferable ideas. The fixed-point representation
@@ -1884,7 +1884,7 @@ history, from Archimedes' bracketed polygons to a spigot formula that produces
 isolated hexadecimal digits, and saw each era's algorithm run, verified, in a
 few microseconds.
 
-## Optional Practice Problems
+## Optional practice problems
 
 The following exercises extend the example code. They are ordered roughly from
 gentle to ambitious.

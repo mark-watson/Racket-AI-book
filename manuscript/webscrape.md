@@ -1,4 +1,4 @@
-# Web Scraping
+# Web scraping
 
 I often write software to automatically collect and use data from the web and other sources. As a practical matter, much of the data that many people use for machine learning comes from either the web or from internal data sources. This section provides some guidance and examples for getting text data from the web.
 
@@ -6,7 +6,7 @@ Before we start a technical discussion about web scraping I want to point out th
 
 We start with low-level Racket code examples in the GitHub repository for this book in the directory **Racket-AI-book/source-code/misc_code**. We will then implement a standalone library in the directory **Racket-AI-book/source-code/webscrape**.
 
-## Getting Started Web Scraping
+## Getting started web scraping
 
 All of the examples in the section can be found in the Racket code snippet files in the directory **Racket-AI-book/source-code/misc_code**.
 
@@ -93,7 +93,7 @@ Now we will extract HTML anchor links:
 )
 ```
 
-## Implementation of a Racket Web Scraping Library
+## Implementation of a Racket web scraping library
 
 The web scraping library listed below can be found in the directory **Racket-AI-book/source-code/webscrape**. The following listing of **webscrape.rkt** should look familiar after reading the code snippets in the last section.
 
@@ -218,7 +218,7 @@ If you want to install this library on your laptop using linking (requiring the 
 
    raco pkg install --scope user
 
-## Optional Practice Problems
+## Optional practice problems
 
 1. **Resolve Relative Links**: Currently, `web-uri->links` only keeps links that start with `"http"`. Modify the function to accept the original URI as a base and resolve any relative paths (e.g., `/about.html` or `../contact`) into absolute URLs.
 2. **Extract Full Page Text**: The `web-uri->text` function only retrieves text nested within `<p>` tags. Extend it to also extract text from headers (`<h1>` to `<h6>`) and list items (`<li>`) to get a more complete textual representation of the page, or use the new `web-uri->html-headers` function.

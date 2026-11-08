@@ -1,1 +1,1 @@
-# Miscellaneous Short and Interesting Projects
+# Miscellaneous short and interesting projects

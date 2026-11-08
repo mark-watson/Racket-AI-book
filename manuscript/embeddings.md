@@ -1,4 +1,4 @@
-# Retrieval Augmented Generation of Text Using Embeddings
+# Retrieval Augmented generation of text using embeddings
 
 Retrieval-Augmented Generation (RAG) is a framework that combines the strengths of pre-trained language models (LLMs) with retrievers. Retrievers are system components for accessing knowledge from external sources of text data. In RAG a retriever selects relevant documents or passages from a corpus, and a generator produces a response based on both the retrieved information and the input query. The process typically follows these steps that we will use in the example Racket code:
 
@@ -10,7 +10,7 @@ Retrieval-Augmented Generation (RAG) is a framework that combines the strengths 
 
 RAG enables the LLM to access and leverage external text data sources, which is crucial for tasks that require information beyond what the LLM has been trained on. It's a blend of retrieval-based and generation-based approaches, aimed at boosting the factual accuracy and informativeness of generated responses. 
 
-## Example Implementation
+## Example implementation
 
 In the following short Racket example program (file **Racket-AI-book/source-code/embeddingsdb
 /embeddingsdb.rkt**) I implement some ideas of a RAG architecture. At file load time the text files in the subdirectory **data** are read, split into "chunks", and each chunk along with its parent file name and uniform-API text embedding is stored in a local SQLite database. When a user enters a query, the OpenAI embedding is calculated, and this embedding is matched against the embeddings of all chunks using the dot product of two 1536 element embedding vectors. The "best" chunks are concatenated together and this "context" text is passed to the chat model along with the user's original query. Here I describe the code in more detail:
@@ -20,7 +20,7 @@ The provided Racket code uses a local SQLite database and the uniform `llmapis.r
 **Utility Functions:**
 
 - `floats->string` and `string->floats` are utility functions for converting between a list of floats and its string representation.
-- `read-file` reads a file’s content.
+- `read-file` reads a file's content.
 - `join-strings` joins a list of strings with a specified separator.
 - `truncate-string` truncates a string to a specified length.
 - `interleave` merges two lists by interleaving their elements.
@@ -283,7 +283,7 @@ Enter chat (STOP or empty line to stop) >>
 
 Notice how the second question, "Where was he born?", contains no name at all. The CHAT loop prepends the previous turns as custom context ("PREVIOUS CHAT: ..."), so the model sees the word "he" against the earlier mention of Robert Boyle. This is the whole trick behind chat-over-documents systems: the retrieval machinery stays the same, and conversation history is just more context.
 
-## What an Embedding Actually Is
+## What an embedding actually is
 
 The code above treats embeddings as opaque lists of 1536 floats. It is worth building an intuition for what those numbers are, because every design decision in a RAG system follows from it.
 
@@ -324,7 +324,7 @@ The new file **rag_extensions.rkt** in the **embeddingsdb** directory implements
 
 The zero check matters more than it looks: a chunk of text that produces an all-zero vector (it happens, for example with some models on empty or whitespace-only input) would otherwise crash the division in the middle of an indexing run. Return 0.0 instead, and that chunk simply never matches anything.
 
-## Chunking: the Most Underrated Part of RAG
+## Chunking: The most underrated part of RAG
 
 Look again at how `create-document` in **embeddingsdb.rkt** prepares text for the index: `break-into-chunks` splits the file every 200 characters. Here is what that does to a normal paragraph, compared with sentence-aware chunking. The output below is real, produced by the code in this section:
 
@@ -415,7 +415,7 @@ The structure is deliberately simple: one pass packs sentences, a second pass ad
 
 How do you pick `chunk-size` and `overlap`? Smaller chunks retrieve more precisely (each vector is about one thing) but carry less context; larger chunks are more forgiving but blur several topics into one vector. Around 300 to 1000 characters with a 10 to 20 percent overlap is a good default for prose. The only real rule: treat chunking as an experiment you rerun against your own documents, not a constant you set once.
 
-## Retrieval, Without Thresholds
+## Retrieval, without thresholds
 
 `semantic-match` filters with a hard similarity cutoff of 0.7. Any chunk scoring above it goes into the prompt, everything else vanishes. That means one bad day can return zero context (and the LLM answers from training alone), while a query where twenty chunks all score 0.71 drowns the model in context and blows the token budget.
 
@@ -442,7 +442,7 @@ Ranking instead of thresholding fixes both: always take the *top k* chunks, what
                " "))
 ```
 
-### Seeing the Whole Pipeline Offline
+### Seeing the whole pipeline offline
 
 The problem with developing a RAG system is that every experiment costs API calls. The last piece of **rag_extensions.rkt** is a tiny deterministic embedder that lets you run and test the entire pipeline (chunk, embed, rank, assemble) offline. It is a stand-in with the same *shape* as a real embedder: text in, unit-length vector of floats out. It hashes each word into one of 256 buckets and normalizes, so texts that share words score well together. Never use it in production; do use it to test your plumbing:
 
@@ -493,7 +493,7 @@ Each query's best match lands on the right document, and the scores show the use
 
 The last block shows the honest output of `assemble-prompt`: retrieved context, a blank custom context, then the question. The word "Question:" is not decoration. It gives the LLM a stable separator between evidence to read and the task to do, and prompts that keep that structure consistent across every call get more consistent answers.
 
-## Testing the Pipeline
+## Testing the pipeline
 
 **tests.rkt** in the same directory runs the whole stack with rackunit, still offline. A few of the properties it pins down:
 
@@ -536,7 +536,7 @@ All tests passed.
 11 tests passed
 ```
 
-## Production Notes
+## Production notes
 
 A few hard-won notes if you carry this design further:
 
@@ -550,11 +550,11 @@ The following diagram shows the high-level architecture of the RAG pipeline deve
 {width: "100%"}
 ![Architecture diagram](images/embeddings_architecture.jpg)
 
-## Retrieval Augmented Generation Wrap Up
+## Retrieval Augmented generation wrap up
 
 Retrieval Augmented Generation (RAG) is one of the best use cases for semantic search. Another way to write RAG applications is to use a web search API to get context text for a query, and add this context data to whatever context data you have in a local embeddings data store.
 
-## Optional Practice Problems
+## Optional practice problems
 
 1. **Wire the Upgrades In**: Modify `create-document` in **embeddingsdb.rkt** to use `chunk-by-sentences` instead of `break-into-chunks`, and `semantic-match` to use `cosine-similarity` and top-k ranking instead of `dot-product` with a cutoff. Run the chemistry and sports queries before and after and compare answers.
 2. **Measure Chunking**: Write a utility that reports, for a given document and chunker settings, the number of chunks, their min/max/mean lengths, and how many chunks end mid-word. Use it to compare the old and new chunkers on **data/chemistry.txt**.

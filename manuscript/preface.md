@@ -8,13 +8,13 @@ In 1982 my company bought a Lisp Machine for my use. A Lisp Machine provided an 
 
 The latest edition is always available for purchase at [https://leanpub.com/racket-ai](https://leanpub.com/racket-ai).  You can also read free online at [https://leanpub.com/racket-ai/read](https://leanpub.com/racket-ai/read). I offer the purchase option for readers who wish to directly support my work.
 
-This is a “live book:” there will never be a second edition. As I add material and make corrections, I simply update the book and the free to read online copy and all eBook formats for purchase get updated.
+This is a "live book:" there will never be a second edition. As I add material and make corrections, I simply update the book and the free to read online copy and all eBook formats for purchase get updated.
 
 I have been developing commercial Artificial Intelligence (AI) tools and applications since the 1980s and I usually use the Lisp languages Common Lisp, Clojure, Racket Scheme, and Gambit Scheme. Here you will find Racket code that I wrote for my own use and I am wrapping in a book in the hopes that it will also be useful to you, dear reader.
 
 ![Mark Watson](images/Mark.png)
 
-This book is written for both professional programmers and home hobbyists who already know how to program in Racket (or another Scheme dialect) and who want to learn practical AI programming and information processing techniques. I have tried to make this an enjoyable book to work through. In the style of a “cook book,” the chapters can be read in any order. 
+This book is written for both professional programmers and home hobbyists who already know how to program in Racket (or another Scheme dialect) and who want to learn practical AI programming and information processing techniques. I have tried to make this an enjoyable book to work through. In the style of a "cook book," the chapters can be read in any order. 
 
 You can find the code examples and the files for the manuscript for this book in the following GitHub repository:
 
@@ -22,24 +22,24 @@ You can find the code examples and the files for the manuscript for this book in
 
 Git pull requests with code improvements for either the source code or manuscript markdown files will be appreciated by me and the readers of this book.
 
-## Requests from the Author
+## Requests from the author
 
 This book will always be available to read free online at [https://leanpub.com/racket-ai/read](https://leanpub.com/racket-ai/read).
 
 That said, I appreciate it when readers purchase my books because the income enables me to spend more time writing.
 
-### Hire the Author as a Consultant
+### Hire the author as a consultant
 
 I am available for short consulting projects. Please see [https://markwatson.com](https://markwatson.com).
 
 
-## License for Book Manuscript: Creative Commons
+## License for book manuscript: Creative Commons
 
 Copyright 2022-2024 Mark Watson. All rights reserved.
 
 This book may be shared using the Creative Commons "share and share alike, no modifications, no commercial reuse" license.
 
-## Book Example Programs
+## Book example programs
 
 Here are the projects for this book:
 
@@ -69,9 +69,9 @@ Racket is a family of languages, a very good IDE, and a rich ecosystem supported
 - Chez Scheme
 
 
-## Personal Artificial Intelligence Journey: or, Life as a Lisp Developer
+## Personal Artificial Intelligence journey: Or, life as a Lisp developer
 
-I have been interested in AI since reading Bertram Raphael’s excellent book *Thinking Computer: Mind Inside Matter* in the early 1980s. I have also had the good fortune to work on many interesting AI projects including the development of commercial expert system tools for the Xerox LISP machines and the Apple Macintosh, development of commercial neural network tools, application of natural language and expert systems technology, medical information systems, application of AI technologies to Nintendo and PC video games, and the application of AI technologies to the financial markets. I have also applied statistical natural language processing techniques to analyzing social media data from Twitter and Facebook. I worked at Google on their Knowledge Graph and I managed a deep learning team at Capital One where I was awarded 55 US patents.
+I have been interested in AI since reading Bertram Raphael's excellent book *Thinking Computer: Mind Inside Matter* in the early 1980s. I have also had the good fortune to work on many interesting AI projects including the development of commercial expert system tools for the Xerox LISP machines and the Apple Macintosh, development of commercial neural network tools, application of natural language and expert systems technology, medical information systems, application of AI technologies to Nintendo and PC video games, and the application of AI technologies to the financial markets. I have also applied statistical natural language processing techniques to analyzing social media data from Twitter and Facebook. I worked at Google on their Knowledge Graph and I managed a deep learning team at Capital One where I was awarded 55 US patents.
 
 I enjoy AI programming, and hopefully this enthusiasm will also infect you.
 
