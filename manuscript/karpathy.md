@@ -32,15 +32,15 @@ This dependency-free approach, heavily inspired by Karpathy's `micrograd`, clear
 
 ### Model parameters and initialization
 
-A neural network is essentially an enormous collection of parameters, weights and biases, that are iteratively optimized over time. In our Racket implementation, these parameters are stored in a centralized hash table called `*state-dict*`. 
+A neural network is a large pile of parameters, weights and biases, refined by gradient steps. Here they all live in one hash table, `*state-dict*`. 
 
 The `init-mod` function defines the architectural shape of our MicroGPT. We initialize several distinct sets of matrices:
-- **`wte`**: The token embedding matrix, which translates discrete character IDs into dense continuous vectors.
-- **`wpe`**: The positional embedding matrix, which gives the model information about where a token is located in the sequence.
-- **`lm_head`**: The final language modeling head, a linear layer that projects the internal representations back into the vocabulary space to predict the next character.
-- **Transformer Layers**: For each layer, we initialize matrices for the attention mechanism (`attn_wq`, `attn_wk`, `attn_wv`, `attn_wo`) and the multi-layer perceptron (`mlp_fc1`, `mlp_fc2`).
+- `wte`: the token embedding matrix, which translates discrete character IDs into dense continuous vectors.
+- `wpe`: the positional embedding matrix, which gives the model information about where a token is located in the sequence.
+- `lm_head`: the final language modeling head, a linear layer that projects the internal representations back into the vocabulary space to predict the next character.
+- Transformer Layers: for each layer, we initialize matrices for the attention mechanism (`attn_wq`, `attn_wk`, `attn_wv`, `attn_wo`) and the multi-layer perceptron (`mlp_fc1`, `mlp_fc2`).
 
-Each parameter is initialized using a Gaussian distribution (`random-gauss`). This small amount of random noise provides the network with an asymmetrical starting state, breaking symmetry and allowing gradient descent to effectively navigate the loss landscape. Crucially, every weight generated is a `val` structure, ensuring that every calculation utilizing these weights is automatically tracked by the autograd engine.
+Each parameter starts from a Gaussian draw (`random-gauss`). The noise breaks symmetry, so gradient descent has somewhere to go. Every weight is a `val` structure, which means any calculation that touches it is tracked by the autograd engine.
 
 ### The Transformer architecture
 
@@ -113,7 +113,7 @@ This complete Racket implementation of MicroGPT vividly demonstrates that the co
 
 Racket, with its unparalleled flexibility and expressive syntax, proves to be an exceptionally capable and elegant language for this endeavor. Its interactive nature makes it a joy to use for defining complex computational graphs and experimenting with novel neural network architectures.
 
-In the following section, you will find the complete source code for our dependency-free MicroGPT. Reading carefully through this program listing will help solidify the theoretical concepts discussed in this chapter and provide you with a robust, transparent foundation for further experimentation and exploration in the fascinating world of language modeling.
+The listing below is the whole thing, with nothing hidden behind a library. Type it in, run it, and change the dimensions to see what breaks.
 
 ## Complete source code listing for `microgpt.rkt`
 
@@ -471,7 +471,7 @@ I highly encourage you to load `microgpt.rkt` into your own Racket REPL or DrRac
 
 ## Optional practice problems
 
-1. **Implement GELU Activation**: The current Multi-Layer Perceptron (MLP) implementation in `microgpt.rkt` uses a standard ReLU activation function. Replace it with a GELU (Gaussian Error Linear Unit) activation function, which is commonly used in modern GPT models, and observe how it affects convergence.
-2. **Add Weight Decay**: Enhance the optimizer implementation to support weight decay (L2 regularization). Update the parameter update step to scale down parameters by a small factor before applying the gradients.
-3. **Temperature and Top-K Sampling**: Modify the inference sampling function to support temperature scaling and Top-K filtering. This will help control the creativity and coherence of the generated names.
+1. Implement GELU Activation: the current Multi-Layer Perceptron (MLP) implementation in `microgpt.rkt` uses a standard ReLU activation function. Replace it with a GELU (Gaussian Error Linear Unit) activation function, which is commonly used in modern GPT models, and observe how it affects convergence.
+2. Add Weight Decay: enhance the optimizer implementation to support weight decay (L2 regularization). Update the parameter update step to scale down parameters by a small factor before applying the gradients.
+3. Temperature and Top-K Sampling: modify the inference sampling function to support temperature scaling and Top-K filtering. This will help control the creativity and coherence of the generated names.
 

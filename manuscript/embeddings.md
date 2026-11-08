@@ -2,11 +2,11 @@
 
 Retrieval-Augmented Generation (RAG) is a framework that combines the strengths of pre-trained language models (LLMs) with retrievers. Retrievers are system components for accessing knowledge from external sources of text data. In RAG a retriever selects relevant documents or passages from a corpus, and a generator produces a response based on both the retrieved information and the input query. The process typically follows these steps that we will use in the example Racket code:
 
-- **Query Encoding**: The input query is encoded into a vector representation.
-- **Document Retrieval**: A retriever system uses the query representation to fetch relevant documents or passages from an external corpus.
-- **Document Encoding**: The retrieved documents are encoded into vector representations.
-- **Joint Encoding**: The query and document representations are combined, often concatenated or mixed via attention mechanisms.
-- **Generation**: A generator, usually LLM, is used to produce a response based on the joint representation.
+- Query Encoding: the input query is encoded into a vector representation.
+- Document Retrieval: a retriever system uses the query representation to fetch relevant documents or passages from an external corpus.
+- Document Encoding: the retrieved documents are encoded into vector representations.
+- Joint Encoding: the query and document representations are combined, often concatenated or mixed via attention mechanisms.
+- Generation: a generator, usually LLM, is used to produce a response based on the joint representation.
 
 RAG gives a model a way to read text it was never trained on. You retrieve passages from your own corpus, put them in the prompt, and let the model answer from those. The point is accuracy. An answer drawn from text that exists beats whatever the weights happen to remember. 
 
@@ -556,9 +556,9 @@ Retrieval Augmented Generation (RAG) is one of the best use cases for semantic s
 
 ## Optional practice problems
 
-1. **Wire the Upgrades In**: Modify `create-document` in **embeddingsdb.rkt** to use `chunk-by-sentences` instead of `break-into-chunks`, and `semantic-match` to use `cosine-similarity` and top-k ranking instead of `dot-product` with a cutoff. Run the chemistry and sports queries before and after and compare answers.
-2. **Measure Chunking**: Write a utility that reports, for a given document and chunker settings, the number of chunks, their min/max/mean lengths, and how many chunks end mid-word. Use it to compare the old and new chunkers on **data/chemistry.txt**.
-3. **Hybrid Retrieval**: Some questions are pure keyword ("what is the formula for ZorroOnian Alcohol") and some are conceptual ("why is teamwork valuable"). Add a keyword score (a simple word-overlap count) alongside the embedding score, and combine them with a weight. Show a query where hybrid beats embeddings alone, and one where it does not.
-4. **Extend Database Operations**: Add a function `delete-document` that deletes all chunks and vector representations associated with a given file path from the SQLite database, and a test that proves re-adding a modified file does not leave stale chunks behind.
-5. **Score-Gap Detection**: Add a check to `rank-chunks` callers that detects "no good match": top score below a floor *and* a small gap between first and second place. When detected, have the prompt tell the LLM explicitly that the local documents may not contain the answer, and observe how its answers change.
+1. Wire the Upgrades In: modify `create-document` in **embeddingsdb.rkt** to use `chunk-by-sentences` instead of `break-into-chunks`, and `semantic-match` to use `cosine-similarity` and top-k ranking instead of `dot-product` with a cutoff. Run the chemistry and sports queries before and after and compare answers.
+2. Measure Chunking: write a utility that reports, for a given document and chunker settings, the number of chunks, their min/max/mean lengths, and how many chunks end mid-word. Use it to compare the old and new chunkers on **data/chemistry.txt**.
+3. Hybrid Retrieval: some questions are pure keyword ("what is the formula for ZorroOnian Alcohol") and some are conceptual ("why is teamwork valuable"). Add a keyword score (a simple word-overlap count) alongside the embedding score, and combine them with a weight. Show a query where hybrid beats embeddings alone, and one where it does not.
+4. Extend Database Operations: add a function `delete-document` that deletes all chunks and vector representations associated with a given file path from the SQLite database, and a test that proves re-adding a modified file does not leave stale chunks behind.
+5. Score-Gap Detection: add a check to `rank-chunks` callers that detects "no good match": top score below a floor *and* a small gap between first and second place. When detected, have the prompt tell the LLM explicitly that the local documents may not contain the answer, and observe how its answers change.
 

@@ -75,19 +75,19 @@ We already saw most of the following code listing in the previous chapter **Data
 
 Part of solving this problem is constructing SPARQL queries as strings. We will look in some detail at one utility function `sparql-dbpedia-for-person` that constructs a SPARQL query string for fetching data from DBpedia about a specific person. The function takes one parameter, `person-uri`, which is expected to be the URI of a person in the DBpedia dataset. The query string is built by appending strings, including the dynamic insertion of the `person-uri` parameter value. Here's a breakdown of how the code works:
 
-1. **Function Definition**: The function `sparql-dbpedia-for-person` is defined with one parameter, `person-uri`. This parameter is used to dynamically insert the person's URI into the SPARQL query.
+1. Function Definition: the function `sparql-dbpedia-for-person` is defined with one parameter, `person-uri`. This parameter is used to dynamically insert the person's URI into the SPARQL query.
 
-2. **String Appending (`@string-append`)**: The `@string-append` construct (which seems like a custom or pseudo-syntax, as the standard Scheme function for string concatenation is `string-append` without the `@`) is used to concatenate multiple strings to form the complete SPARQL query. This includes static parts of the query as well as dynamic parts where the `person-uri` is inserted.
+2. String Appending (`@string-append`): the `@string-append` construct (which seems like a custom or pseudo-syntax, as the standard Scheme function for string concatenation is `string-append` without the `@`) is used to concatenate multiple strings to form the complete SPARQL query. This includes static parts of the query as well as dynamic parts where the `person-uri` is inserted.
 
-3. **SPARQL Query Construction**: The function constructs a SPARQL query with the following key components:
-   - **SELECT Clause**: This part of the query specifies what information to return. It uses `GROUP_CONCAT` to aggregate multiple `?website` values into a single string, separated by `"  |  "`, and also selects the `?comment` variable.
-   - **OPTIONAL Clauses**: Two OPTIONAL blocks are included:
+3. SPARQL Query Construction: the function constructs a SPARQL query with the following key components:
+   - SELECT Clause: this part of the query specifies what information to return. It uses `GROUP_CONCAT` to aggregate multiple `?website` values into a single string, separated by `"  |  "`, and also selects the `?comment` variable.
+   - OPTIONAL Clauses: two OPTIONAL blocks are included:
      - The first block attempts to fetch English comments (`?comment`) associated with the person, filtering to ensure the language of the comment is English (`lang(?comment) = 'en'`).
      - The second block fetches external links (`?website`) associated with the person but filters out any URLs containing "dbpedia" (case-insensitive), to likely avoid self-references within DBpedia.
-   - **Dynamic URI Insertion**: The `@person-uri` placeholder is replaced with the actual `person-uri` passed to the function. This dynamically targets the SPARQL query at a specific DBpedia resource.
-   - **LIMIT Clause**: The query is limited to return at most 4 results with `LIMIT 4`.
+   - Dynamic URI Insertion: the `@person-uri` placeholder is replaced with the actual `person-uri` passed to the function. This dynamically targets the SPARQL query at a specific DBpedia resource.
+   - LIMIT Clause: the query is limited to return at most 4 results with `LIMIT 4`.
 
-4. **Usage of `@person-uri` Placeholder**: The code shows `@person-uri` placeholders within the query string, indicating where the `person-uri` parameter's value should be inserted. However, the mechanism for replacing these placeholders with the actual URI value is not explicitly shown in the snippet. Typically, this would involve string replacement functionality, ensuring the final query string includes the specific URI of the person of interest.
+4. Usage of `@person-uri` Placeholder: the code shows `@person-uri` placeholders within the query string, indicating where the `person-uri` parameter's value should be inserted. However, the mechanism for replacing these placeholders with the actual URI value is not explicitly shown in the snippet. Typically, this would involve string replacement functionality, ensuring the final query string includes the specific URI of the person of interest.
 
 In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SPARQL query to fetch English comments and external links (excluding DBpedia links) for a given person from DBpedia, with the results limited to a maximum of 4 entries. The use of string concatenation (or a pseudo-syntax resembling `@string-append`) allows for the dynamic insertion of the person's URI into the query.
 
@@ -509,6 +509,6 @@ I had the idea for the KGN application because I was spending quite a bit of tim
 
 ## Optional practice problems
 
-1. **Extend templates for Historical Events**: The current KGN implementation only recognizes persons and places. Add support to `sparql-utils.rkt` for querying historical events (e.g., battles, treaty signings) by crafting a new SPARQL template and corresponding parsing logic.
-2. **Add Wikidata Backend**: Currently, KGN only queries DBpedia. Implement alternative search functions in `sparql-utils.rkt` targeting Wikidata's SPARQL endpoint, mapping the resulting entities back to the GUI.
-3. **Query History in the GUI**: Modify the GUI code in `main.rkt` to include a historical list of past queries in the user interface. Clicking on an item in the history list should automatically reload and execute that query.
+1. Extend templates for Historical Events: the current KGN implementation only recognizes persons and places. Add support to `sparql-utils.rkt` for querying historical events (e.g., battles, treaty signings) by crafting a new SPARQL template and corresponding parsing logic.
+2. Add Wikidata Backend: currently, KGN only queries DBpedia. Implement alternative search functions in `sparql-utils.rkt` targeting Wikidata's SPARQL endpoint, mapping the resulting entities back to the GUI.
+3. Query History in the GUI: modify the GUI code in `main.rkt` to include a historical list of past queries in the user interface. Clicking on an item in the history list should automatically reload and execute that query.

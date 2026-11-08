@@ -11,17 +11,17 @@ In the following Racket code example for accesing data on DBPedia using SPARQL, 
 
 ### Function definitions
 
-- **sparql-dbpedia-for-person**: This function takes a `person-uri` as an argument and constructs a SPARQL query to retrieve the comment and website associated with the person. The `@string-append` macro helps in constructing the SPARQL query string by concatenating the literals and the `person-uri` argument.
+- sparql-dbpedia-for-person: this function takes a `person-uri` as an argument and constructs a SPARQL query to retrieve the comment and website associated with the person. The `@string-append` macro helps in constructing the SPARQL query string by concatenating the literals and the `person-uri` argument.
 
-- **sparql-dbpedia-person-uri**: Similar to the above function, this function accepts a `person-name` argument and constructs a SPARQL query to fetch the URI and comment of the person from DBpedia.
+- sparql-dbpedia-person-uri: similar to the above function, this function accepts a `person-name` argument and constructs a SPARQL query to fetch the URI and comment of the person from DBpedia.
 
-- **sparql-query->hash**: This function encapsulates the logic for sending the constructed SPARQL query to the DBpedia endpoint. It takes a `query` argument, encodes it into a URL format, and sends an HTTP request to the DBpedia SPARQL endpoint. The response, expected in JSON format, is then converted to a Racket expression using `string->jsexpr`.
+- sparql-query->hash: this function encapsulates the logic for sending the constructed SPARQL query to the DBpedia endpoint. It takes a `query` argument, encodes it into a URL format, and sends an HTTP request to the DBpedia SPARQL endpoint. The response, expected in JSON format, is then converted to a Racket expression using `string->jsexpr`.
 
-- **json->listvals**: This function is designed to transform the JSON expression obtained from the SPARQL endpoint into a more manageable list of values. It processes the hash data structure, extracting the relevant bindings and converting them into a list format.
+- json->listvals: this function is designed to transform the JSON expression obtained from the SPARQL endpoint into a more manageable list of values. It processes the hash data structure, extracting the relevant bindings and converting them into a list format.
 
 - **gd** (Data Processing Function): This function processes the data structure obtained from `json->listvals`. It defines four inner functions `gg1`, `gg2`, `gg3`, and `gg4`, each designed to handle a specific number of variables returned in the SPARQL query result. It uses a `case` statement to determine which inner function to call based on the length of the data.
 
-- **sparql-dbpedia**: This is the entry function which accepts a `sparql` argument, invokes `sparql-query->hash` to execute the SPARQL query, and then calls `gd` to process the resulting data structure.
+- sparql-dbpedia: this is the entry function which accepts a `sparql` argument, invokes `sparql-query->hash` to execute the SPARQL query, and then calls `gd` to process the resulting data structure.
 
 ### Usage flow
 
@@ -170,6 +170,6 @@ The following diagram shows the high-level architecture of the datastore integra
 
 ## Optional practice problems
 
-1. **Extend the SQLite Example**: Modify the SQLite code to support updating an existing person's age or email, and writing a query function to retrieve a person by their name.
-2. **Dynamic SPARQL Variable Handling**: The `gd` function in `sparql.rkt` is limited to handling up to 4 return variables. Rewrite `gd` to support an arbitrary number of variables using a general list-zipping function.
-3. **DBpedia Location Search**: Write a function `sparql-dbpedia-for-city` that queries DBpedia for a city's name (e.g., "Paris" or "Tokyo"), returning its URI, country, and population, using SPARQL query templates.
+1. Extend the SQLite Example: modify the SQLite code to support updating an existing person's age or email, and writing a query function to retrieve a person by their name.
+2. Dynamic SPARQL Variable Handling: the `gd` function in `sparql.rkt` is limited to handling up to 4 return variables. Rewrite `gd` to support an arbitrary number of variables using a general list-zipping function.
+3. DBpedia Location Search: write a function `sparql-dbpedia-for-city` that queries DBpedia for a city's name (e.g., "Paris" or "Tokyo"), returning its URI, country, and population, using SPARQL query templates.

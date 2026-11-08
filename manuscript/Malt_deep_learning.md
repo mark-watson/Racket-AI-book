@@ -13,10 +13,10 @@ around the XOR pattern.
 
 That is the thread running through this chapter's three examples:
 
-1. **XOR**: the smallest problem that *requires* a hidden layer.
-2. **Circle classification**: a two-hidden-layer network learning a curved
+1. XOR: the smallest problem that *requires* a hidden layer.
+2. Circle classification: a two-hidden-layer network learning a curved
    boundary from synthetic data we generate ourselves.
-3. **A two-tower recommender**: a jointly learned model that takes *two
+3. A two-tower recommender: a jointly learned model that takes *two
    kinds* of input (customer features and product features), learns an
    embedding for each, and predicts a rating. Along the way we hit, diagnose,
    and fix a real bug: and the debugging trail is as instructive as the

@@ -14,17 +14,17 @@ The Racket conversion does not change the algorithm. The interesting work is the
 
 A production system has three parts:
 
-1. **Working memory**: a set of facts. In OPS5 each fact is a tagged list, such as `(card heart 10)` or `(monkey ^ at 5-7 ^ on couch ^ holds nothing)`.
-2. **Productions**: rules. Each production has a left-hand side (LHS), a pattern that matches working memory, and a right-hand side (RHS), actions that change working memory.
-3. **The inference engine**: the loop that matches the LHS of every production against working memory, chooses one matching production, and runs its RHS.
+1. Working memory: a set of facts. In OPS5 each fact is a tagged list, such as `(card heart 10)` or `(monkey ^ at 5-7 ^ on couch ^ holds nothing)`.
+2. Productions: rules. Each production has a left-hand side (LHS), a pattern that matches working memory, and a right-hand side (RHS), actions that change working memory.
+3. The inference engine: the loop that matches the LHS of every production against working memory, chooses one matching production, and runs its RHS.
 
 Forward chaining means the engine works from facts to conclusions. It looks at what is true now, finds rules whose conditions hold, fires them, and lets the new facts trigger more rules. It runs until no rule matches or until a rule halts it. This is the opposite of backward chaining, which starts from a goal and asks which rules could prove it.
 
 The engine repeats one cycle:
 
-1. **Match**: find all productions whose LHS is satisfied by the current working memory. The set of satisfied instantiations is the **conflict set**.
-2. **Resolve**: pick one instantiation from the conflict set.
-3. **Act**: run that instantiation's RHS, which adds, removes, or changes facts.
+1. Match: find all productions whose LHS is satisfied by the current working memory. The set of satisfied instantiations is the **conflict set**.
+2. Resolve: pick one instantiation from the conflict set.
+3. Act: run that instantiation's RHS, which adds, removes, or changes facts.
 4. **Repeat**, unless a halt fires or the conflict set is empty.
 
 The hard part is step 1. A naive engine, on every cycle, tests every production against every combination of facts. If a production has several condition elements, the engine must try combinations of facts across those elements. The cost grows fast. We fix this with the Rete algorithm.
@@ -55,8 +55,8 @@ Rete also shares nodes across productions. If two rules test `(card <suit> <num>
 
 Many productions may match at once. OPS5 picks one with a strategy. This code supports two.
 
-- **LEX (lexicographic)**: among matching instantiations, prefer the one whose matched facts are most recent. If two share the same recency pattern, the engine breaks the tie by sorting the time tags of the matched facts and comparing the sorted lists element by element.
-- **MEA (means-ends analysis)**: like LEX, but it first compares only the time tag of the first condition element. The first condition element acts as the goal condition and dominates the choice.
+- LEX (lexicographic): among matching instantiations, prefer the one whose matched facts are most recent. If two share the same recency pattern, the engine breaks the tie by sorting the time tags of the matched facts and comparing the sorted lists element by element.
+- MEA (means-ends analysis): like LEX, but it first compares only the time tag of the first condition element. The first condition element acts as the goal condition and dominates the choice.
 
 Both strategies also respect **refraction**: an instantiation that has already fired cannot fire again on the same facts. This stops a rule from firing forever on unchanged working memory. The engine records fired instantiations and rejects them when they reappear.
 
@@ -843,11 +843,11 @@ The final line of each run is a statistics report. It has four parts.
 (48 mean token memory size (60 maximum))
 ```
 
-- **Productions and nodes**: `19 productions` fired here. `212 // 212 nodes` gives virtual nodes and real nodes. Virtual is every node the compiler built. Real is the unique nodes after sharing. They are equal in this program because no two productions share enough to merge nodes. In a larger program with shared patterns, real would be smaller than virtual.
-- **Firings and RHS actions**: `16 firings` means 16 productions fired. `42 RHS actions` counts the individual `make`, `modify`, `ops-write`, and other actions those firings ran. One firing can run several actions, so the action count is higher than the firing count.
-- **Working memory size**: `10 Mean working memory size (14 maximum)`. On average 10 facts were in memory across cycles, and at peak there were 14. The monkey program keeps a small world, so these numbers stay low.
-- **Conflict set size**: `2 mean conflict set size (3 maximum)`. On average 2 instantiations competed each cycle, peaking at 3. A small conflict set means the strategy had little to choose from, which fits a planning program that mostly has one sensible next step.
-- **Token memory size**: `48 mean token memory size (60 maximum)`. Tokens are the partial matches stored in beta memories. This is the memory cost of Rete. It is larger than the working memory size because one fact can participate in many partial matches.
+- Productions and nodes: `19 productions` fired here. `212 // 212 nodes` gives virtual nodes and real nodes. Virtual is every node the compiler built. Real is the unique nodes after sharing. They are equal in this program because no two productions share enough to merge nodes. In a larger program with shared patterns, real would be smaller than virtual.
+- Firings and RHS actions: `16 firings` means 16 productions fired. `42 RHS actions` counts the individual `make`, `modify`, `ops-write`, and other actions those firings ran. One firing can run several actions, so the action count is higher than the firing count.
+- Working memory size: `10 Mean working memory size (14 maximum)`. On average 10 facts were in memory across cycles, and at peak there were 14. The monkey program keeps a small world, so these numbers stay low.
+- Conflict set size: `2 mean conflict set size (3 maximum)`. On average 2 instantiations competed each cycle, peaking at 3. A small conflict set means the strategy had little to choose from, which fits a planning program that mostly has one sensible next step.
+- Token memory size: `48 mean token memory size (60 maximum)`. Tokens are the partial matches stored in beta memories. This is the memory cost of Rete. It is larger than the working memory size because one fact can participate in many partial matches.
 
 Compare the two programs. The draw program has a large, noisy conflict set (mean 16, max 30) because many suit orderings match at once. The monkey program has a small one (mean 2, max 3) because the goal chain keeps the choices tight. The token memory tells the same story: draw averages 98 tokens, monkey averages 48, even though monkey has far more productions. More rules do not mean more memory when the working memory stays small and the goals channel the matching.
 

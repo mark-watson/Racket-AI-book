@@ -385,8 +385,8 @@ The agentic pipeline costs more API calls than vanilla RAG: one call to rewrite 
 
 ## Optional practice problems
 
-1. **Persist the cache**: `*embedding-cache*` lives in memory and is lost when the program exits. Change `get-embedding` so the cache is written to a file after each batch call and read back at startup. What happens to startup time for the demo?
+1. Persist the cache: `*embedding-cache*` lives in memory and is lost when the program exits. Change `get-embedding` so the cache is written to a file after each batch call and read back at startup. What happens to startup time for the demo?
 
-2. **Score-weighted context**: The synthesis agent receives chunks in descending score order but no scores. Modify `format-retrieved-chunks` and the synthesis prompt so each passage shows its relevance score, and experiment with instructing the model to prefer higher-scoring passages when they conflict.
+2. Score-weighted context: the synthesis agent receives chunks in descending score order but no scores. Modify `format-retrieved-chunks` and the synthesis prompt so each passage shows its relevance score, and experiment with instructing the model to prefer higher-scoring passages when they conflict.
 
-3. **Async fanout**: `search-fanout` searches each sub-query in turn. Use `racket/async-channel` or futures to search all sub-queries in parallel and measure the speedup on a corpus of a few hundred chunks.
+3. Async fanout: `search-fanout` searches each sub-query in turn. Use `racket/async-channel` or futures to search all sub-queries in parallel and measure the speedup on a corpus of a few hundred chunks.

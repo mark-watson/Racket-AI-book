@@ -253,7 +253,7 @@ This pattern (shelling out to a specialized tool and processing its output) is a
 
 ## Optional practice problems
 
-1. **Verify Binary Installation**: Implement a function `verify-lightpanda-path` that validates if the configured `lightpanda-binary` path exists using `find-executable-path`. If the binary cannot be resolved, raise a clear user-facing error message with advice on installation.
-2. **Support Dynamic Fetch Options**: Extend the `fetch-url` function to support additional command-line parameters that Lightpanda offers (for example, setting a custom `--user_agent` or specifying custom `--headers`).
-3. **Capture Process Standard Error**: In `run-command`, standard error output is discarded. Refactor the subprocess handling to capture `stderr` from the subprocess and include its contents in the error output logs when the exit code is non-zero.
+1. Verify Binary Installation: implement a function `verify-lightpanda-path` that validates if the configured `lightpanda-binary` path exists using `find-executable-path`. If the binary cannot be resolved, raise a clear user-facing error message with advice on installation.
+2. Support Dynamic Fetch Options: extend the `fetch-url` function to support additional command-line parameters that Lightpanda offers (for example, setting a custom `--user_agent` or specifying custom `--headers`).
+3. Capture Process Standard Error: in `run-command`, standard error output is discarded. Refactor the subprocess handling to capture `stderr` from the subprocess and include its contents in the error output logs when the exit code is non-zero.
 
