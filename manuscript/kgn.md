@@ -193,15 +193,15 @@ Please make sure you have read that chapter before the following sections.
 
 The file **Racket-AI-book/source-code/kgn/main.rkt** contains library boilerplate and the file **Racket-AI-book/source-code/kgn/kgn.rkt** the application code. The provided Racket scheme code is structured for interacting with the DBPedia SPARQL endpoint to retrieve information about persons or places based on a user's string query. The code is organized into several defined functions aimed at handling different steps of the process:
 
-**Query Parsing and Entity Recognition**:
+### Query parsing and entity Recognition
 
 The **parse-query** function takes a string **query-str** and tokenizes it into a list of words after replacing certain characters (like "." and "?"). It then checks for keywords like "who" or "where" to infer the type of query - person or place. Using **find-human-names** and **find-place-names** (defined in the earlier section on SPARQL), it extracts the entity names from the tokens. Depending on the type of query and the entities found, it returns a list indicating the type and name of the entity, or **unknown** if no relevant entities are identified.
 
-**SPARQL Query Construction and Execution**:
+### SPARQL query construction and execution
 
 The functions **get-person-results** and **get-place-results** take a name string, construct a SPARQL query to get information about the entity from DBPedia, execute the query, and process the results. They utilize the **sparql-dbpedia-person-uri**, **sparql-query->hash**, and **json->listvals** functions that we listed previously to construct the query, execute it, and convert the returned JSON data to a list, respectively.
 
-**Query Interface**:
+### Query interface
 
 The **ui-query-helper** function acts as the top-level utility for processing a string query to generate a SPARQL query, execute it, and return the results. It first calls **parse-query** to understand the type of query and the entity in question. Depending on whether the query is about a person or a place, it invokes **get-person-results** or **get-place-results**, respectively, to get the relevant information from DBPedia. It then returns a list containing the SPARQL query and the results, or **#f** if the query type is unknown.
 
@@ -512,4 +512,3 @@ I had the idea for the KGN application because I was spending quite a bit of tim
 1. **Extend templates for Historical Events**: The current KGN implementation only recognizes persons and places. Add support to `sparql-utils.rkt` for querying historical events (e.g., battles, treaty signings) by crafting a new SPARQL template and corresponding parsing logic.
 2. **Add Wikidata Backend**: Currently, KGN only queries DBpedia. Implement alternative search functions in `sparql-utils.rkt` targeting Wikidata's SPARQL endpoint, mapping the resulting entities back to the GUI.
 3. **Query History in the GUI**: Modify the GUI code in `main.rkt` to include a historical list of past queries in the user interface. Clicking on an item in the history list should automatically reload and execute that query.
-

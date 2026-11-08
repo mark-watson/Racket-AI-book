@@ -48,7 +48,7 @@ So that no listing below sends you reaching for a browser, here is the
 complete vocabulary of the chapter. Functions are explained at first use as
 well; treat this as the reference you can flip back to.
 
-**Building and inspecting tensors**
+### Building and inspecting tensors
 
 - `(tensor ...)`: constructs a tensor from numbers or other tensors.
   `(tensor 1.0 2.0)` is a rank-1 vector; `(tensor (tensor 1 2) (tensor 3 4))`
@@ -68,7 +68,7 @@ well; treat this as the reference you can flip back to.
   matrix" half of every neural network layer.
 - `(flatten t)`: collapses a tensor to rank 1.
 
-**Layers and networks**
+### Layers and networks
 
 - `linear` :the affine layer. `((linear t) theta)` computes
   `W·t + b`, where `theta` is the list `(weights bias)`. (You will never
@@ -88,7 +88,7 @@ well; treat this as the reference you can flip back to.
   network. You need it to create correctly-shaped initial parameters; for
   the XOR network it returns `((8 2) (8) (1 8) (1))`, e.g., weight matrix and bias for the hidden layer, then weight matrix and bias for the output layer.
 
-**Parameters, training, and prediction**
+### Parameters, training, and prediction
 
 - `(init-theta shapes)`: creates fresh parameters with the given shapes:
   random small weights, zero biases. This is the starting point that

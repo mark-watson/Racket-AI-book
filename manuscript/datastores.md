@@ -9,7 +9,7 @@ I will not cover RDF data and the SPARQL query language in great detail here. Ra
 
 In the following Racket code example for accesing data on DBPedia using SPARQL, the primary objective is to interact with DBpedia's SPARQL endpoint to query information regarding a person based on their name or URI. The code is structured into several functions, each encapsulating a specific aspect of the querying process, thereby promoting modular design and ease of maintenance.
 
-**Function Definitions:**
+### Function definitions
 
 - **sparql-dbpedia-for-person**: This function takes a `person-uri` as an argument and constructs a SPARQL query to retrieve the comment and website associated with the person. The `@string-append` macro helps in constructing the SPARQL query string by concatenating the literals and the `person-uri` argument.
 
@@ -23,7 +23,7 @@ In the following Racket code example for accesing data on DBPedia using SPARQL, 
 
 - **sparql-dbpedia**: This is the entry function which accepts a `sparql` argument, invokes `sparql-query->hash` to execute the SPARQL query, and then calls `gd` to process the resulting data structure.
 
-**Usage Flow:**
+### Usage flow
 
 The typical flow would be to call **sparql-dbpedia-person-uri** with a person's name to obtain the person's URI and comment from DBpedia. Following that, **sparql-dbpedia-for-person** can be invoked with the obtained URI to fetch more detailed information like websites associated with the person. The results from these queries are then processed through **sparql-query->hash**, **json->listvals**, and **gd** to transform the raw JSON response into a structured list format, making it easier to work with within the Racket environment.
 

@@ -17,7 +17,7 @@ In the following short Racket example program (file **Racket-AI-book/source-code
 
 The provided Racket code uses a local SQLite database and the uniform `llmapis.rkt` API for calculating text embeddings and for text completions (OpenAI models by default; the `*embeddingsdb-chat-model*` and `*embeddingsdb-embedding-model*` parameters switch models).
 
-**Utility Functions:**
+### Utility functions
 
 - `floats->string` and `string->floats` are utility functions for converting between a list of floats and its string representation.
 - `read-file` reads a file's content.
@@ -27,24 +27,24 @@ The provided Racket code uses a local SQLite database and the uniform `llmapis.r
 - `break-into-chunks` breaks a text into chunks of a specified size.
 - `string-to-list` and `decode-row` are utility functions for parsing and processing database rows.
 
-**Database Setup:**
+### Database setup
 
 - Database connection is established to "test.db" and a table named "documents" is created with columns for document_path, content, and embedding.
 
-**Document Management:**
+### Document management
 
 - `insert-document` inserts a document and its associated information into the database.
 - `get-document-by-document-path` and `all-documents` are utility functions for querying documents from the database.
 - `create-document` reads a document from a file path, breaks it into chunks, computes embeddings for each chunk via `llm-embedding` from the uniform API (model `openai/text-embedding-ada-002` unless `*embeddingsdb-embedding-model*` is rebound), and inserts these into the database.
 
-**Semantic Matching and Interaction:**
+### Semantic matching and interaction
 
 - `execute-to-list` and `dot-product` are utility functions for database queries and vector operations.
 - `semantic-match` performs a semantic search by calculating the dot product of embeddings of the query and documents in the database. It then aggregates contexts of documents with a similarity score above a certain threshold, and sends a new query constructed with these contexts to the chat model (`openai/gpt-5-mini` unless `*embeddingsdb-chat-model*` is rebound) for further processing.
 - `QA` is a wrapper around `semantic-match` for querying.
 - `CHAT` initiates a loop for user interaction where each user input is processed through `semantic-match` to generate a response, maintaining a context of the previous chat.
 
-**Test Code:**
+### Test code
 
 - `test` function creates documents by reading from specified file paths, and performs some queries using the `QA` function.
 
@@ -561,5 +561,4 @@ Retrieval Augmented Generation (RAG) is one of the best use cases for semantic s
 3. **Hybrid Retrieval**: Some questions are pure keyword ("what is the formula for ZorroOnian Alcohol") and some are conceptual ("why is teamwork valuable"). Add a keyword score (a simple word-overlap count) alongside the embedding score, and combine them with a weight. Show a query where hybrid beats embeddings alone, and one where it does not.
 4. **Extend Database Operations**: Add a function `delete-document` that deletes all chunks and vector representations associated with a given file path from the SQLite database, and a test that proves re-adding a modified file does not leave stale chunks behind.
 5. **Score-Gap Detection**: Add a check to `rank-chunks` callers that detects "no good match": top score below a floor *and* a small gap between first and second place. When detected, have the prompt tell the LLM explicitly that the local documents may not contain the answer, and observe how its answers change.
-
 

@@ -2542,37 +2542,37 @@ These patterns (tool registries, approval gates with stale-base guards, intent r
 
 ## Optional practice problems
 
-**Problem 1: Add a `write_file` tool**
+### Problem 1: Add a `write_file` tool
 
 The agent currently has no way for the model to create a file without going through `propose_edit`. Add a `write_file` tool to `tools.rkt` that accepts a `path` and `content` parameter, writes the content directly (without a diff prompt), and returns a confirmation string. Register it in `register-all` and add it to `ENABLED-TOOLS`. Consider what safety constraints, if any, should prevent the model from overwriting files outside the working directory, and whether the existing `hidden-file?` predicate should apply.
 
-**Problem 2: Extend the shell whitelist dynamically**
+### Problem 2: Extend the shell whitelist dynamically
 
 `SHELL-WHITELIST` is currently a compile-time constant. Add a `/allow-cmd` slash command to `agent.rkt` that lets the user append a command to the whitelist at runtime, so that `/allow-cmd git` would let the model run `git status` and `git diff`. Update `handle-slash-command` to recognize the new command and update the set stored in `tools.rkt`. Think about where the mutable whitelist state should live and how `tools.rkt` should expose it.
 
-**Problem 3: Persistent session history**
+### Problem 3: Persistent session history
 
 At present, `/reset` discards the conversation history and there is no way to resume a previous session. Add two slash commands: `/save <filename>` that writes the current `messages-box` contents to a JSON file using `jsexpr->string`, and `/load <filename>` that reads that file and restores the conversation. Use `string->jsexpr` for loading. Handle file-not-found and malformed JSON gracefully by printing an error and leaving the existing history unchanged.
 
-**Problem 4: Token-budget guard**
+### Problem 4: Token-budget guard
 
 `chat-with-tools*` will keep iterating until the model stops calling tools or `max-iterations` is reached. Add a token-budget guard that checks the running token total after each iteration and returns early with a warning message if it exceeds a configurable threshold. The counters live in private boxes in `fireworks-ai.rkt`, and `mlx-serve.rkt` keeps a smaller pair of its own, so you will need to export a reader or thread a check through the `post-fn` adapter. Expose the threshold as a `/budget <n>` slash command that sets it, and a `/budget` command with no argument that prints the current setting and the remaining budget.
 
-**Problem 5: Second search backend -- DuckDuckGo**
+### Problem 5: A second search backend with DuckDuckGo
 
 Add a `ddg-search` function to `search.rkt` using the DuckDuckGo Instant Answer API at `https://api.duckduckgo.com/?q=QUERY&format=json`. The response contains a `RelatedTopics` array of objects with `Text` and `FirstURL` fields. Return results in the same `(url title description)` triple format as `brave-search` and `exa-search`. Update `agent.rkt` to accept `/search ddg` as a valid engine selection, and add it to the `SEARCH-ENGINES` list so Tab completes it.
 
-**Problem 6: Colored intent label in the REPL prompt**
+### Problem 6: Colored intent label in the REPL prompt
 The line `[intent: coding → coding tools, no search]` is printed in plain text. Use ANSI codes to color the label: green for `"coding"`, cyan for `"general"`, and yellow (`"\033[33m"`) for `"hybrid"`. Update `send-to-model` in `agent.rkt` to apply the color. `approval.rkt` already defines the constants, but they are not in its `provide` list, so decide whether to export them, redefine them locally, or move them to a shared `ansi.rkt` module.
 
-**Problem 7: Retry on `make check` failure**
+### Problem 7: Retry on `make check` failure
 
 Currently, when `propose_edit` runs `make check` and it fails, the failure output is returned to the model as a tool result, but the model must then propose a new edit from scratch. Modify `tool-propose-edit` so that on a `make check` failure it offers the user a `[r]etry` option at the approval prompt (in addition to the existing `y/n/s` choices). On retry, revert the file to its previous contents using `call-with-output-file`, print a confirmation, and return a result string that tells the model the file was reverted and includes the check output so it can try again with a corrected edit.
 
-**Problem 8: Stream the SSE deltas to the terminal**
+### Problem 8: Stream the SSE deltas to the terminal
 
 The Fireworks client already reassembles the SSE stream into a single response via `parse-sse-response`, but the user does not see the reply being written in real time. Modify `post-fireworks` so that, while `parse-sse-response` is accumulating the response, each `delta.content` fragment is also `display`ed to the terminal as it arrives. Consider how to do this without double-printing the final text (which the REPL also prints after the call returns), and whether the tool-call argument fragments should be hidden.
 
-**Problem 9: Add a provider profile without touching code**
+### Problem 9: Add a provider profile without touching code
 
 The provider layer is data, not code. Confirm that by adding a second local profile to `~/.coding_harness.json` that points at a different port, for example oMLX on 8000 or sushi on 12345. Switch to it with `/provider <name>`, check it with `/provider` alone and with `/tokens`, and verify that Tab completion offers the new profile name. Then override one field in `.local_coding_harness.json` and confirm that the deep merge replaces just that field while the rest of the global profile survives.

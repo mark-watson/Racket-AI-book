@@ -99,24 +99,24 @@ The web scraping library listed below can be found in the directory **Racket-AI-
 
 The provided Racket Scheme code defines four functions to interact with and process web resources: `web-uri->xexp`, `web-uri->text`, `web-uri->links`, and `web-uri->html-headers`.
 
-**`web-uri->xexp`**:
+### `web-uri->xexp`
    - Requires libraries: `net/http-easy`, `html-parsing`, and `net/url xml xml/path`.
    - Given a URI (`a-uri`), it creates a stream using the `get` function from the `net/http-easy` library to fetch the contents of the URI.
    - Converts the HTML content of the URI to an S-expression (`xexp`) using the `html->xexp` function from the `html-parsing` library.
    - Closes the response stream using `response-close!` and returns the `xexp`.
 
-**`web-uri->text`**:
+### `web-uri->text`
    - Calls `web-uri->xexp` to convert the URI content to an `xexp`.
    - Utilizes `se-path*/list` from the `xml/path` library to extract all paragraph elements (`p`) from the `xexp`.
    - Filters the paragraph elements to retain only strings (excluding nested tags or other structures).
    - Joins these strings with a newline separator, normalizing spaces using `string-normalize-spaces` from the `srfi/13` library.
 
-**`web-uri->links`**:
+### `web-uri->links`
    - Similar to `web-uri->text`, it starts by converting URI content to an `xexp`.
    - Utilizes `se-path*/list` to extract all `href` attributes from the `xexp`.
    - Filters these `href` attributes to retain only those that are external links (those beginning with "http").
 
-**`web-uri->html-headers`**:
+### `web-uri->html-headers`
    - Extracts H1, H2, and H3 headers from a web page.
    - Returns a list of three lists: `((h1-headers...) (h2-headers...) (h3-headers...))`.
    - Each inner list contains text strings from headers of that level.
