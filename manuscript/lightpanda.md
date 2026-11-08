@@ -95,13 +95,13 @@ Racket provides `subprocess` in `racket/system` for launching external processes
 ```
 
 Key Racket features used:
-- `subprocess` — Creates a new process with three pipes (stdout, stdin, stderr) plus the process handle.
-- `apply` — Calls `subprocess` dynamically with a list of arguments.
-- `find-executable-path` — Locates the full path of the executable by checking system directories.
-- `define-values` — Destructures multiple return values from `subprocess` in a single binding.
-- `port->string` — Reads the entire stdout stream into a Racket string.
-- `with-handlers` — Gracefully catches exceptions, reporting error details to `stderr` and returning `#f`.
-- `dynamic-wind` — Guarantees resource cleanup by closing input and output ports regardless of how the evaluation finishes.
+- `subprocess`: creates a new process with three pipes (stdout, stdin, stderr) plus the process handle.
+- `apply`: calls `subprocess` dynamically with a list of arguments.
+- `find-executable-path`: locates the full path of the executable by checking system directories.
+- `define-values`: destructures multiple return values from `subprocess` in a single binding.
+- `port->string`: reads the entire stdout stream into a Racket string.
+- `with-handlers`: gracefully catches exceptions, reporting error details to `stderr` and returning `#f`.
+- `dynamic-wind`: guarantees resource cleanup by closing input and output ports regardless of how the evaluation finishes.
 
 ## HTML parsing: Extracting links
 
@@ -159,10 +159,10 @@ No server process is required; lightpanda is invoked directly.
 ```
 
 Key techniques:
-- `#:keyword [param default]` — Racket's keyword arguments with default values.
-- `(if obey-robots '("--obey_robots") '())` — Conditional list inclusion.
-- `append` — Combines several lists into a single flat argument list.
-- `(lightpanda-binary)` — Invokes the configuration parameter.
+- `#:keyword [param default]`: Racket's keyword arguments with default values.
+- `(if obey-robots '("--obey_robots") '())`: conditional list inclusion.
+- `append`: combines several lists into a single flat argument list.
+- `(lightpanda-binary)`: invokes the configuration parameter.
 
 ## Helper functions
 
@@ -242,14 +242,14 @@ Found 14 link(s):
 
 ## Key Racket takeaways
 
-1. **`subprocess`** — Portable subprocess execution; returns four values (process, stdout, stdin, stderr)
-2. **`make-parameter`** — Thread-safe dynamic configuration with `parameterize` for scoped overrides
-3. **`provide` / module system** — Privacy is enforced by what you export, not by naming conventions
-4. **Keyword arguments** — `#:key [param default]` for flexible, self-documenting APIs
-5. **Named `let`** — Tail-recursive loops without mutation: `(let loop ([acc '()] ...) ...)`
-6. **`with-handlers`** — Structured exception handling with predicate-based dispatch
+1. `subprocess`: portable subprocess execution; returns four values (process, stdout, stdin, stderr)
+2. `make-parameter`: thread-safe dynamic configuration with `parameterize` for scoped overrides
+3. `provide` / module system: privacy is enforced by what you export, not by naming conventions
+4. Keyword arguments: `#:key [param default]` for flexible, self-documenting APIs
+5. Named `let`: tail-recursive loops without mutation: `(let loop ([acc '()] ...) ...)`
+6. `with-handlers`: structured exception handling with predicate-based dispatch
 
-This pattern — shelling out to a specialized tool and processing its output — is a powerful technique. You can wrap any command-line tool this way: databases, image processors, compilers, or your own scripts. The result is a Racket API that hides the implementation details while providing access to the tool's capabilities.
+This pattern (shelling out to a specialized tool and processing its output) is a powerful technique. You can wrap any command-line tool this way: databases, image processors, compilers, or your own scripts. The result is a Racket API that hides the implementation details while providing access to the tool's capabilities.
 
 ## Optional practice problems
 

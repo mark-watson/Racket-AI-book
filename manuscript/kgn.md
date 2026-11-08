@@ -7,7 +7,7 @@ I cover SPARQL and linked data/knowledge Graphs is previous books I have written
 - The chapter **Knowledge Graph Navigator** in my book **Loving Common Lisp, or the Savvy Programmer's Secret Weapon**
 - The chapters **Background Material for the Semantic Web and Knowledge Graphs**, **Knowledge Graph Navigator** in my book **Practical Artificial Intelligence Programming With Clojure**
 
-We use the Natural Language Processing (NLP) library from the last chapter to find human and place names in input text and  then construct SPARQL queries to access data from DBPedia.
+We use the Natural Language Processing (NLP) library from the last chapter to find human and place names in input text and then construct SPARQL queries to access data from DBPedia.
 
 The KGN application is still a work in progress so please check for updates to this *live eBook*. The following screenshots show the current version of the application:
 

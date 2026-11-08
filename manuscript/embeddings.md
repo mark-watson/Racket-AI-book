@@ -245,7 +245,7 @@ In summary, the history of the science of chemistry spans centuries, starting fr
 
 This output is the combination of data found in the text files in the directory **Racket-AI-book/source-code/embeddingsdb/data** and the data that the OpenAI chat model was trained on. Since the local "document" file **chemistry.txt** is very short, most of this output is derived from the innate knowledge the chat model has from its training data.
 
-In order to show that this example is also using data in the local "document" text files, I manually edited the file **data/chemistry.txt** adding the following made-up organic compound:
+To show that this example is also using data in the local "document" text files, I manually edited the file **data/chemistry.txt** adding the following made-up organic compound:
 
     ZorroOnian Alcohol is another organic compound with the formula C 6 H 10 O.
     

@@ -32,7 +32,7 @@ This dependency-free approach, heavily inspired by Karpathy's `micrograd`, clear
 
 ### Model parameters and initialization
 
-A neural network is essentially an enormous collection of parameters—weights and biases—that are iteratively optimized over time. In our Racket implementation, these parameters are stored in a centralized hash table called `*state-dict*`. 
+A neural network is essentially an enormous collection of parameters, weights and biases, that are iteratively optimized over time. In our Racket implementation, these parameters are stored in a centralized hash table called `*state-dict*`. 
 
 The `init-mod` function defines the architectural shape of our MicroGPT. We initialize several distinct sets of matrices:
 - **`wte`**: The token embedding matrix, which translates discrete character IDs into dense continuous vectors.
@@ -73,7 +73,7 @@ The `gp` function serves as the central processing unit of the model. It impleme
 
 ### Training the model: Learning from data
 
-The `run-train` function orchestrates the intricate dance of the learning process. The model trains by reading lines of text—in our specific example, from a file called `names.txt`—processing it character by character. 
+The `run-train` function orchestrates the intricate dance of the learning process. The model trains by reading lines of text (in our specific example, from a file called `names.txt`) processing it character by character. 
 
 The training loop proceeds iteratively over many steps:
 1. **The Forward Pass:** The model ingests a sequence of characters and attempts to predict the subsequent character for every position in the sequence simultaneously.

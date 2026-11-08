@@ -58,8 +58,7 @@ f : P \times A \to B.
 ```
 
 To train such a layer we need to know how a small change in its output
-propagates back to its parameters and its input. That bidirectional pair — a
-forward map plus a *pullback* — is a **lens**. The forward pass of a layer is
+propagates back to its parameters and its input. That bidirectional pair (a forward map plus a *pullback*) is a **lens**. The forward pass of a layer is
 the "get" direction; the backward pass is the "put" direction:
 
 ```$
@@ -92,7 +91,7 @@ uncertainty.
 A layer `f`$ is *equivariant* under a group `G`$ when `f(g \cdot x) = g \cdot f(x)`$
 for every `g \in G`$: the symmetry of the input is preserved by the layer.
 *Invariant* maps go further and forget the symmetry entirely. The sum
-`\sum_i x_i`$ is invariant to any permutation of its inputs — it is the
+`\sum_i x_i`$ is invariant to any permutation of its inputs. It is the
 **colimit** (coproduct) over the set diagram, and it is the heart of
 set-based architectures like DeepSets. In the same spirit, k-means clustering
 is a colimit computation: each cluster centroid is the colimit (average) of
@@ -243,7 +242,7 @@ put-back. Given the upstream gradient from the layer above, it computes the
 local gradient `\delta = \nabla_{\hat y} \odot \sigma'(z)`$, packs the
 parameter gradients into a `layer-grads` (the outer product for `dW`, `\delta`$
 for `db`), and propagates `W^\top \delta`$ on to the previous layer. Because
-the pullback is a closure, it remembers `zs`$ — that is what makes composing
+the pullback is a closure, it remembers `zs`$. That is what makes composing
 lenses possible without storing every intermediate activation globally.
 
 Now we can compose layers. `network-forward` walks the model's layer list,
@@ -341,7 +340,7 @@ model state is produced by `train-step` before the loop continues.
 First, dropout as a stochastic lens. `make-dropout-lens` returns a function
 that samples a Bernoulli mask, scales by `1/p`$ (inverted dropout keeps the
 expected activation constant), and attaches a pullback that reuses the saved
-mask. Both passes share the mask — that shared state *is* the stochastic
+mask. Both passes share the mask. That shared state *is* the stochastic
 lens's "closed optic" structure.
 
 ```racket
@@ -634,8 +633,7 @@ Reference: Jia et al. (2025) Axioms 14(3):204
 Run the program and read it as five little experiments, each confirming one
 categorical story.
 
-**I — the Para spine learned XOR, and the loss tells the story.**
-The epoch losses collapse from `1.173366` to `0.002327` to `0.000651` — a
+**I (the Para spine learned XOR, and the loss tells the story.** The epoch losses collapse from `1.173366` to `0.002327` to `0.000651`) a
 steady exponential-ish decay with no divergence, which is what you expect from
 compositional backprop on a well-posed problem. The real check is the
 prediction table: `(0,1)` and `(1,0)` produce ~0.99 (class 1), while `(0,0)`
@@ -669,9 +667,7 @@ ensembling disagreeing models. The Heyting line demonstrates the
 shows its 0.2 as 0.19999999999999996 — harmless), and implication
 `0.8 ⇒ 0.3 = max(0.2, 0.3) = 0.3`.
 
-**V — distillation compresses the teacher's representation.**
-The teacher hidden vector for input `(1.0, 0.0)` is 4-dimensional:
-`(0.8588 0.0626 0.2403 0.0987)` — mostly-concentrated feature activity with one
+**V (distillation compresses the teacher's representation.** The teacher hidden vector for input `(1.0, 0.0)` is 4-dimensional: `(0.8588 0.0626 0.2403 0.0987)`) mostly-concentrated feature activity with one
 dominant unit. The student adapter squeezes it to 2 dimensions: `(0.3703 0.5728)`. The
 point of the demo is not that these numbers are meaningful on their own; it is
 that `\eta`$ is a *uniform* map — apply the same adapter to any teacher hidden
