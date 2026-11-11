@@ -11,6 +11,8 @@ How this list was produced:
 
 Items are ordered by priority within each section.
 
+Re-verified on 2026-11-10 against commit `bb5ee0c`, which merged the "Humanizer" passes (sentence-case headings, rewritten passages). Every manuscript item below was re-checked against that text and still applies; heading names quoted here use the new sentence case.
+
 ## 1. Fix first: things that are broken or wrong
 
 - [ ] **`manuscript/conclusion.md`: remove the stray Mermaid diagram.** The chapter ends with a `{format: mermaid}` flowchart of a Python `estimate_pi` function (with `ValueError` handling). It has nothing to do with the conclusion or with Racket.
@@ -31,7 +33,7 @@ Items are ordered by priority within each section.
 
 `Book.txt` now has 21 chapters in six parts. Several index files still describe a much earlier book.
 
-- [ ] **`manuscript/TOC.md`** lists 11 chapters. Missing: MicroGPT, Ollama tools, coding agent, Malt, category theory, reinforcement learning, OPS5, Racklog, pi and e. Chapter titles and numbers are also stale (the LLM chapter title no longer matches). The README sends GitHub readers to this file, so it is the first thing they see.
+- [ ] **`manuscript/TOC.md`** lists 11 chapters (the merged commit changed its capitalization but not its contents). Missing: MicroGPT, Ollama tools, coding agent, Malt, category theory, reinforcement learning, OPS5, Racklog, pi and e. Chapter titles and numbers are also stale (the LLM chapter title no longer matches). The README sends GitHub readers to this file, so it is the first thing they see.
 - [ ] **`SOURCE_CODE_MAP.md`** is missing the same chapters plus `RAG.md`. It also maps `datastores.md` to `misc_code` only, although that chapter's main listing is `sparql/sparql.rkt`. Consider generating both `TOC.md` and this file from `Book.txt` with a small script so they cannot drift again.
 - [ ] **`manuscript/Makefile`** `edit` target opens files that no longer exist (`deeplearning.md`, `opennlp.md`, `anomaly_detection.md`, `libpython.md`, `semantic_web.md`, `jena_wrapper.md`). It looks copied from another book.
 - [ ] **Preface project list** covers 10 directories and omits most of the current book. It lists `pdf_chat` and `search_brave`, which no chapter covers. Rewrite it to follow the six parts.
@@ -85,7 +87,7 @@ Not compiled here because packages were not installed on the review machine: `Ma
 - [ ] Calling `create-document` twice on the same file inserts duplicate rows. Delete existing rows for that path first.
 - [ ] Remove dead code: `read-file`, `join-strings`, `truncate-string`, `interleave`, `execute-to-list`, and `string-to-list` (a duplicate of `string->floats`). Remove the placeholder comments `;; ... database setup, error handling, and queries ...` from the real source file.
 - [ ] `break-into-chunks` cuts every 200 characters with no overlap and no regard for word boundaries. `rag_extensions.rkt` already has better chunking; make it the default so the chapter's first example is not the weak one.
-- [ ] The `0.7` dot-product cutoff in `semantic-match` was tuned for one embedding model. Switch the default to top-k retrieval, which the chapter's own "Retrieval, Without Thresholds" section argues for.
+- [ ] The `0.7` dot-product cutoff in `semantic-match` was tuned for one embedding model. Switch the default to top-k retrieval, which the chapter's own "Retrieval, without thresholds" section argues for.
 
 ### `sparql/sparql.rkt` and `kgn/`
 
@@ -120,14 +122,14 @@ Not compiled here because packages were not installed on the review machine: `Ma
 - [ ] **Part pages are a single heading each.** `PART1.md` to `PART6.md` have no text. Add two or three sentences per part saying what the chapters have in common and which can be skipped.
 - [ ] **Chapter order in Part 4.** `kgn.md` says it uses "the NLP library from the last chapter", which is true, but Part 4 puts Malt, category theory and RL before NLP and KGN, which have nothing to do with deep learning. Consider moving NLP and KGN into Part 1 (next to the RDF chapters they build on) or into their own part.
 - [ ] **Two RAG chapters use different stacks.** `embeddings.md` uses OpenAI and SQLite; `RAG.md` uses Gemini and its own vector store. Add a short paragraph at the start of `RAG.md` saying why it does not reuse `embeddingsdb`, or make it reuse it.
-- [ ] **Exercises.** Thirteen chapters end with "Optional Practice Problems", two use "Exercises" (`ReinforcementLearning.md`, `Racklog_expert_systems_logic.md`), and three have none (`tutorial.md`, `Malt_deep_learning.md`, `deep_learning_category_theory.md`). Use one heading and add problems to the three.
+- [ ] **Exercises.** Fourteen chapters end with "Optional practice problems", two use "Exercises" (`ReinforcementLearning.md`, `Racklog_expert_systems_logic.md`), and three have none (`tutorial.md`, `Malt_deep_learning.md`, `deep_learning_category_theory.md`). Use one heading and add problems to the three.
 - [ ] **Architecture diagrams.** The 12 older chapters each have an `*_architecture.jpg`; the 9 newer chapters have no images at all (`RAG`, `Malt`, coding agent, RL, pi and e, Racklog, category theory, OPS5, conclusion). The coding agent, RAG agent loop and Rete network would each benefit most from a diagram.
 - [ ] **Code that overflows the page.** Lines over 75 characters inside code blocks: `coding-agent-harness.md` 234, `math-pi-e.md` 124, `Ollama_Tools.md` 50, `kgn.md` 39, `embeddings.md` 36, `deep_learning_category_theory.md` 36, `llm.md` 31. These wrap or get cut in PDF and EPUB.
 - [ ] **Chapters that are mostly listing.** `coding-agent-harness.md` (15,400 words, about 2,090 code lines) and `math-pi-e.md` (11,100 words, about 1,400 code lines) reprint nearly the whole program; `karpathy.md` appends the complete 300-line source after already walking through it. Show the instructive excerpts and link to the repository for the rest. `ReinforcementLearning.md` is the opposite: about 2,800 words of prose and no Racket listings at all for 2,700 lines of code. A few short excerpts (the Q-learning update, the policy gradient step, the replay buffer) would help.
 - [ ] **Old Leanpub attribute syntax.** `nlp.md` and `kgn.md` still use `{lang=racket, linenos=off}` with `~~~~~~~~` fences; every other chapter uses fenced blocks with a language. Convert these so they are highlighted the same way.
 - [ ] **Stale version banners.** REPL transcripts show Racket 8.10, 8.12 and 8.14. Regenerate them on a current release when the listings are next touched.
 - [ ] **Hard-wrapped versus unwrapped source.** Five chapters are hard-wrapped at about 72 columns, the rest are one line per paragraph. Not visible to readers, but it makes diffs noisy; pick one.
-- [ ] **"Work in progress" statements.** `nlp.md` says so twice, `kgn.md` twice plus "will be updated … when I finish writing the KGN application". These have been there across several editions; finish the work or delete the sentences.
+- [ ] **"Work in progress" statements.** `nlp.md` says so twice, `kgn.md` once plus "will be updated … when I finish writing the KGN application". These have been there across several editions; finish the work or delete the sentences.
 - [ ] **Add a setup chapter or appendix.** There is no single place that covers installing Racket, the package list, API keys, Ollama, and how to run the tests. Each chapter currently repeats part of it.
 
 ### Per chapter
@@ -213,7 +215,7 @@ Not compiled here because packages were not installed on the review machine: `Ma
 **`kgn.md`**
 - [ ] The opening paragraph ends with the fragment "KGN uses the SPARQL queries." Finish or delete the sentence.
 - [ ] "is previous books" should be "in previous books"; "look at either for more details" has no clear referent.
-- [ ] "Entity Types Handled" says people and places only; the next section says the application processes "Person, Place, and Organization names" and finds "relationships between them". The code does people and places. Make the text consistent.
+- [ ] "Entity types handled by KGN" says people and places only; the next section says the application processes "Person, Place, and Organization names" and finds "relationships between them". The code does people and places. Make the text consistent.
 - [ ] The prose says `find-human-names` and `find-place-names` are "defined in the earlier section on SPARQL"; they are from the NLP chapter.
 - [ ] The SPARQL client listing is repeated from the datastores chapter ("We already saw most of the following code listing"). Reference it instead of reprinting it.
 - [ ] Four listings near the end (`dialog-utils.rkt`, `sparql-utils.rkt`, `kgn.rkt`) are introduced with one sentence each and no explanation.
