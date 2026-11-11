@@ -14,8 +14,9 @@
 (define *gemini-max-tokens* 8192)
 
 (define *google-api-key*
-  (or (getenv "GOOGLE_API_KEY")
-      (error "GOOGLE_API_KEY environment variable is not set")))
+  (or (getenv "GEMINI_API_KEY")
+      (getenv "GOOGLE_API_KEY")
+      (error "GEMINI_API_KEY (or GOOGLE_API_KEY) environment variable is not set")))
 
 (define *base-url*
   "https://generativelanguage.googleapis.com/v1beta/models")

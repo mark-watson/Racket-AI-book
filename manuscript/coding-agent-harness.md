@@ -1,6 +1,6 @@
 # A Racket coding agent
 
-The source code for this example is in the directory **coding-agent-harness**.
+The source code for this example is in the directory **coding-agent-harness**. Unlike the other examples in this book, which use the Apache 2 license, I released this example under the AGPL version 3 license. Please read the **LICENSE** file in that directory before reusing the code in your own projects.
 
 ## The agentic loop
 
@@ -1327,7 +1327,7 @@ The accessors near the bottom of the file, `provider-endpoint`, `provider-model`
     (define entries (directory-list path))
     (define lines
       (for/list ([e (in-list (sort (map path->string entries) string<?))]
-                 #:unless (hidden-file? (path->string e)))
+                 #:unless (hidden-file? e))
         (define full (build-path path e))
         (if (directory-exists? full)
             (string-append e "/")
@@ -1605,6 +1605,19 @@ Do not let the short list suggest that the model can wander the filesystem. `rea
 ```
 
 If the model attempts a disallowed command, or names a file the agent considers internal, it receives an error string describing what is allowed. It can then adapt its approach rather than causing the agent to crash. The whitelist currently allows `make`, `ls`, `pwd`, `cat`, and `uv` (the Python package runner). Everything else is refused.
+
+### What the tool guards do not protect against
+
+It is worth being clear about the limits of these checks, because it is easy to read more into them than is there. They are guard rails against accidents, not a security sandbox:
+
+- Paths are not confined to the project directory. `read_file` and `cat` will read any file on your computer that your user account can read, as long as its name is not hidden by the `hidden-file?` rules. A file named `secrets.txt` in your home directory is fair game.
+- Two of the whitelisted commands run other programs. `make` runs whatever the Makefile in the current directory says, and `uv` runs Python code. A model that can edit a Makefile (with your approval) and then run `make` can run anything.
+- Everything a tool returns is sent to the model provider. With a cloud provider that includes the contents of every file the model reads.
+- Tool results are text that the model reads, so a file containing instructions ("ignore your previous instructions and ...") can steer a weak model. The approval gate on edits is the real protection here, which is one reason not to use the auto-approve option on a project you do not trust.
+
+What the design does get right is that commands are started directly with an argument list and never passed through a shell, so characters like `;`, `|`, and `>` in a command have no special meaning and cannot be used to chain a second command. If you need stronger isolation, run the agent inside a container or a virtual machine that only contains the project you are working on.
+
+The file **tests.rkt** in the same directory tests these guards and the diff display without calling a model. Run it with **raco test tests.rkt**.
 
 ### The `propose_edit` approval gate
 

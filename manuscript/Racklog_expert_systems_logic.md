@@ -368,6 +368,7 @@ Same problems, two tools, two philosophies:
 | Goal is | implicit, emerges from firing | explicit, named in the query |
 | Monkey output | narration of actions as they fire | a plan returned as data |
 | Control lives in | rule order and conflict resolution | clause order and backtracking |
+| Size of the two programs | 31 and 272 lines (`draw.ops`, `monkey.ops`) | 57 and 77 lines (`draw.rkt`, `monkey.rkt`) |
 
 Neither is "better." Production rules shine when a system must react
 continuously to arriving facts: monitoring, diagnosis, agents. Logic
@@ -378,7 +379,11 @@ is just Racket, so when the logic ends (printing a plan, formatting a
 hand) you are back in an ordinary general-purpose language with no
 seams.
 
-## Exercises
+Both programs have a regression test in **tests.rkt** that runs them and
+checks the hands found and the nine-step plan. Run it with
+**raco test tests.rkt**.
+
+## Optional practice problems
 
 1. Add a `%two-pair` relation to `draw.rkt` that finds two pairs at
    different ranks. Test it by adding a 4 of clubs to the hand.

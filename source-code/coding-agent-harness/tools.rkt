@@ -194,7 +194,7 @@
     (define entries (directory-list path))
     (define lines
       (for/list ([e (in-list (sort (map path->string entries) string<?))]
-                 #:unless (hidden-file? (path->string e)))
+                 #:unless (hidden-file? e))
         (define full (build-path path e))
         (if (directory-exists? full)
             (string-append e "/")

@@ -51,7 +51,7 @@
              (list
               (string-append
                "{\"input\": \"" text "\","
-               " \"model\": \"text-embedding-ada-002\"}"))))
+               " \"model\": \"text-embedding-3-small\"}"))))
            (auth (lambda (uri headers params)
                  (values
                   (hash-set*

@@ -1,8 +1,7 @@
 #lang racket
 
 (require "pdf2text.rkt")
-(require embeddingsdb)
-(require llmapis)
+(require "../embeddingsdb/embeddingsdb.rkt")
 
 ;; This script implements a simple command-line PDF chat / QA utility
 ;; using pdf2text, embeddingsdb, and llmapis.

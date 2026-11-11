@@ -8,24 +8,23 @@ This library provides foundational web scraping utilities in Racket, enabling yo
 
 - **`web-uri->xexp`** — Fetch a web page and return its HTML as an XExp structure
 - **`web-uri->text`** — Extract all paragraph text from a web page
-- **`web-uri->links`** — Extract all external links (URLs starting with http) from a web page
+- **`web-uri->links`** — Extract all external links (URLs starting with http) from a web page; pass `#:resolve-relative? #t` to include relative links as absolute URLs
 - **`web-uri->html-headers`** — Extract H1, H2, and H3 headers from a web page, returns a list of lists
+- **`html-string->xexp`**, **`xexp->text`**, **`xexp->links`**, **`xexp->html-headers`** — the same operations on HTML you already have, with no network access. `xexp->links` takes an optional base URI and then resolves relative links.
+
+`web-uri->xexp` raises an error for any HTTP status other than 2xx and uses connect and request timeouts.
 
 ## Architecture
 
 ![Generated image](architecture.png)
 
-### Partial implementation
-
-I will commit the complete library code here when it is feature complete.
-
 ## Run
 
     racket webscrape.rkt
 
-## Tests
+## Tests (offline)
 
-    racket test.rkt
+    raco test tests.rkt
 
 ## Demo
 

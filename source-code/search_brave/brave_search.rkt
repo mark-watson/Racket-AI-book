@@ -38,6 +38,7 @@
                                      (response-status-code response)
                                      (response-body response))))))
 
-; Example usage
-(pretty-print 
- (brave-search "Fun things to do in Sedona Arizona"))
+; Example usage: racket brave_search.rkt
+(module+ main
+  (pretty-print
+   (brave-search "Fun things to do in Sedona Arizona")))

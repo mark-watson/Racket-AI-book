@@ -1,12 +1,12 @@
 # LLM Agents
 
-**Book Chapter:** [Using the Google Gemini, OpenAI, Anthropic, Mistral, and Local LLM APIs](https://leanpub.com/racket-ai/read) — *Practical Artificial Intelligence Development With Racket* (free to read online).
+**Not covered by a book chapter yet.** This is a small experiment in agent structure (a shared context "blackboard" plus tools). For the agent that the book does cover, see `../coding-agent-harness` and the chapter "A Racket Coding Agent".
 
 This project demonstrates how to build LLM-powered agents in Racket, utilizing various language model APIs (like OpenAI, Google Gemini, Anthropic, etc.) to perform complex, multi-step tasks and tool usage.
 
 ## Run
 
-    racket llb-agent.rkt
+    racket llm-agent.rkt
 
 ## License and Copyright
 

@@ -1,16 +1,16 @@
 #lang racket
 
 (require racket/pretty)
-(require nlp)
+(require "../nlp/main.rkt")          ; find-human-names, find-place-names
+(require "../sparql/sparql.rkt")    ; SPARQL query templates and client
 
 (provide get-person-results)
+(provide get-place-results)
+(provide parse-query)
 (provide ui-query-helper)
-
-(require "sparql-utils.rkt")
 
 (define (get-person-results person-name-string)
   (let ((person-uri (sparql-dbpedia-person-uri person-name-string)))
-    ;; TBD: check for valid result here...
     (let* ((hash-data (sparql-query->hash person-uri)))
       (list
        person-uri
@@ -36,7 +36,7 @@
           (printf "\n+ + person-names= ~a\n" person-names)
           (if (> (length person-names) 0)
               (list 'person (first person-names))   ;; for now, return the first name found
-              #f))
+              (list 'unknown query-str)))
         (if (member "where" cleaned-query-tokens)
             (let ((place-names (find-place-names (list->vector cleaned-query-tokens) '())))
               (printf "\n+ + place-names= ~a\n" place-names)

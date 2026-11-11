@@ -381,6 +381,10 @@ You should see:
 
 ## Wrap up
 
+To put numbers on the cost: with the default `#:max-iterations 3`, one question makes between three and six text generation calls. The best case is three: rewrite the query, assess the context once, and synthesize. Each time the context is judged insufficient adds two calls, one for the assessment and one to refine the queries, and at the last iteration the assessment is skipped. Each search step also makes one batched embedding call for its queries. Lowering `#:max-iterations` to 1 gives you plain RAG with query rewriting: two generation calls.
+
+This chapter uses its own vector store in **vector-store.rkt** instead of the SQLite store from the embeddings chapter. The store here keeps each corpus in memory with normalized embedding vectors and can save a corpus to a file and load it back, which suits a small number of corpora that are searched many times per question. The two chapters are otherwise independent, so you can read the code for either one on its own.
+
 The agentic pipeline costs more API calls than vanilla RAG: one call to rewrite the query, at least one to assess sufficiency, and one more to synthesize. In exchange you get answers that hold together for multi-hop questions, with citations that point back to the source files. The iteration bound and the context cap keep the cost predictable even on hard questions.
 
 ## Optional practice problems

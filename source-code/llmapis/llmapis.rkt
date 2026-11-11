@@ -61,6 +61,9 @@
  find-provider
  llm-providers
  parse-model
+ ;; default model names used by the book examples
+ default-chat-model
+ default-embedding-model
  provider-api-key
  ;; messages
  (struct-out llm-message)
@@ -194,6 +197,17 @@ OpenAI-compatible base URL (or the native base for 'anthropic /
 (define (llm-providers)
   "Sorted list of registered provider name symbols."
   (sort (hash-keys provider-table) symbol<?))
+
+;; Default models for the book examples. Each example that needs "a chat
+;; model" or "an embedding model" asks here, so there is one place to
+;; change when model names are retired. Override without editing code:
+;;   export LLM_CHAT_MODEL=ollama/qwen3:1.7b
+;;   export LLM_EMBEDDING_MODEL=ollama/nomic-embed-text
+(define (default-chat-model)
+  (or (getenv "LLM_CHAT_MODEL") "openai/gpt-5-mini"))
+
+(define (default-embedding-model)
+  (or (getenv "LLM_EMBEDDING_MODEL") "openai/text-embedding-3-small"))
 
 (define (parse-model model #:provider [provider #f])
   "Split a \"provider/model-name\" string into (values provider model-name).
@@ -1072,7 +1086,7 @@ llm-response. For manual control, loop `llm-completion' +
                       tools))
 
 ;; embeddings
-(llm-embedding "openai/text-embedding-ada-002" "hello world")
+(llm-embedding (default-embedding-model) "hello world")
 
 ;; register another OpenAI-compatible provider at runtime
 (define-provider 'groq "https://api.groq.com/openai/v1"

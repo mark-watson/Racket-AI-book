@@ -642,3 +642,37 @@ the gradient path before the hyperparameters. And in malt, remember that
 | `joint_recommendation.rkt` | Two-tower jointly learned recommender, MAE 0.09 |
 | `sanity_check.rkt` | Independent verification of the synthetic data |
 | `PROBLEMS.md` | Full postmortem of the selection-matrix bug and malt gotchas |
+
+## Wrap up
+
+The three examples follow one recipe: write the network as a function of
+its inputs and a parameter list, describe the parameter shapes, pick a
+loss, and let Malt's gradient descent do the rest. XOR shows the smallest
+case where a hidden layer is necessary, the circle classifier shows what a
+second hidden layer buys, and the two-tower recommender shows how to share
+one training signal between two sub-networks. The bug described in the
+interlude is the part I would most like you to remember: when a model
+trains without errors but predicts the same value for every input, check
+the data flowing into the network before you change the network.
+
+## Optional practice problems
+
+1. **A dot-product scoring head**: The recommender combines the customer
+   and product embeddings by concatenating them and applying a linear
+   layer, which can only approximate the multiplicative structure of the
+   training data. Replace that head with a dot product of the two
+   embeddings and compare the mean absolute error with the 0.09 reported
+   above. You will need both towers to produce embeddings of the same
+   size.
+2. **How small can the XOR network be?** `xor.rkt` uses eight hidden
+   units. Reduce the hidden layer to four, three, and two units and, for
+   each size, try several random seeds. Record how often training
+   converges.
+3. **A held-out test set**: `two_hidden_layers.rkt` reports accuracy on
+   the 300 points it was trained on. Generate another 300 points from the
+   same distribution after training and report accuracy on those. Is the
+   299/300 figure optimistic?
+4. **Watch the loss**: Add code to one of the examples that prints the
+   loss every 500 revisions, using the tips in the survival guide for
+   unwrapping duals, and describe the shape of the curve.
+

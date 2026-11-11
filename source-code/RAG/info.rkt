@@ -1,4 +1,4 @@
-#lang racket
+#lang info
 
 ;;; info.rkt — Package definition for the RAG system
 ;;; Copyright (C) 2026 Mark Watson <markw@markwatson.com>

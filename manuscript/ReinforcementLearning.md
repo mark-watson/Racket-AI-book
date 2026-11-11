@@ -175,6 +175,44 @@ and differ only in `y`$:
 | Expected SARSA | `r + \gamma \sum_{a'} \pi(a' \mid s') Q(s',a')`$ | on-policy |
 | Double Q-learning | update `Q_1`$, bootstrap `\arg\max`$ from `Q_1`$ evaluated in `Q_2`$ (and vice versa on a coin flip) | off-policy |
 
+In `q_learning.rkt` the table above is one function. `td-target/table`
+returns the target `y`$ and the table that should move toward it, and the
+three off-policy methods share everything else:
+
+```racket
+(define (td-target/table method q q2 s2 r done? gamma eps)
+  (cond
+    [(eq? method 'double-q)
+     (define use-q1? (< (random) 0.5))
+     (cond
+       [done? (values r (if use-q1? q q2))]
+       [use-q1?
+        ;; update Q1, bootstrap the greedy action of Q1 evaluated in Q2
+        (values (+ r (* gamma (q-ref q2 s2 (flvector-argmax (vector-ref q s2))))) q)]
+       [else
+        ;; update Q2, bootstrap the greedy action of Q2 evaluated in Q1
+        (values (+ r (* gamma (q-ref q s2 (flvector-argmax (vector-ref q2 s2))))) q2)])]
+    [done? (values r q)]
+    [(eq? method 'q-learning)
+     (values (+ r (* gamma (greedy-action-value q s2))) q)]
+    [(eq? method 'expected-sarsa)
+     (values (+ r (* gamma (expected-value q s2 eps))) q)]
+    [else (error 'td-target/table "unknown method: ~a" method)]))
+```
+
+On a terminal transition (`done?`) the target is just the reward, because
+there is no next state to bootstrap from. The episode loop then applies
+the shared update in one line:
+
+```racket
+(define-values (target table)
+  (td-target/table method q q2 s2 r done? gamma eps))
+(q-set! table s a (+ (q-ref table s a) (* alpha (- target (q-ref table s a)))))
+```
+
+SARSA has its own episode loop because it must choose the next action
+before it can compute its target.
+
 The distinction between on-policy and off-policy is not academic. SARSA
 asks "how good is the policy I am actually following, exploration and
 all?", while Q-learning asks "how good is the greedy policy?". The epsilon
@@ -322,6 +360,25 @@ the weights. DQN's three fixes are all present in `dqn.rkt`:
    and linear beyond `\pm 1`$, so one surprising transition cannot produce
    a huge gradient.
 
+The replay buffer is a good example of how little code these ideas
+need. It is a set of fixed-size vectors and an index that wraps around,
+so that once the buffer is full each new transition overwrites the
+oldest one:
+
+```racket
+(define (replay-push! buf s a r s2 done?)
+  (define i (replay-buffer-next-index buf))
+  (vector-set! (replay-buffer-states buf) i s)
+  (vector-set! (replay-buffer-actions buf) i a)
+  (flvector-set! (replay-buffer-rewards buf) i (exact->inexact r))
+  (vector-set! (replay-buffer-next-states buf) i s2)
+  (vector-set! (replay-buffer-dones buf) i done?)
+  (set-replay-buffer-next-index! buf (remainder (add1 i) (replay-buffer-capacity buf)))
+  (set-replay-buffer-size! buf (min (replay-buffer-capacity buf)
+                                    (add1 (replay-buffer-size buf))))
+  buf)
+```
+
 The GridWorld demo uses one-hot state vectors, which makes the network a
 differentiable Q table and allows a direct numerical comparison:
 
@@ -374,7 +431,7 @@ about:
 - Seed the PRNG before building the network, or the weights differ from
   process to process and the demo is not reproducible.
 
-## Exercises
+## Optional practice problems
 
 1. **Add EXP3** to `bandits.rkt`. It maintains exponential weights over
    arms and works even when the rewards are chosen adversarially rather

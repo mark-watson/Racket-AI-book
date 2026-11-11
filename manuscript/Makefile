@@ -1,3 +1,6 @@
 edit:
-	open preface.md deeplearning.md opennlp.md anomaly_detection.md libpython.md webscrape.md semantic_web.md jena_wrapper.md kgn.md conclusion.md
+	open `grep -v "^$$" Book.txt`
 
+# Regenerate TOC.md and ../SOURCE_CODE_MAP.md from Book.txt
+index:
+	racket ../tools/make-index.rkt

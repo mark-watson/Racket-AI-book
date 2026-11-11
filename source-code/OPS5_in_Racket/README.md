@@ -70,13 +70,7 @@ The simple habit: `(exit)` and relaunch with the next file.
 
 | File          | Role                                            |
 |---------------|-------------------------------------------------|
-| `load.rkt`    | driver: loads the system into a namespace, starts the REPL |
-| `compat.rkt`  | compatibility layer for old MIT Scheme idioms   |
-| `ops5.rkt`    | top-level OPS5 commands                         |
-| `compiler.rkt`| production compiler (LHS to Rete network)       |
-| `network.rkt` | Rete network construction and token flow        |
-| `rhs.rkt`     | right-hand side actions                         |
-| `lit.rkt`     | literalize support                              |
+| `ops5.rkt`    | the whole system in one file: compatibility layer, production compiler, Rete network, RHS actions, and the REPL |
 | `draw.ops`    | card hand example                               |
 | `monkey.ops`  | monkey and bananas example                      |
-| `PROBLEMS.md` | log of the conversion work and bugs fixed       |
+| `tests.rkt`   | regression tests: run both examples and check the output (`raco test tests.rkt`) |

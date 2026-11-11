@@ -14,7 +14,7 @@ I have been developing commercial Artificial Intelligence (AI) tools and applica
 
 ![Mark Watson](images/Mark.png)
 
-This book is written for both professional programmers and home hobbyists who already know how to program in Racket (or another Scheme dialect) and who want to learn practical AI programming and information processing techniques. I have tried to make this an enjoyable book to work through. In the style of a "cook book," the chapters can be read in any order. 
+This book is written for both professional programmers and home hobbyists who already know how to program in Racket (or another Scheme dialect) and who want to learn practical AI programming and information processing techniques. I have tried to make this an enjoyable book to work through. In the style of a "cook book," most chapters can be read in any order. There are three exceptions: the Knowledge Graph Navigator chapter uses the libraries from the datastores and natural language processing chapters, the agentic RAG chapter builds on the embeddings chapter before it, and the Racklog chapter solves the same two problems as the OPS5 chapter before it. 
 
 You can find the code examples and the files for the manuscript for this book in the following GitHub repository:
 
@@ -35,25 +35,57 @@ I am available for short consulting projects. Please see [https://markwatson.com
 
 ## License for book manuscript: Creative Commons
 
-Copyright 2022-2024 Mark Watson. All rights reserved.
+Copyright 2022-2026 Mark Watson. All rights reserved.
 
 This book may be shared using the Creative Commons "share and share alike, no modifications, no commercial reuse" license.
 
 ## Book example programs
 
-Here are the projects for this book:
+Here are the example projects for this book, in the order the chapters use them:
 
+Part 1, tutorial and datastores:
 
-- embeddingsdb - Vector database for embeddings. This project stores and queries vector representations of text, the piece semantic search and similarity comparison are built on.
-- kgn - Knowledge Graph Navigator. The Knowledge Graph Navigator is a tool for exploring and querying knowledge graphs. It includes utilities querying graph structures, executing queries, and visualizing relationships between entities. This can be particularly useful for working with semantic web technologies or large-scale knowledge bases.
-- llmapis - Interfaces to various LLM APIs. This module provides interfaces to various Large Language Model APIs, including OpenAI, Anthropic, Mistral, and others. It offers for interact ing with different LLM providers, allowing users to easily switch between models or compare outputs from different services. This can be valuable for developers looking to integrate state-of-the-art language models into their applications.
-- lightpanda - Lightpanda headless browser client. This library provides a Racket interface to the Lightpanda headless browser for fetching JavaScript-rendered web content. It demonstrates subprocess management, string processing, and building reusable APIs by wrapping the Lightpanda command-line tool. Output formats include HTML, Markdown, and semantic tree representations.
-- misc_code - Miscellaneous utility code. This directory contains various utility functions and examples for common programming tasks in Racket. It includes code for working with hash tables, parsing HTML, handling HTTP requests, and interacting with SQLite databases. These utilities can serve as building blocks for larger AI projects or as reference implementations for common tasks.
-- nlp - Natural Language Processing utilities. The NLP module provides tools for natural language processing tasks. It includes implementations for part-of-speech tagging and named entity recognition. These fundamental NLP tasks are essential for many text analysis and understanding applications, making this module a valuable resource for developers working with textual data.
-- pdf_chat - PDF text extraction. This project focuses on extracting text from PDF documents. It provides utilities for parsing PDF files and converting their content into plain text format. This can be particularly useful for applications that need to process or analyze information contained in PDF documents, such as document summarization or information retrieval systems.
-- search_brave - Brave Search API wrapper. The Brave Search API wrapper provides an interface for interacting with the Brave search engine programmatically. It offers functions for sending queries and processing search results, making it easier to integrate Brave's search capabilities into Racket applications.
-- sparql - SPARQL querying utilities for DBpedia. This module focuses on SPARQL querying, particularly for interacting with DBpedia. It includes utilities for constructing SPARQL queries, executing them against DBpedia's endpoint, and processing the results. This can be valuable for applications that need to extract structured information from large knowledge bases.
-- webscrape - Web scraping utilities. The web scraping module provides tools for extracting information from websites. It includes functions for fetching web pages, parsing HTML content, and extracting specific data elements. These utilities can be useful for a wide range of applications, from data collection to automated information gathering and analysis.
+- misc_code - Short examples for the tutorial chapter: hash tables, HTTP requests, HTML parsing, and SQLite.
+- sparql - A small SPARQL client for querying DBpedia.
+- simple_RDF_SPARQL - An RDF datastore with partial SPARQL support, written from scratch.
+
+Part 2, web scraping and browser use:
+
+- webscrape - Fetch web pages and extract text, links, and headers.
+- lightpanda - A client for the Lightpanda headless browser, for pages that need JavaScript.
+
+Part 3, large language models:
+
+- Karpathy_MicroGPT - A tiny GPT with its own autograd engine, for learning how LLMs work inside.
+- llmapis - One uniform API for OpenAI, Google Gemini, Anthropic, Mistral, and local models, plus provider-specific modules.
+- racket_llm_language - Short examples using William J. Bowman's **#lang llm**.
+- ollama_tools - Tool (function) calling with local models.
+- coding-agent-harness - A complete coding agent with tools, an approval step for edits, and web search.
+- embeddingsdb - Embeddings stored in SQLite, with retrieval and question answering.
+- RAG - Agentic retrieval augmented generation using Gemini.
+
+Part 4, deep learning, NLP, and knowledge graphs:
+
+- Malt_deep_learning - Neural networks using the Malt library.
+- deep_learning_category_theory - A small deep learning framework organized around ideas from category theory.
+- ReinforcementLearning - Bandits, Q-learning, policy gradients, and DQN.
+- nlp - Part-of-speech tagging and finding the names of people and places.
+- kgn - The Knowledge Graph Navigator application.
+
+Part 5, rule based systems:
+
+- OPS5_in_Racket - The OPS5 production system language.
+- Racklog_expert_systems_logic - The same two problems solved with Prolog-style logic programming.
+
+Part 6, miscellaneous:
+
+- math-pi-e - Fourteen classical algorithms for computing pi and e in exact arithmetic.
+
+The repository also has a few examples that are not covered by a chapter yet (for example **genetic_programming**, **pdf_chat**, and the two web search wrappers). The file **source-code/README.md** lists every directory with the packages and API keys it needs.
+
+All of the example code is released under the Apache 2 license with one exception: the coding agent in **coding-agent-harness** is released under the AGPL version 3 license.
+
+You can check your setup without any API keys. In the **source-code** directory, **make compile** compiles the examples and **make test** runs the test suites that need no network connection.
 
 The following diagram showing Racket software examples configured for your local laptop. There are several combined examples that build both to a Racket package that get installed locally, as well as command line programs that get built and deployed to **~/bin**. Other examples are either a command line tool or a Racket package.
 

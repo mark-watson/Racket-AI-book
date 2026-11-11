@@ -444,18 +444,20 @@ Re-exports all LLM provider functions for convenient use:
 ## kgn (Knowledge Graph Navigator)
 
 **Directory:** `kgn/`
-**Deps:** `racket/gui`, `htdp/gui`, `scribble/text/wrap`, `nlp` (package), `net/url`, `json`
-**Install:** Requires `nlp` package installed first
+**Deps:** `racket/gui`, `scribble/text/wrap`, `net/url`, `json`
+**Install:** nothing to install; `../nlp/main.rkt` and `../sparql/sparql.rkt` are loaded by relative path
 
 ### Key Modules
 
-- **`sparql-utils.rkt`** — SPARQL query helpers for DBpedia:
+- **`../sparql/sparql.rkt`** — the SPARQL client that KGN uses (shared with the `sparql` example):
   - `(sparql-dbpedia-person-uri person-name)` — Build SPARQL to find person URIs.
   - `(sparql-dbpedia-for-person person-uri)` — Build SPARQL for person details.
   - `(sparql-dbpedia-place-uri place-name)` — Build SPARQL to find place URIs.
   - `(sparql-query->hash query)` — Execute SPARQL on DBpedia, return JSON hash.
   - `(json->listvals a-hash)` — Parse SPARQL JSON results into lists.
   - `(extract-name-uri-and-comment l1 l2)` — Zip two result lists.
+
+- **`main.rkt`** — Query handling: `(parse-query query-str)` and `(ui-query-helper query-str)`.
 
 - **`dialog-utils.rkt`** — GUI dialog helpers:
   - `(make-selection-functions parent-frame title)` — Returns `(list set-new-items-and-show-dialog get-selection-index)`.
@@ -465,7 +467,7 @@ Re-exports all LLM provider functions for convenient use:
 ### Example
 
 ```racket
-(require "sparql-utils.rkt")
+(require "../sparql/sparql.rkt")
 (sparql-query->hash (sparql-dbpedia-person-uri "Steve Jobs"))
 ```
 
@@ -521,7 +523,7 @@ An in-memory RDF triple store with a SPARQL query parser.
 ## embeddingsdb
 
 **Directory:** `embeddingsdb/`
-**Deps:** `db`, `llmapis` (package)
+**Deps:** `db`, `../llmapis/llmapis.rkt` (loaded by relative path)
 **Env var:** `OPENAI_API_KEY` (uses OpenAI embeddings)
 
 ### API
@@ -543,13 +545,15 @@ An in-memory RDF triple store with a SPARQL query parser.
 ## webscrape
 
 **Directory:** `webscrape/`
-**Deps:** `net/http-easy`, `html-parsing`, `net/url`, `xml`, `xml/path`, `srfi/13`
+**Deps:** `net/http-easy`, `html-parsing`, `net/url`, `xml`, `xml/path`
 
 ### API
 
 - `(web-uri->xexp a-uri)` — Fetch a URL and parse HTML to XEXP (S-expression DOM).
 - `(web-uri->text a-uri)` — Fetch a URL and extract paragraph text as a single string.
-- `(web-uri->links a-uri)` — Fetch a URL and extract all external HTTP links.
+- `(web-uri->links a-uri #:resolve-relative? #f)` — Fetch a URL and extract all external HTTP links; with `#:resolve-relative? #t` relative links are returned as absolute URLs too.
+- `(web-uri->html-headers a-uri)` — Fetch a URL and return lists of H1, H2, and H3 header text.
+- `(html-string->xexp html)`, `(xexp->text x)`, `(xexp->links x [base-uri])`, `(xexp->html-headers x)` — the same operations on HTML you already have; no network needed.
 
 ### Example
 
@@ -580,7 +584,7 @@ A blackboard-based agent framework with tool registration and simulated LLM call
 ### Example
 
 ```racket
-(require "llb-agent.rkt")
+(require "llm-agent.rkt")
 (define ctx (make-context))
 (register-tool ctx 'racket-eval racket-eval)
 (define my-agent
@@ -652,14 +656,13 @@ racket microgpt.rkt
 ## misc_code
 
 **Directory:** `misc_code/`
-**Deps:** `db`, `sqlite-table`, `net/http-easy`, `html-parsing`
+**Deps:** `db` (built in), `net/http-easy`, `html-parsing`
 
 Miscellaneous utility examples:
 
-- **`sqlite.rkt`** — SQLite database CRUD operations.
+- **`sqlite.rkt`** — SQLite example: `open-person-db`, `add-person!`, `find-person`, `update-person-age!`, with parameterized queries and a transaction.
 - **`html_text.rkt`** — Fetch and parse HTML from a URL, extract paragraph text.
 - **`hash_tests.rkt`** — Hash table operations and patterns.
-- **`lists_tests.rkt`** — List manipulation examples.
 - **`http_links.rkt`** — HTTP link extraction.
 
 ---

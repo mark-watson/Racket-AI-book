@@ -18,6 +18,18 @@ computation, classify via a topos' subobject classifier, glue ensemble
 predictions like sheaf sections, and distill knowledge through a natural
 transformation.
 
+## What you need to know first
+
+You do not need to know any category theory to read this chapter. Every
+term is defined when it first appears, and the code runs and can be
+understood as ordinary Racket even if you skip the mathematics. You do
+need to be comfortable with the basics of neural networks: a layer as a
+weight matrix and a bias vector, a forward pass, and backpropagation as
+the chain rule. The chapter on Malt covers those. If the vocabulary here
+makes you curious, a gentle book-length introduction is *Seven Sketches in
+Compositionality* by Brendan Fong and David Spivak, which is free to read
+online.
+
 ## Why category theory for machine learning
 
 A category is a collection of *objects* with *morphisms* (arrows) between
@@ -691,3 +703,32 @@ distribution. To explore further: replace sigmoid with ReLU (and its
 derivative), try deeper architectures by editing the `make-network` spec, or
 widen the dropout lens into an input-space perturbator — the categorical
 scaffolding does not change, only the morphisms you plug in.
+
+The directory also has a test file, **tests.rkt**, that checks each of the
+five sections without printing the demo: the backward pass is compared
+with a numerical gradient, k-means is run on two well-separated clusters,
+and the sheaf gluing and Heyting algebra functions are checked on small
+cases. Run it with **raco test tests.rkt**.
+
+## Optional practice problems
+
+1. **ReLU as a lens**: `forward-para` takes the activation function and
+   its derivative as arguments. Train the XOR network with ReLU in the
+   hidden layer and sigmoid at the output. This needs a small change to
+   `network-forward`, which currently uses sigmoid for every layer.
+2. **Check the composition law**: Composing two layers and then running
+   the backward pass should give the same gradients as running each
+   layer's pullback in reverse order by hand. Write a test that builds a
+   two-layer network, calls the two pullbacks yourself, and compares the
+   result with `model-backward`.
+3. **Mean pooling is also invariant**: `permutation-invariant-pool` sums
+   its inputs. Write a mean-pooling version and a max-pooling version, and
+   a test that shuffles the inputs to confirm that all three give the same
+   answer in any order. Which of the three also ignores duplicated
+   inputs?
+4. **When gluing fails**: `sheaf-glue` returns `#f` when two sections
+   disagree by more than the tolerance. Train three small networks on XOR
+   with different random seeds, treat each prediction as a section, and
+   find an input and a tolerance for which the predictions do not glue.
+   What does that tell you about the ensemble?
+

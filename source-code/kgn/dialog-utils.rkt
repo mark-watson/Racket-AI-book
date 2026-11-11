@@ -1,6 +1,5 @@
 #lang racket/gui
 
-(require htdp/gui)
 (require racket/gui/base)
 (require racket/pretty)
 (provide make-selection-functions)

@@ -9,4 +9,8 @@
 (provide web-uri->xexp
          web-uri->text
          web-uri->links
-         web-uri->html-headers)
+         web-uri->html-headers
+         html-string->xexp
+         xexp->text
+         xexp->links
+         xexp->html-headers)

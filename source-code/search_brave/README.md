@@ -7,7 +7,9 @@ This project demonstrates how to perform automated web searches in Racket using 
 ## Setup
 
 You will need to get a free API key at [https://brave.com/search/api](https://brave.com/search/api) to use these code examples. You can use the search API 2000 times a month for free, or pay $5/month to get 20 million API calls a month.
-Set the key as an environment variable (e.g., `BRAVE_API_KEY`, check the source for the exact name).
+Set the key in the environment variable `BRAVE_SEARCH_API_KEY`.
+
+This example is not covered by a book chapter yet. Requiring `brave_search.rkt` only defines `brave-search`; the sample query runs when you run the file.
 
 ## Run
 

@@ -37,7 +37,7 @@ The **uniform entry point** is `llmapis.rkt`: one API for all providers, modeled
                       tools))
 
 ;; embeddings (OpenAI-compatible providers)
-(llm-embedding "openai/text-embedding-ada-002" "hello world")
+(llm-embedding "openai/text-embedding-3-small" "hello world")
 
 ;; register another OpenAI-compatible provider at runtime
 (define-provider 'groq "https://api.groq.com/openai/v1"
@@ -94,6 +94,18 @@ Newer OpenAI models reject `max_tokens`; when a 400 names `max_completion_tokens
 | `ollama_ai_local.rkt` | Local Ollama chat + embeddings |
 | `llama_local.rkt` | Local llama.cpp chat |
 | `main.rkt` | Re-exports the per-provider modules |
+
+## Default models
+
+`(default-chat-model)` and `(default-embedding-model)` in `llmapis.rkt` are the single place where the book examples get their model names (currently `openai/gpt-5-mini` and `openai/text-embedding-3-small`). Override them without editing code:
+
+    export LLM_CHAT_MODEL=ollama/qwen3:1.7b
+    export LLM_EMBEDDING_MODEL=ollama/nomic-embed-text
+
+## Tests
+
+    raco test tests.rkt      # offline: routing, message and tool translation, parsing, error mapping
+    racket live-test.rkt     # live smoke test; skips providers with no key or server
 
 ## Architecture
 

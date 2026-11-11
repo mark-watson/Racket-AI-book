@@ -2,7 +2,7 @@
 
 I have a Natural Language Processing (NLP) library that I wrote in Common Lisp. Here we will use code that I wrote in pure Scheme and converted to Racket.
 
-The NLP library is still a work in progress so please check for future updates to this *live eBook*.
+The library does two things: it labels each word in a sentence with its part of speech, and it finds the names of people and places. Both work from word lists and hand-written rules. There is no machine learning model, so the library loads in about a second, runs offline, and always gives the same answer for the same input. At the end of the chapter I compare this approach with using an LLM for the same job.
 
 Since we will use the example code in this chapter as a library we start by defining a **main.rkt** file:
 
@@ -21,12 +21,26 @@ There are two main source files for the NLP library: **fasttag.rkt** and **names
 
 The following listing of **fasttag.rkt** is a conversion of original code I wrote in Java and later translated to Common Lisp. The provided Racket Scheme code is designed to perform part-of-speech tagging for a given list of words. The code begins by loading a hash table (`lex-hash`) from a data file ("data/tag.dat"), where each key-value pair maps a word to its possible part of speech. Then it defines several helper functions and transformation rules for categorizing words based on various syntactic and morphological criteria.
 
+The tags are the ones used by the Penn Treebank project, which most English taggers share. These are the tags you will see most often in this chapter:
+
+| Tag | Meaning | Example |
+|---|---|---|
+| NN, NNS | noun, plural noun | cat, cats |
+| NNP | proper noun | London |
+| VB, VBD, VBP | verb: base form, past tense, present tense | run, ran, run |
+| DT | determiner | the |
+| JJ | adjective | good |
+| IN, TO | preposition, the word "to" | in, to |
+| CC | coordinating conjunction | and |
+| CD | number | 42 |
+
+The file **data/tag.dat** is the lexicon. It is a single large Racket data structure that is read into the hash table `lex-hash` when the library loads, which is the short pause you see after the message "loading lex-hash". A word that is not in the lexicon starts out tagged as a noun, and then the rules get a chance to correct it.
+
 The core function, `parts-of-speech`, takes a vector of words and returns a vector of corresponding parts of speech. Inside this function, a number of rules are applied to each word in the list to refine its part of speech based on both its individual characteristics and its context within the list. For instance, Rule 1 changes the part of speech to "NN" (noun) if the previous word is "DT" (determiner) and the current word is categorized as a verb form ("VBD", "VBP", or "VB"). Rule 2 changes a word to a cardinal number ("CD") if it contains a period, and so on. The function applies these rules in sequence, updating the part of speech for each word accordingly.
 
 The `parts-of-speech` function iterates over each word in the input vector, checks it against `lex-hash`, and then applies the predefined rules. The result is a new vector of tags, one for each input word, where each tag represents the most likely part of speech for that word, based on the rules and the original lexicon.
 
-{lang=racket, linenos=off}
-~~~~~~~~
+```racket
 #lang racket
 
 (require srfi/13) ; the string SRFI
@@ -158,7 +172,7 @@ The `parts-of-speech` function iterates over each word in the input vector, chec
        (set! ret (cons (first r) ret)))
      (vector->list words))  ;; not very efficient !!
     (list->vector (reverse ret))))
-~~~~~~~~
+```
 
 The following listing of file **names.rkt** identifies human and place names in text. The Racket Scheme code is a script for Named Entity Recognition (NER). It is specifically designed to recognize human names and place names in given text:
 
@@ -186,10 +200,9 @@ We define two Named Entity Recognition (NER) functions:
 
 We define one helper functions **`not-in-list-find-names-helper`** to ensures that an identified name does not overlap with another name or entry in the exclusion list.
 
-Overall, the code is fairly optimized for its purpose, utilizing hash tables for constant-time look-up and lists to store identified entities.
+The name lists are stored in hash tables, so checking whether a word is a known first name, last name, or place name takes the same time no matter how long the lists are. The comment header in the listing has a 2002 copyright date because this code started life in my older Java and Common Lisp NLP libraries.
 
-{lang=racket, linenos=off}
-~~~~~~~~
+```racket
 #lang racket
 
 (require "fasttag.rkt")
@@ -424,7 +437,7 @@ Overall, the code is fairly optimized for its purpose, utilizing hash tables for
 (define nn (find-human-names '#("President" "George" "Bush" "went" "to" "San" "Diego" "to" "meet" "Ms" "." "Jones" "and" "Gen" "." "Pervez" "Musharraf" ".") '()))
 (display (find-place-names '#("George" "Bush" "went" "to" "San" "Diego" "and" "London") '()))
 |#
-~~~~~~~~
+```
 
 Let's try some examples in a Racket REPL:
 
@@ -479,20 +492,36 @@ word: London
 > 
 ```
 
+The library prints the tags and each word as it works, which is useful when you are trying to understand why a name was or was not found.
+
+Look closely at the first result: the list of human names includes "San". The word "San" appears in the name lists and the tagger marked it as a proper noun, so the rules accepted it, even though here it is the first half of the place name "San Diego". This is typical of rule-based name finding. It is right most of the time on ordinary sentences and it makes mistakes like this one on words that can be either a personal name or part of a place name. A simple improvement is to find place names first and pass them as the exclusion list, which is the second argument of **find-human-names**.
+
+The file **tests.rkt** in the same directory checks the tagger and both name finders. Run it with **raco test tests.rkt**.
+
 The following diagram shows the high-level architecture of the NLP library developed in this chapter:
 
 {width: "100%"}
 ![Architecture diagram](images/nlp_architecture.jpg)
 
+## Rules or an LLM?
+
+An LLM will do a better job than this library at finding names in text. Given a prompt like "List the people and places mentioned in the following text as JSON" a current model handles "San Diego", titles, nicknames, and names it has never seen in any list. So why keep a rule-based library?
+
+- It is fast and free. Tagging a sentence takes well under a millisecond once the lexicon is loaded, and there is no charge per call. That matters when you process millions of sentences.
+- It runs offline and keeps your text on your own computer.
+- It is repeatable. The same input always gives the same output, and when the output is wrong you can find the rule or the list entry that caused it.
+
+I use this library when I need a quick first pass over a lot of text, and an LLM when accuracy on a small amount of text matters more. The next chapter uses the library to decide whether a question typed by a user is about a person or about a place.
+
 ## NLP wrap up
 
-The NLP library is still a work in progress so please check for updates to this *live eBook* and the GitHub repository for this book:
+The code for this chapter is in the GitHub repository for this book:
 
-[https://github.com/mark-watson/Racket-AI-book/source-code](https://github.com/mark-watson/Racket-AI-book/source-code)
+[https://github.com/mark-watson/Racket-AI-book/tree/main/source-code/nlp](https://github.com/mark-watson/Racket-AI-book/tree/main/source-code/nlp)
 
 ## Optional practice problems
 
 1. Dynamic Lexicon Updates: the Part-of-Speech tagger loads its word lexicon from static files. Implement a function `add-to-lexicon!` that allows developers to dynamically register new words and their corresponding tags at runtime without modifying the source data files.
 2. Enhance Named Entity Recognition (NER): heuristics in `names.rkt` extract sequences of proper nouns (`NNP`). Extend these rules to correctly handle titles (e.g., "Dr.", "Professor") and middle initials (e.g., "George W. Bush") when extracting complete names.
 3. Sentence Tokenizer: implement a sentence tokenizer function that segments paragraphs into individual sentences. Make sure it correctly distinguishes between sentence-ending punctuation and abbreviations such as "e.g.", "i.e.", or "Ms.".
-
+4. **Compare with an LLM**: Using the `llm-ask` function from the chapter on LLM APIs, write a function that asks a model to return the people and places in a sentence as JSON. Run it and `find-human-names` on ten sentences of your own and count how often each one is right. Time both.

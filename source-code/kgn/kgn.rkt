@@ -1,6 +1,6 @@
 #lang racket/gui
 
-(require htdp/gui)            ;; note: when building executable, choose GRacket, not Racket to get *.app bundle
+;; note: when building executable, choose GRacket, not Racket to get *.app bundle
 (require racket/gui/base)
 (require racket/match)
 (require racket/pretty)
@@ -12,7 +12,6 @@
 ;;   where is San Francisco?
 ;; (only who/where queries are currently handled)
 
-(require nlp)
 (require "main.rkt")
 (require "dialog-utils.rkt")
 

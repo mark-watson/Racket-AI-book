@@ -6,7 +6,7 @@ Ollama supports tool/function calling through its chat API. When you provide a l
 
 The examples for this chapter are in the directory **Racket-AI-book/source-code/ollama_tools**.
 
-The library talks to Ollama through its OpenAI-compatible `/v1/chat/completions` route using the uniform API in `source-code/llmapis/llmapis.rkt`. The registry, handlers, and schemas below are unchanged; only the transport moved.
+The library talks to Ollama through its OpenAI-compatible `/v1/chat/completions` route using the uniform API in `source-code/llmapis/llmapis.rkt` from the previous chapter. One consequence is that very little in this chapter is specific to Ollama. The tool registry, the handler functions, and the JSON schemas are the same ones a hosted model would use, and the model name is the only thing you would change to run these tools against a different provider. I use Ollama here because tool calling with a small local model is free to experiment with and keeps your data on your own computer.
 
 
 ## How tool calling works

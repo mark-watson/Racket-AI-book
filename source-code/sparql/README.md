@@ -11,6 +11,9 @@ This project provides utilities for executing SPARQL queries against external se
 ## Run
 
     racket sparql.rkt
+    raco test tests.rkt     # offline tests (canned JSON results, no network)
+
+`sparql-dbpedia` returns one list per result row for any number of query variables. Names passed to `sparql-dbpedia-person-uri` and `sparql-dbpedia-place-uri` are escaped with `sparql-escape-string`. Rebind the `*sparql-endpoint*` parameter to query a different SPARQL service.
 
 ## License and Copyright
 

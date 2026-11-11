@@ -10,16 +10,17 @@ This directory contains assorted utilities and helper code referenced in the boo
 
 ## Install dependencies
 
-Install Racket packages:
-- `sqlite-table`
+The SQLite example uses Racket's built-in `db` library, so there is no Racket package to install.
+Make sure the SQLite native library is installed on your OS.
 
-SQLite native client dependencies:
-*(Please make sure SQLite is installed on your OS)*
+The web examples need two packages:
+
+    raco pkg install --auto http-easy html-parsing
 
 ## Run Tests
 
     racket hash_tests.rkt
-    racket lists_tests.rkt
+    racket sqlite.rkt
 
 ## License and Copyright
 

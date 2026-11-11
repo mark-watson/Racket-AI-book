@@ -1,7 +1,0 @@
-Java
-IntelliJ
-Coke
-Pepsi
-Mac
-Macintosh
-iPhone

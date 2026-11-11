@@ -18,6 +18,8 @@ Then install the following in your `.profile`, `.zshrc`, `.bashrc`, etc.:
 export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib/
 ```
 
+`pdfchat.rkt` loads `../embeddingsdb` and `../llmapis` by relative path, so those need no install step.
+
 Then install Racket packages:
 ```bash
 raco pkg install pdf-read

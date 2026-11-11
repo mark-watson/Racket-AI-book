@@ -12,7 +12,9 @@ Test queries:
 - "who is Bill Gates?"
 - "where is California?"
 
-*Note: This is a work in progress; the example works but not all features are implemented.*
+Only "who is ..." (people) and "where is ..." (places) questions are handled.
+
+The NLP library (`../nlp`) and the SPARQL client (`../sparql`) are loaded by relative path, so there is nothing to install first.
 
 ## Creating a standalone application
 
@@ -21,7 +23,8 @@ Test queries:
 
 ## Run
 
-    racket main.rkt
+    racket kgn.rkt          # the GUI application
+    raco test tests.rkt     # offline tests for query parsing
 
 ## License and Copyright
 

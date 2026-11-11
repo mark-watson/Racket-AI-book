@@ -1,15 +1,15 @@
 # Knowledge Graph Navigator {#kgn}
 
-The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for processing a set of entity names and automatically exploring the public Knowledge Graph [DBPedia](http://dbpedia.org) using SPARQL queries. I started to write KGN for my own use to automate some things I used to do manually when exploring Knowledge Graphs, and later thought that KGN might be also useful for educational purposes. KGN shows the user the auto-generated SPARQL queries so hopefully the user will learn by seeing examples. KGN uses the SPARQL queries.
+The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for processing a set of entity names and automatically exploring the public Knowledge Graph [DBPedia](http://dbpedia.org) using SPARQL queries. I started to write KGN for my own use to automate some things I used to do manually when exploring Knowledge Graphs, and later thought that KGN might be also useful for educational purposes. KGN shows the user the auto-generated SPARQL queries so hopefully the user will learn by seeing examples.
 
-I cover SPARQL and linked data/knowledge Graphs is previous books I have written and while I give you a brief background here, I ask interested users to look at either for more details:
+I cover SPARQL and linked data/Knowledge Graphs in previous books I have written. The chapter **Datastores** in this book has a short background section, and for more details please see either of the following:
 
 - The chapter **Knowledge Graph Navigator** in my book **Loving Common Lisp, or the Savvy Programmer's Secret Weapon**
 - The chapters **Background Material for the Semantic Web and Knowledge Graphs**, **Knowledge Graph Navigator** in my book **Practical Artificial Intelligence Programming With Clojure**
 
 We use the Natural Language Processing (NLP) library from the last chapter to find human and place names in input text and then construct SPARQL queries to access data from DBPedia.
 
-The KGN application is still a work in progress so please check for updates to this *live eBook*. The following screenshots show the current version of the application:
+The Racket version of KGN is deliberately small: it answers "who is ..." questions about people and "where is ..." questions about places. The following screenshots show the application:
 
 {width: "30%"}
 ![KGN finds multiple RDF subjects for "Steve Jobs" so a dialog is presented to choose one](images/kgn1.jpg)
@@ -26,21 +26,19 @@ We will be running an example using data containing three person entities, one c
 
 I chose to use DBPedia instead of WikiData for this example because DBPedia URIs are human readable. The following URIs represent the concept of a *person*. The semantic meanings of DBPedia and FOAF (friend of a friend) URIs are self-evident to a human reader while the WikiData URI is not:
 
-{linenos=off}
-~~~~~~~~
+```
 http://www.wikidata.org/entity/Q215627
 http://dbpedia.org/ontology/Person
 http://xmlns.com/foaf/0.1/name
-~~~~~~~~
+```
 
-I frequently use WikiData in my work and WikiData is one of the most useful public knowledge bases. I have both DBPedia and WikiData SPARQL endpoints in the example code that we will look at later, with the WikiData endpoint comment out. You can try manually querying WikiData at the [WikiData SPARQL endpoint](https://query.wikidata.org). For example, you might explore the WikiData URI for the *person* concept using:
+I frequently use WikiData in my work and WikiData is one of the most useful public knowledge bases. The SPARQL client that we use has its endpoint in a parameter, so the same code can be pointed at WikiData. You can try manually querying WikiData at the [WikiData SPARQL endpoint](https://query.wikidata.org). For example, you might explore the WikiData URI for the *person* concept using:
 
-{lang=sparql, linenos=off}
-~~~~~~~~
+```sparql
 select ?p ?o where {
  <http://www.wikidata.org/entity/Q215627> ?p ?o .
 } limit 10
-~~~~~~~~
+```
 
 For the rest of this chapter we will just use DBPedia or data copied from DBPedia.
 
@@ -57,78 +55,29 @@ The Common Lisp version of KGN also searches for relationships between entities.
 
 ## KGN implementation
 
-The example application works processing a list or Person, Place, and Organization names. We generate SPARQL queries to DBPedia to find information about the entities and relationships between them.
+The example application takes a question, finds the name of a person or a place in it, and generates a SPARQL query to DBPedia to find information about that entity.
 
 We are using two libraries developed for this book that can be found in the directories **Racket-AI-book/source-code/sparql** and **Racket-AI-book/source-code/nlp** to supply support for SPARQL queries and natural language processing.
 
 ### SPARQL client library
 
-We already looked at code examples for making simple SPARQL queries in the chapter **Datastores** and here we continue with more examples that we need to the KGN application.
+KGN uses the SPARQL client in **Racket-AI-book/source-code/sparql/sparql.rkt** that we developed in the chapter **Datastores**. Please see that chapter for the complete listing. KGN loads it with a relative path, **(require "../sparql/sparql.rkt")**, and uses five of its functions:
 
-The following listing shows **Racket-AI-book/source-code/sparql/sparql.rkt** where we implement several functions for interacting with DBPedia's SPARQL endpoint. There are two functions **sparql-dbpedia-for-person** and **sparql-dbpedia-person-uri** crafted for constructing SPARQL queries. The function **sparql-dbpedia-for-person** takes a person URI and formulates a query to fetch associated website links and comments, limiting the results to four. On the other hand, the function **sparql-dbpedia-person-uri** takes a person name and builds a query to obtain the person's URI and comments from DBpedia. Both functions utilize string manipulation to embed the input parameters into the SPARQL query strings. There are similar functions for places.
+- **sparql-dbpedia-person-uri** and **sparql-dbpedia-place-uri** each take a name and return the text of a SPARQL query that finds the URIs and English comments of everything with that name.
+- **sparql-query->hash** sends a query to DBPedia and returns the JSON reply as a hash table.
+- **json->listvals** converts that hash table into one list per query variable.
+- **extract-name-uri-and-comment** pairs up the values of the first two variables, giving a list of (URI comment) pairs.
 
-Another function **sparql-query->hash** executes SPARQL queries against the DBPedia endpoint. It takes a SPARQL query string as an argument, sends an HTTP request to the DBpedia SPARQL endpoint, and expects a JSON response. The **call/input-url** function is used to send the request, with **uri-encode** ensuring the query string is URL-encoded. The response is read from the port, converted to a JSON expression using the function **string->jsexpr**, and is expected to be in a hash form which is returned by this function.
-
-Lastly, there are two functions **json->listvals** and **gd** for processing the JSON response from DBPedia. The function **json->listvals** extracts the variable bindings from the SPARQL result and organizes them into lists. The function **gd** further processes these lists based on the number of variables in the query result, creating lists of lists which represent the variable bindings in a structured way. The **sparql-dbpedia** function serves as an interface to these functionalities, taking a SPARQL query string, executing the query via **sparql-query->hash**, and processing the results through **gd** to provide a structured output. This arrangement encapsulates the process of querying DBPedia and formatting the results, making it convenient for further use within a Racket program.
-
-We already saw most of the following code listing in the previous chapter **Datastores**. The following listings in this chapter will be updated in future versions of this *live eBook* when I finish writing the KGN application.
-
-Part of solving this problem is constructing SPARQL queries as strings. We will look in some detail at one utility function `sparql-dbpedia-for-person` that constructs a SPARQL query string for fetching data from DBpedia about a specific person. The function takes one parameter, `person-uri`, which is expected to be the URI of a person in the DBpedia dataset. The query string is built by appending strings, including the dynamic insertion of the `person-uri` parameter value. Here's a breakdown of how the code works:
-
-1. Function Definition: the function `sparql-dbpedia-for-person` is defined with one parameter, `person-uri`. This parameter is used to dynamically insert the person's URI into the SPARQL query.
-
-2. String Appending (`@string-append`): the `@string-append` construct (which seems like a custom or pseudo-syntax, as the standard Scheme function for string concatenation is `string-append` without the `@`) is used to concatenate multiple strings to form the complete SPARQL query. This includes static parts of the query as well as dynamic parts where the `person-uri` is inserted.
-
-3. SPARQL Query Construction: the function constructs a SPARQL query with the following key components:
-   - SELECT Clause: this part of the query specifies what information to return. It uses `GROUP_CONCAT` to aggregate multiple `?website` values into a single string, separated by `"  |  "`, and also selects the `?comment` variable.
-   - OPTIONAL Clauses: two OPTIONAL blocks are included:
-     - The first block attempts to fetch English comments (`?comment`) associated with the person, filtering to ensure the language of the comment is English (`lang(?comment) = 'en'`).
-     - The second block fetches external links (`?website`) associated with the person but filters out any URLs containing "dbpedia" (case-insensitive), to likely avoid self-references within DBpedia.
-   - Dynamic URI Insertion: the `@person-uri` placeholder is replaced with the actual `person-uri` passed to the function. This dynamically targets the SPARQL query at a specific DBpedia resource.
-   - LIMIT Clause: the query is limited to return at most 4 results with `LIMIT 4`.
-
-4. Usage of `@person-uri` Placeholder: the code shows `@person-uri` placeholders within the query string, indicating where the `person-uri` parameter's value should be inserted. However, the mechanism for replacing these placeholders with the actual URI value is not explicitly shown in the snippet. Typically, this would involve string replacement functionality, ensuring the final query string includes the specific URI of the person of interest.
-
-In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SPARQL query to fetch English comments and external links (excluding DBpedia links) for a given person from DBpedia, with the results limited to a maximum of 4 entries. The use of string concatenation (or a pseudo-syntax resembling `@string-append`) allows for the dynamic insertion of the person's URI into the query.
-
+Part of solving this problem is constructing SPARQL queries as strings, so it is worth looking at how one of the query templates is written:
 
 ```racket
-#lang at-exp racket
-
-(provide sparql-dbpedia-person-uri)
-(provide sparql-query->hash)
-(provide json->listvals)
-(provide sparql-dbpedia)
-
-(require net/url)
-(require net/uri-codec)
-(require json)
-(require racket/pretty)
-
-(define (sparql-dbpedia-for-person person-uri)
-  @string-append{
-     SELECT
-      (GROUP_CONCAT(DISTINCT ?website; SEPARATOR="  |  ")
-                                   AS ?website) ?comment {
-      OPTIONAL {
-        { @person-uri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . FILTER (lang(?comment) = 'en') }
-        UNION
-        { @person-uri <http://dbpedia.org/ontology/description> ?comment . FILTER (lang(?comment) = 'en') }
-      } .
-      OPTIONAL {
-        @person-uri
-        <http://dbpedia.org/ontology/wikiPageExternalLink>
-        ?website
-         . FILTER( !regex(str(?website), "dbpedia", "i"))
-      }
-     } LIMIT 4})
-
 (define (sparql-dbpedia-person-uri person-name)
+  (define name (sparql-escape-string person-name))
   @string-append{
     SELECT DISTINCT ?personuri ?comment {
       ?personuri
         <http://xmlns.com/foaf/0.1/name>
-        "@person-name"@"@"en .
+        "@name"@"@"en .
       {
         ?personuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
         FILTER (lang(?comment) = 'en')
@@ -137,50 +86,18 @@ In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SP
         FILTER (lang(?comment) = 'en')
       }
 }})
-
-
-(define (sparql-query->hash query)
-  (call/input-url
-   (string->url
-    (string-append
-     "https://dbpedia.org/sparql?query="
-     (uri-encode query)))
-   get-pure-port
-   (lambda (port)
-     (string->jsexpr (port->string port)))
-   '("Accept: application/json")))
-
-(define (json->listvals a-hash)
-  (let* ([head (hash-ref a-hash 'head (hash))]
-         [vars (hash-ref head 'vars '())]
-         [results (hash-ref a-hash 'results (hash))]
-         [bindings (hash-ref results 'bindings '())])
-    (for/list ([var vars])
-      (for/list ([bc bindings])
-        (let* ([var-sym (string->symbol var)]
-               [var-info (hash-ref bc var-sym (hash))]
-               [a-value (hash-ref var-info 'value "")])
-          (list var a-value))))))
-
-(define (gd data)
-  (let ([jd (json->listvals data)])
-    (define gg1 (lambda (x) (map list (car x))))
-    (define gg2 (lambda (x) (map list (car x) (cadr x))))
-    (define gg3 (lambda (x) (map list (car x) (cadr x) (caddr x))))
-    (define gg4 (lambda (x) (map list (car x) (cadr x) (caddr x) (cadddr x))))
-    (case (length jd)
-      [(1) (gg1 jd)]
-      [(2) (gg2 jd)]
-      [(3) (gg3 jd)]
-      [(4) (gg4 jd)]
-      [else (error "sparql queries with 1 to 4 vars")])))
-
-(define sparql-dbpedia
-  (lambda (sparql)
-    (gd (sparql-query->hash sparql)))
 ```
 
-The function **gd** converts JSON data to Scheme nested lists and then extracts the values for up to four variables.
+The file **sparql.rkt** starts with **#lang at-exp racket**, which turns on Racket's *at-expression* reader. This is a standard part of Racket, designed for writing text with a few embedded values. Here is how to read the form **@string-append{...}**:
+
+1. Everything between the curly braces is literal text. Line breaks and double quote characters need no escaping, which is why the query looks almost exactly as it would in the DBPedia query web app.
+2. Inside the braces, **@name** is replaced by the value of the Racket variable **name**. This is how the person's name gets into the query.
+3. The pieces of text and the inserted values are passed as arguments to **string-append**, which joins them into one string.
+4. SPARQL itself uses an at sign for language tags, as in **"Steve Jobs"@en**. To get a literal at sign we write **@"@"**, which inserts the one-character string "@".
+
+So the line **"@name"@"@"en** produces a double quote, the name, another double quote, an at sign, and the letters en. The name is first passed through **sparql-escape-string** so that a name containing a double quote cannot end the quoted string early.
+
+The query has two parts joined by **UNION** because DBPedia stores a short description of a thing under either of two predicates, and we accept whichever one is present. Each part uses **FILTER** to keep only English text.
 
 ### NLP library
 
@@ -191,15 +108,15 @@ Please make sure you have read that chapter before the following sections.
 
 ### Implementation of KGN application code
 
-The file **Racket-AI-book/source-code/kgn/main.rkt** contains library boilerplate and the file **Racket-AI-book/source-code/kgn/kgn.rkt** the application code. The provided Racket scheme code is structured for interacting with the DBPedia SPARQL endpoint to retrieve information about persons or places based on a user's string query. The code is organized into several defined functions aimed at handling different steps of the process:
+The file **Racket-AI-book/source-code/kgn/main.rkt** contains the query handling code and the file **Racket-AI-book/source-code/kgn/kgn.rkt** the application code. The provided Racket scheme code is structured for interacting with the DBPedia SPARQL endpoint to retrieve information about persons or places based on a user's string query. The code is organized into several defined functions aimed at handling different steps of the process:
 
 ### Query parsing and entity Recognition
 
-The **parse-query** function takes a string **query-str** and tokenizes it into a list of words after replacing certain characters (like "." and "?"). It then checks for keywords like "who" or "where" to infer the type of query - person or place. Using **find-human-names** and **find-place-names** (defined in the earlier section on SPARQL), it extracts the entity names from the tokens. Depending on the type of query and the entities found, it returns a list indicating the type and name of the entity, or **unknown** if no relevant entities are identified.
+The **parse-query** function takes a string **query-str** and tokenizes it into a list of words after replacing certain characters (like "." and "?"). It then checks for keywords like "who" or "where" to infer the type of query - person or place. Using **find-human-names** and **find-place-names** from the NLP library in the previous chapter, it extracts the entity names from the tokens. Depending on the type of query and the entities found, it returns a list indicating the type and name of the entity, or a list starting with **unknown** if no person or place is found.
 
 ### SPARQL query construction and execution
 
-The functions **get-person-results** and **get-place-results** take a name string, construct a SPARQL query to get information about the entity from DBPedia, execute the query, and process the results. They utilize the **sparql-dbpedia-person-uri**, **sparql-query->hash**, and **json->listvals** functions that we listed previously to construct the query, execute it, and convert the returned JSON data to a list, respectively.
+The functions **get-person-results** and **get-place-results** take a name string, construct a SPARQL query to get information about the entity from DBPedia, execute the query, and process the results. They utilize the **sparql-dbpedia-person-uri**, **sparql-query->hash**, and **json->listvals** functions from the SPARQL client to construct the query, execute it, and convert the returned JSON data to a list, respectively.
 
 ### Query interface
 
@@ -208,13 +125,16 @@ The **ui-query-helper** function acts as the top-level utility for processing a 
 This code structure facilitates the breakdown of a user's natural language query into actionable SPARQL queries to retrieve and present information about identified entities from a structured data source like DBPedia.
 
 ```racket
+#lang racket
+
 (require racket/pretty)
-(require nlp)
+(require "../nlp/main.rkt")          ; find-human-names, find-place-names
+(require "../sparql/sparql.rkt")    ; SPARQL query templates and client
 
 (provide get-person-results)
+(provide get-place-results)
+(provide parse-query)
 (provide ui-query-helper)
-
-(require "sparql-utils.rkt")
 
 (define (get-person-results person-name-string)
   (let ((person-uri (sparql-dbpedia-person-uri person-name-string)))
@@ -243,7 +163,7 @@ This code structure facilitates the breakdown of a user's natural language query
           (printf "\n+ + person-names= ~a\n" person-names)
           (if (> (length person-names) 0)
               (list 'person (first person-names))   ;; for now, return the first name found
-              #f))
+              (list 'unknown query-str)))
         (if (member "where" cleaned-query-tokens)
             (let ((place-names (find-place-names (list->vector cleaned-query-tokens) '())))
               (printf "\n+ + place-names= ~a\n" place-names)
@@ -272,10 +192,11 @@ This code structure facilitates the breakdown of a user's natural language query
             #f))))
 ```
 
-The file **Racket-AI-book/source-code/kgn/dialog-utils.rkt** contains the user interface specific code for implementing a dialog box.
+The file **Racket-AI-book/source-code/kgn/dialog-utils.rkt** contains the user interface code for a dialog box that lets the user choose between several matching entities. The function **make-selection-functions** builds the dialog once, with a list box and a button, and returns two functions. The first takes a list of strings, puts them in the list box, and shows the dialog. Because this is a modal **dialog%** object, that call does not return until the user closes the dialog by double-clicking an item or clicking the button. The second function returns the index of the item that was selected. Returning a pair of functions that share the dialog is a simple way to hide the GUI objects from the rest of the program.
 
 ```racket
-(require htdp/gui)
+#lang racket/gui
+
 (require racket/gui/base)
 (require racket/pretty)
 (provide make-selection-functions)
@@ -313,111 +234,25 @@ The file **Racket-AI-book/source-code/kgn/dialog-utils.rkt** contains the user i
 ```
 
 
-The local file **sparql-utils.rkt** contains additional utility functions for accessing information in DBPedia.
+The local file **kgn.rkt** is the main program for this application. It builds the window: a text field for the question, a button, a read-only area that shows the generated SPARQL, and a read-only area for the results. Most of the file is the callback that runs when the user presses Enter or clicks the button. The callback calls **ui-query-helper** and then handles three cases. If there is exactly one result it is shown directly. If there are several, as with "Steve Jobs" in the first screenshot, the selection dialog is shown and the chosen result is displayed. If there are none, a message says so.
+
+One detail is a little unusual. The widgets are created inside a single **match-let\*** form, and the query callback needs to refer to widgets that are created after the text field that uses the callback. The code solves this by first installing a placeholder function named **dummy** and then replacing it with the real callback, using **set!**, once all of the widgets exist.
 
 ```racket
-#lang at-exp racket
+#lang racket/gui
 
-(provide sparql-dbpedia-for-person
-         sparql-dbpedia-person-uri
-         sparql-dbpedia-place-uri
-         sparql-query->hash
-         json->listvals
-         extract-name-uri-and-comment)
-
-(require net/url)
-(require net/uri-codec)
-(require json)
-(require racket/pretty)
-
-(define ps-encoded-by "ps:P702")
-(define wdt-instance-of "wdt:P31")
-(define wdt-in-taxon "wdt:P703")
-(define wd-human "wd:Q15978631")
-(define wd-mouse "wd:Q83310")
-(define wd-rat "wd:Q184224")
-(define wd-gene "wd:Q7187")
-
-(define (sparql-dbpedia-for-person person-uri)
-  @string-append{
-     SELECT
-      (GROUP_CONCAT(DISTINCT ?website; SEPARATOR="  |  ") AS ?website) ?comment {
-      OPTIONAL {
-        { @person-uri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . FILTER (lang(?comment) = 'en') }
-        UNION
-        { @person-uri <http://dbpedia.org/ontology/description> ?comment . FILTER (lang(?comment) = 'en') }
-      } .
-      OPTIONAL { @person-uri <http://dbpedia.org/ontology/wikiPageExternalLink> ?website . FILTER( !regex(str(?website), "dbpedia", "i"))} .
-     } LIMIT 4})
-
-(define (sparql-dbpedia-person-uri person-name)
-  @string-append{
-    SELECT DISTINCT ?personuri ?comment {
-      ?personuri <http://xmlns.com/foaf/0.1/name> "@person-name"@"@"en .
-      {
-        ?personuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
-        FILTER (lang(?comment) = 'en')
-      } UNION {
-        ?personuri <http://dbpedia.org/ontology/description> ?comment .
-        FILTER (lang(?comment) = 'en')
-      }
-}})
-
-(define (sparql-dbpedia-place-uri place-name)
-  @string-append{
-    SELECT DISTINCT ?placeuri ?comment {
-      ?placeuri <http://xmlns.com/foaf/0.1/name> "@place-name"@"@"en .
-      {
-        ?placeuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
-        FILTER (lang(?comment) = 'en')
-      } UNION {
-        ?placeuri <http://dbpedia.org/ontology/description> ?comment .
-        FILTER (lang(?comment) = 'en')
-      }
-}})
-
-(define (sparql-query->hash query)
-  (call/input-url (string->url (string-append "https://dbpedia.org/sparql?query=" (uri-encode query)))
-                      get-pure-port
-                      (lambda (port)
-                        (string->jsexpr (port->string port)))
-                      '("Accept: application/json")))
-
-(define (json->listvals a-hash)
-  (let* ([head (hash-ref a-hash 'head (hash))]
-         [vars (hash-ref head 'vars '())]
-         [results (hash-ref a-hash 'results (hash))]
-         [bindings (hash-ref results 'bindings '())])
-    (for/list ([var vars])
-      (for/list ([bc bindings])
-        (let* ([var-sym (string->symbol var)]
-               [var-info (hash-ref bc var-sym (hash))]
-               [a-value (hash-ref var-info 'value "")])
-          (list var a-value))))))
-
-(define extract-name-uri-and-comment (lambda (l1 l2)
-              (map ;; perform a "zip" action on two lists
-               (lambda (a b)
-                 (list (second a) (second b)))
-               l1 l2)))
-```
-
-The local file **kgn.rkt** is the main program for this application.
-
-```racket
-(require htdp/gui)  ;; note: when building executable, choose GRacket, not Racket to get *.app bundle
+;; note: when building executable, choose GRacket, not Racket to get *.app bundle
 (require racket/gui/base)
 (require racket/match)
 (require racket/pretty)
 (require scribble/text/wrap)
 
+
 ;; Sample queries:
 ;;   who is Bill Gates
-;;   where is San Francisco
+;;   where is San Francisco?
 ;; (only who/where queries are currently handled)
 
-;;(require "utils.rkt")
-(require nlp)
 (require "main.rkt")
 (require "dialog-utils.rkt")
 
@@ -476,23 +311,24 @@ The local file **kgn.rkt** is the main program for this application.
                      (send  sparql-canvas set-value sparql-results)
                      (send  results-canvas set-value
                             (string-append (string-join  (wrap-line (first query-helper-results) 95) "\n") "\n\n" (first uris))))
-                   (if (> (length query-helper-results) 1)
-                       (let ()
-                         (set-new-items-and-show-dialog (map short-string query-helper-results))
-                         (set! query-helper-results
-                               (let ((sel-index (get-selection-index)))
-                                 (if (> sel-index -1)
-                                     (list-ref query-helper-results sel-index)
-                                     '(""))))
-                         (set! uris (list-ref uris (get-selection-index)))
-                         (display query-helper-results)
-                         (send  sparql-canvas set-value sparql-results)
-                         (send  results-canvas set-value
-                                (string-append (string-join  (wrap-line query-helper-results 95) "\n") "\n\n" uris)))
-                       (send  results-canvas set-value (string-append "No results for: " (send query-field get-value))))))))))
+                    (if (> (length query-helper-results) 1)
+                        (begin
+                          (set-new-items-and-show-dialog (map short-string query-helper-results))
+                          (let ([sel-index (get-selection-index)])
+                            (if (and (>= sel-index 0) (< sel-index (length query-helper-results)))
+                                (let ([selected-result (list-ref query-helper-results sel-index)]
+                                      [selected-uri (list-ref uris sel-index)])
+                                  (display selected-result)
+                                  (send sparql-canvas set-value sparql-results)
+                                  (send results-canvas set-value
+                                        (string-append (string-join (wrap-line selected-result 95) "\n") "\n\n" selected-uri)))
+                                (send results-canvas set-value "Selection cancelled"))))
+                        (send  results-canvas set-value (string-append "No results for: " (send query-field get-value))))))))))
      (send frame show #t)))
 ```
 
+
+The parsing step can be tested without the GUI or a network connection. The file **tests.rkt** checks that "who is Bill Gates?" is recognized as a question about a person, that "where is San Francisco?" is recognized as a question about a place, and that a question with no known name is reported as unknown. Run it with **raco test tests.rkt**.
 
 The two screen shot figures seen earlier show the GUI application running.
 
@@ -509,6 +345,6 @@ I had the idea for the KGN application because I was spending quite a bit of tim
 
 ## Optional practice problems
 
-1. Extend templates for Historical Events: the current KGN implementation only recognizes persons and places. Add support to `sparql-utils.rkt` for querying historical events (e.g., battles, treaty signings) by crafting a new SPARQL template and corresponding parsing logic.
-2. Add Wikidata Backend: currently, KGN only queries DBpedia. Implement alternative search functions in `sparql-utils.rkt` targeting Wikidata's SPARQL endpoint, mapping the resulting entities back to the GUI.
-3. Query History in the GUI: modify the GUI code in `main.rkt` to include a historical list of past queries in the user interface. Clicking on an item in the history list should automatically reload and execute that query.
+1. Extend templates for Historical Events: the current KGN implementation only recognizes persons and places. Add support for querying historical events (e.g., battles, treaty signings) by crafting a new SPARQL template and corresponding parsing logic.
+2. Add Wikidata Backend: currently, KGN only queries DBpedia. Implement alternative query templates targeting Wikidata's SPARQL endpoint (bind the `*sparql-endpoint*` parameter from the SPARQL client), mapping the resulting entities back to the GUI.
+3. Query History in the GUI: modify the GUI code in `kgn.rkt` to include a historical list of past queries in the user interface. Clicking on an item in the history list should automatically reload and execute that query.

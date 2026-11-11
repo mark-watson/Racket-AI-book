@@ -12,43 +12,44 @@ RAG gives a model a way to read text it was never trained on. You retrieve passa
 
 ## Example implementation
 
-In the following short Racket example program (file **Racket-AI-book/source-code/embeddingsdb
-/embeddingsdb.rkt**) I implement some ideas of a RAG architecture. At file load time the text files in the subdirectory **data** are read, split into "chunks", and each chunk along with its parent file name and uniform-API text embedding is stored in a local SQLite database. When a user enters a query, the OpenAI embedding is calculated, and this embedding is matched against the embeddings of all chunks using the dot product of two 1536 element embedding vectors. The "best" chunks are concatenated together and this "context" text is passed to the chat model along with the user's original query. Here I describe the code in more detail:
+In the following short Racket example program (file **Racket-AI-book/source-code/embeddingsdb/embeddingsdb.rkt**) I implement some ideas of a RAG architecture. The text files in the subdirectory **data** are read, split into "chunks", and each chunk along with its parent file name and uniform-API text embedding is stored in a local SQLite database. When a user enters a query, its embedding is calculated, and this embedding is matched against the embeddings of all chunks using the dot product of two 1536 element embedding vectors. The "best" chunks are concatenated together and this "context" text is passed to the chat model along with the user's original query. Here I describe the code in more detail:
 
 The provided Racket code uses a local SQLite database and the uniform `llmapis.rkt` API for calculating text embeddings and for text completions (OpenAI models by default; the `*embeddingsdb-chat-model*` and `*embeddingsdb-embedding-model*` parameters switch models).
 
 ### Utility functions
 
-- `floats->string` and `string->floats` are utility functions for converting between a list of floats and its string representation.
-- `read-file` reads a file's content.
-- `join-strings` joins a list of strings with a specified separator.
-- `truncate-string` truncates a string to a specified length.
-- `interleave` merges two lists by interleaving their elements.
-- `break-into-chunks` breaks a text into chunks of a specified size.
-- `string-to-list` and `decode-row` are utility functions for parsing and processing database rows.
+- `floats->string` and `string->floats` convert between a list of floats and the string form that is stored in the database.
+- `break-into-chunks` breaks a text into chunks of a fixed number of characters.
+- `decode-row` converts a database row into a list of document path, chunk text, and embedding.
 
 ### Database setup
 
-- Database connection is established to "test.db" and a table named "documents" is created with columns for document_path, content, and embedding.
+- The database file name is the parameter `*embeddingsdb-file*`, with the default "test.db". The function `get-db` opens the connection the first time it is needed and creates the table named "documents", with columns for document_path, content, and embedding, if it does not exist yet. Nothing touches the file system when the module is merely required.
 
 ### Document management
 
-- `insert-document` inserts a document and its associated information into the database.
-- `get-document-by-document-path` and `all-documents` are utility functions for querying documents from the database.
-- `create-document` reads a document from a file path, breaks it into chunks, computes embeddings for each chunk via `llm-embedding` from the uniform API (model `openai/text-embedding-ada-002` unless `*embeddingsdb-embedding-model*` is rebound), and inserts these into the database.
+- `insert-document` inserts one chunk and its embedding into the database.
+- `get-document-by-document-path` and `all-documents` query chunks from the database.
+- `delete-document` removes all of the chunks for one file.
+- `create-document` reads a document from a file path, breaks it into chunks, computes an embedding for each chunk via `llm-embedding` from the uniform API, and inserts these into the database. It first deletes any chunks stored earlier for the same file, so indexing a file twice does not create duplicates. If the first embedding call fails, for example because no API key is set, the error is raised so that you see it. A later chunk that fails is reported on the error port and skipped. The function returns the number of chunks stored.
 
 ### Semantic matching and interaction
 
-- `execute-to-list` and `dot-product` are utility functions for database queries and vector operations.
-- `semantic-match` performs a semantic search by calculating the dot product of embeddings of the query and documents in the database. It then aggregates contexts of documents with a similarity score above a certain threshold, and sends a new query constructed with these contexts to the chat model (`openai/gpt-5-mini` unless `*embeddingsdb-chat-model*` is rebound) for further processing.
+- `dot-product` computes the similarity score between two embeddings.
+- `best-matches` embeds the query, scores every stored chunk against it, sorts the chunks by score, and returns the text of the best few (three by default).
+- `semantic-match` calls `best-matches`, joins the chunks into a context string, and sends a new query constructed with this context to the chat model.
 - `QA` is a wrapper around `semantic-match` for querying.
 - `CHAT` initiates a loop for user interaction where each user input is processed through `semantic-match` to generate a response, maintaining a context of the previous chat.
 
-### Test code
+### Models and test code
 
+- The models come from the parameters `*embeddingsdb-chat-model*` and `*embeddingsdb-embedding-model*`. Their initial values are the book-wide defaults from `llmapis.rkt` (see the section on default model names in the chapter on LLM APIs), so by default this example uses OpenAI models and you can switch to local models by setting two environment variables.
+- The parameter `*embedding-fn*` holds the function used to compute embeddings. The tests rebind it to an offline stand-in.
 - `test` function creates documents by reading from specified file paths, and performs some queries using the `QA` function.
 
-The code uses a local SQLite database to store and manage document embeddings and the uniform `llmapis.rkt` API for generating embeddings and performing semantic searches based on user queries. Four functions and two model parameters are exported in case you want to use this example as a library: **create-document**, **QA**, **CHAT**, and **semantic-match**, plus `*embeddingsdb-chat-model*` and `*embeddingsdb-embedding-model*`.
+The main functions are exported in case you want to use this example as a library: **create-document**, **delete-document**, **QA**, **CHAT**, **semantic-match**, and **best-matches**, plus the parameters described above.
+
+Please treat this first version as a baseline. It is deliberately simple so that every step is visible, and two of its choices are poor ones that later sections of this chapter improve on: it cuts text into chunks at fixed character positions, and it compares embeddings with a raw dot product. If you want code to copy into your own project, read to the end of the chapter first.
 
 ```racket
 #lang racket
@@ -57,16 +58,22 @@ The code uses a local SQLite database to store and manage document embeddings an
 (require "../llmapis/llmapis.rkt")
 (require racket/runtime-path)
 
-(provide create-document QA CHAT semantic-match
+(provide create-document delete-document QA CHAT semantic-match best-matches
          *embeddingsdb-chat-model*
-         *embeddingsdb-embedding-model*)
+         *embeddingsdb-embedding-model*
+         *embeddingsdb-file*
+         *embedding-fn*)
 
 ;; Models used through the uniform llmapis.rkt API. Rebind (e.g. to
 ;; "ollama/qwen3:1.7b" and an Ollama embedding model) to run locally.
 (define *embeddingsdb-chat-model*
-  (make-parameter "openai/gpt-5-mini"))
+  (make-parameter (default-chat-model)))
 (define *embeddingsdb-embedding-model*
-  (make-parameter "openai/text-embedding-ada-002"))
+  (make-parameter (default-embedding-model)))
+
+;; The function that turns text into embeddings. Tests rebind it to an
+;; offline stub; it has the same calling convention as llm-embedding.
+(define *embedding-fn* (make-parameter llm-embedding))
 
 ; Function to convert list of floats to string representation
 (define (floats->string floats)
@@ -77,25 +84,6 @@ The code uses a local SQLite database to store and manage document embeddings an
   (map string->number (string-split str)))
 
 
-(define (read-file infile)
-  (with-input-from-file infile
-    (lambda ()
-      (let ((contents (read)))
-        contents))))
-
-(define (join-strings separator list)
-  (string-join list separator))
-
-(define (truncate-string string length)
-  (substring string 0 (min length (string-length string))))
-
-(define (interleave list1 list2)
-  (if (or (null? list1) (null? list2))
-      (append list1 list2)
-      (cons (car list1)
-            (cons (car list2)
-                  (interleave (cdr list1) (cdr list2))))))
-
 (define (break-into-chunks text chunk-size)
   (let loop ((start 0) (chunks '()))
     (if (>= start (string-length text))
@@ -103,34 +91,40 @@ The code uses a local SQLite database to store and manage document embeddings an
         (loop (+ start chunk-size)
               (cons (substring text start (min (+ start chunk-size) (string-length text))) chunks)))))
 
-(define (string-to-list str)
-  (map string->number (string-split str)))
-
 (define (decode-row row)
   (let ((id (vector-ref row 0))
         (context (vector-ref row 1))
-        (embedding (string-to-list (vector-ref row 2))))
+        (embedding (string->floats (vector-ref row 2))))
     (list id context embedding)))
 
-(define db (sqlite3-connect #:database "test.db" #:mode 'create #:use-place #t))
+;; The database file. It is a parameter so tests and other programs can
+;; use their own file; the connection is opened on first use, not when
+;; this module is required.
+(define *embeddingsdb-file* (make-parameter "test.db"))
 
-(with-handlers ([exn:fail? (lambda (ex) (void))])
-  (query-exec
-   db
-   "CREATE TABLE documents (document_path TEXT, content TEXT, embedding TEXT);"))
-      
-;; ... database setup, error handling, and queries ...
+(define connections (make-hash)) ; database file -> open connection
+
+(define (get-db)
+  (hash-ref! connections (*embeddingsdb-file*)
+             (lambda ()
+               (define conn
+                 (sqlite3-connect #:database (*embeddingsdb-file*)
+                                  #:mode 'create))
+               (query-exec
+                conn
+                "CREATE TABLE IF NOT EXISTS documents (document_path TEXT, content TEXT, embedding TEXT);")
+               conn)))
 
 (define (insert-document document-path content embedding)
   (printf "~%insert-document:~%  content:~a~%~%" content)
   (query-exec
-   db
+   (get-db)
    "INSERT INTO documents (document_path, content, embedding) VALUES (?, ?, ?);"
    document-path content (floats->string embedding)))
 
 (define (get-document-by-document-path document-path)
   (map decode-row
-       (query-rows db
+       (query-rows (get-db)
                     "SELECT * FROM documents WHERE document_path = ?;"
                     document-path)))
 
@@ -138,46 +132,60 @@ The code uses a local SQLite database to store and manage document embeddings an
   (map
    decode-row
    (query-rows
-    db
+    (get-db)
     "SELECT * FROM documents;")))
-   
-;; ... remaining database query functions ...
 
+(define (delete-document document-path)
+  (query-exec (get-db)
+              "DELETE FROM documents WHERE document_path = ?;"
+              document-path))
+
+;; Index one text file. Any rows from an earlier run on the same file are
+;; removed first, so indexing a file twice does not create duplicates.
+;; A chunk whose embedding call fails is reported and skipped; if the very
+;; first call fails (for example a missing API key) the error is raised.
 (define (create-document fpath)
-  (let ((contents (break-into-chunks (file->string fpath) 200)))
+  (let ((contents (break-into-chunks (file->string fpath) 200))
+        (stored 0))
+    (delete-document fpath)
     (for-each
      (lambda (content)
-       (with-handlers ([exn:fail? (lambda (ex) (void))])
-         (let ((embedding (first (llm-embedding (*embeddingsdb-embedding-model*)
+       (with-handlers ([exn:fail?
+                        (lambda (ex)
+                          (when (zero? stored) (raise ex))
+                          (eprintf "create-document: skipping a chunk of ~a: ~a~%"
+                                   fpath (exn-message ex)))])
+         (let ((embedding (first ((*embedding-fn*) (*embeddingsdb-embedding-model*)
                                                 content))))
-           (insert-document fpath content embedding))))
-     contents)))
-
-
-;; Assuming a function to fetch documents from database
-(define (execute-to-list db query)
-  (query-rows db query))
+           (insert-document fpath content embedding)
+           (set! stored (+ stored 1)))))
+     contents)
+    stored))
 
 (define (dot-product a b) ;; dot product of two lists of floating point numbers
   (for/sum ([x a] [y b])
     (* x y)))
 
 
-(define (semantic-match query custom-context [cutoff 0.7])
-  (let ((emb (first (llm-embedding (*embeddingsdb-embedding-model*) query)))
-        (ret '()))
-    (for-each
-     (lambda (doc)
-       (let* ((context (second doc))
-              (embedding (third doc))
-              (score (dot-product emb embedding)))
-         (when (> score cutoff)
-           (set! ret (cons context ret)))))
-     (all-documents))
-    (printf "~%semantic-search: ret=~a~%" ret)
-    (let* ((context (string-join (reverse ret) " . "))
-           (query-with-context (string-join (list context custom-context "Question:" query) " ")))
-      (llm-ask (*embeddingsdb-chat-model*) query-with-context))))
+;; Score every stored chunk against the query and keep the TOP-K best.
+;; Ranking and taking the best few works with any embedding model; a fixed
+;; score cutoff does not, because each model has its own score range.
+(define (best-matches query [top-k 3])
+  (let* ((emb (first ((*embedding-fn*) (*embeddingsdb-embedding-model*) query)))
+         (scored
+          (map (lambda (doc)
+                 (cons (dot-product emb (third doc)) (second doc)))
+               (all-documents)))
+         (ranked (sort scored > #:key car)))
+    (map cdr (take ranked (min top-k (length ranked))))))
+
+(define (semantic-match query custom-context [top-k 3])
+  (let* ((matches (best-matches query top-k))
+         (context (string-join matches " . "))
+         (query-with-context
+          (string-join (list context custom-context "Question:" query) " ")))
+    (printf "~%semantic-search: matches=~a~%" matches)
+    (llm-ask (*embeddingsdb-chat-model*) query-with-context)))
 
 (define (QA query [quiet #f])
   (let ((answer (semantic-match query "")))
@@ -218,9 +226,6 @@ The code uses a local SQLite database to store and manage document embeddings an
   ;; Uncomment below if you want to execute tests when running this module
   ;; (test)
   )
-
-
-
 ```
 
 A few examples from a Racket REPL:
@@ -301,7 +306,7 @@ Second, why the raw `dot-product` in `embeddingsdb.rkt` is subtly fragile. For t
 a \cdot b = \|a\| \, \|b\| \cos\theta
 ```
 
-The dot product rewards long vectors as much as aligned directions. If your embedding model does not promise unit-length vectors, a long but tangentially related chunk can outscore a short, perfectly on-topic one. `text-embedding-ada-002` returns unit vectors, so for that model `\|a\| = \|b\| = 1`$ and the dot product *equals* cosine similarity. But that is a property of one model, not of embeddings in general. As soon as you swap in a local embedding model, use cosine similarity:
+The dot product rewards long vectors as much as aligned directions. If your embedding model does not promise unit-length vectors, a long but tangentially related chunk can outscore a short, perfectly on-topic one. OpenAI's embedding models return unit vectors, so for those models `\|a\| = \|b\| = 1`$ and the dot product *equals* cosine similarity. But that is a property of particular models, not of embeddings in general. As soon as you swap in a local embedding model, use cosine similarity:
 
 ```$
 \mathrm{cosine}(a, b) = \frac{a \cdot b}{\|a\| \, \|b\|}
@@ -417,9 +422,9 @@ How do you pick `chunk-size` and `overlap`? Smaller chunks retrieve more precise
 
 ## Retrieval, without thresholds
 
-`semantic-match` filters with a hard similarity cutoff of 0.7. Any chunk scoring above it goes into the prompt, everything else vanishes. That means one bad day can return zero context (and the LLM answers from training alone), while a query where twenty chunks all score 0.71 drowns the model in context and blows the token budget.
+An earlier version of `semantic-match` filtered with a hard similarity cutoff of 0.7: any chunk scoring above it went into the prompt and everything else vanished. That design has two failure modes. A query whose best chunk scores 0.69 gets zero context (and the LLM answers from its training alone), while a query where twenty chunks all score 0.71 drowns the model in context and blows the token budget. Worse, a cutoff is tied to one embedding model. Different models produce scores in different ranges, so a number tuned for one model can silently return nothing with another.
 
-Ranking instead of thresholding fixes both: always take the *top k* chunks, whatever their scores. The generalization in **rag_extensions.rkt** also lets the caller swap in any embedding function with the `#:embed` keyword, so the same code ranks with OpenAI embeddings in production and with the deterministic local embedder (below) in tests:
+Ranking instead of thresholding fixes all of this: always take the *top k* chunks, whatever their scores. That is what `best-matches` in **embeddingsdb.rkt** now does. The generalization in **rag_extensions.rkt** also lets the caller swap in any embedding function with the `#:embed` keyword, so the same code ranks with OpenAI embeddings in production and with the deterministic local embedder (below) in tests:
 
 ```racket
 (define (rank-chunks query chunks
@@ -533,14 +538,16 @@ $ raco test tests.rkt
 raco test: "tests.rkt"
 
 All tests passed.
-11 tests passed
+13 tests passed
 ```
+
+The last two tests cover the SQLite store in **embeddingsdb.rkt**. They rebind `*embeddingsdb-file*` to a temporary file and `*embedding-fn*` to the offline `hash-embed`, then check that indexing a file twice does not duplicate its chunks, that `best-matches` returns the chemistry chunk for a chemistry question, and that a failing embedding call raises an error instead of quietly producing an empty index.
 
 ## Production notes
 
 A few hard-won notes if you carry this design further:
 
-- **Embedding calls dominate indexing cost.** `create-document` calls the embedding API once per chunk, and re-running `test` re-inserts every document. Cache by file content (a hash) and skip unchanged files.
+- **Embedding calls dominate indexing cost.** `create-document` calls the embedding API once per chunk, and re-running `test` computes every embedding again even when a file has not changed. Cache by file content (a hash) and skip unchanged files.
 - **The vector column is a TEXT string.** `floats->string` stores 1536 numbers as space-separated text, and every query parses all of them back with `string->floats`. For a few thousand chunks that is fine. Beyond that, keep vectors as blobs or move to a database with a vector index.
 - **Linear scans do not scale.** Every query walks every row. Approximate nearest neighbor indexes (HNSW is the usual choice in SQLite-adjacent tooling like sqlite-vec) turn the scan into a near-constant lookup.
 - **Duplicates pollute prompts.** If two documents repeat the same paragraph, both copies can rank in the top k and waste context. Deduplicate by chunk text before indexing, and drop near-duplicate retrieved chunks before assembling the prompt.
@@ -556,9 +563,9 @@ Retrieval Augmented Generation (RAG) is one of the best use cases for semantic s
 
 ## Optional practice problems
 
-1. Wire the Upgrades In: modify `create-document` in **embeddingsdb.rkt** to use `chunk-by-sentences` instead of `break-into-chunks`, and `semantic-match` to use `cosine-similarity` and top-k ranking instead of `dot-product` with a cutoff. Run the chemistry and sports queries before and after and compare answers.
+1. Wire the Upgrades In: modify `create-document` in **embeddingsdb.rkt** to use `chunk-by-sentences` instead of `break-into-chunks`, and `best-matches` to use `cosine-similarity` instead of `dot-product`. Run the chemistry and sports queries before and after and compare answers.
 2. Measure Chunking: write a utility that reports, for a given document and chunker settings, the number of chunks, their min/max/mean lengths, and how many chunks end mid-word. Use it to compare the old and new chunkers on **data/chemistry.txt**.
 3. Hybrid Retrieval: some questions are pure keyword ("what is the formula for ZorroOnian Alcohol") and some are conceptual ("why is teamwork valuable"). Add a keyword score (a simple word-overlap count) alongside the embedding score, and combine them with a weight. Show a query where hybrid beats embeddings alone, and one where it does not.
-4. Extend Database Operations: add a function `delete-document` that deletes all chunks and vector representations associated with a given file path from the SQLite database, and a test that proves re-adding a modified file does not leave stale chunks behind.
+4. Skip Unchanged Files: add a column that stores a hash of each file's content (for example with `sha256-bytes`). Change `create-document` to return immediately when the stored hash matches, and add a test, using the `*embedding-fn*` parameter to count calls, that proves indexing an unchanged file a second time makes no embedding calls.
 5. Score-Gap Detection: add a check to `rank-chunks` callers that detects "no good match": top score below a floor *and* a small gap between first and second place. When detected, have the prompt tell the LLM explicitly that the local documents may not contain the answer, and observe how its answers change.
 

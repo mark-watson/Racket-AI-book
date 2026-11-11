@@ -1,13 +1,13 @@
 #lang racket
 
-;;; test.rkt -- live demo / smoke test for the uniform API in llmapis.rkt.
+;;; live-test.rkt -- live demo / smoke test for the uniform API in llmapis.rkt.
 ;;;
 ;;; Uses ONLY the new uniform API (no per-provider modules). Google tests
 ;;; need GOOGLE_API_KEY (or GEMINI_API_KEY), OpenAI tests need
 ;;; OPENAI_API_KEY (or OPENAI_KEY); Ollama tests need a local server with
 ;;; qwen3:1.7b. Anything unavailable is SKIPped, not failed.
 ;;;
-;;; Run:  racket test.rkt
+;;; Run:  racket live-test.rkt   (offline unit tests are in tests.rkt)
 ;;; Optional env overrides: GEMINI_MODEL, OPENAI_MODEL, OLLAMA_MODEL,
 ;;; OLLAMA_HOST.
 
@@ -236,7 +236,7 @@ Returns #f when the network/API is unreachable (caller SKIPpes)."
         (demo-auto-loop "OpenAI" m
                         "Add 17 and 25, then tell me the weather in Paris."
                         demo-tools)
-        (demo-embedding "OpenAI" "openai/text-embedding-ada-002" "hello world")))
+        (demo-embedding "OpenAI" "openai/text-embedding-3-small" "hello world")))
     (headline "OpenAI: SKIP (no key or no working model)"))
 
 ;; Ollama (local).

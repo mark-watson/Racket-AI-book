@@ -22,7 +22,7 @@ To process sequences of these word vectors, we turned to Recurrent Neural Networ
  
 ### The Transformer inflection point: "Attention is all you need"
 
-Despite the success of LSTMs, a fundamental architectural bottleneck remained. Both RNNs and LSTMs are inherently sequential processors; they must compute the hidden state for token `t`$ before they can compute it for token `t+1`$. This sequential dependency made it impossible to fully parallelize the computation across the tokens in a sequence, creating a significant performance barrier on modern hardware like GPUs. solution arrived in 2017 with a landmark paper from researchers at Google titled "Attention Is All You Need". The paper introduced the Transformer architecture, which dispensed with recurrence entirely and relied instead on a mechanism called "self-attention." The attention mechanism, first developed by Bahdanau et al. in 2014 for machine translation, allows a model to dynamically weigh the importance of different parts of the input sequence when producing an output.
+Despite the success of LSTMs, a fundamental architectural bottleneck remained. Both RNNs and LSTMs are inherently sequential processors; they must compute the hidden state for token `t`$ before they can compute it for token `t+1`$. This sequential dependency made it impossible to fully parallelize the computation across the tokens in a sequence, creating a significant performance barrier on modern hardware like GPUs. The solution arrived in 2017 with a landmark paper from researchers at Google titled "Attention Is All You Need". The paper introduced the Transformer architecture, which dispensed with recurrence entirely and relied instead on a mechanism called "self-attention." The attention mechanism, first developed by Bahdanau et al. in 2014 for machine translation, allows a model to dynamically weigh the importance of different parts of the input sequence when producing an output.
 
 ## Commercial and open weight LLMs
 
@@ -36,7 +36,7 @@ Anthropic focuses on building steerable and interpretable models like the Claude
 
 Mistral AI provides efficient open-weight and hosted models such as `mistral-small` and `mistral-embed`.
 
-What if you want the total control of running open LLMs on your own computers? The company [Hugging Face](https://huggingface.co) maintains a huge repository of pre-trained models. Some of these models are licensed for research only but many are licensed (e.g., using Apache 2) for commercial use. You can easily run models locally on your laptop using tools like [llama.cpp](https://github.com/ggerganov/llama.cpp) or [Ollama](https://ollama.ai).
+What if you want the total control of running open LLMs on your own computers? The company [Hugging Face](https://huggingface.co) maintains a huge repository of pre-trained models. Some of these models are licensed for research only but many are licensed (e.g., using Apache 2) for commercial use. You can easily run models locally on your laptop using tools like [llama.cpp](https://github.com/ggml-org/llama.cpp) or [Ollama](https://ollama.com).
 
 ## Introduction to the applications of LLMs
 
@@ -87,7 +87,7 @@ Using `llmapis.rkt` is straightforward. Here are common patterns:
 
 ;; 3. Vector embeddings across providers
 (define emb
-  (llm-embedding "openai/text-embedding-ada-002" "Practical Artificial Intelligence"))
+  (llm-embedding (default-embedding-model) "Practical Artificial Intelligence"))
 (printf "Embedding dimension: ~a\n" (length (first emb)))
 
 ;; 4. Tools as first-class Racket functions
@@ -112,6 +112,24 @@ Using `llmapis.rkt` is straightforward. Here are common patterns:
 (define-provider 'groq "https://api.groq.com/openai/v1"
   #:env-keys '("GROQ_API_KEY"))
 ```
+
+### Default model names
+
+Model names change often, and a model that an example was written for may be retired by the time you read this. So that there is one place to make a change, `llmapis.rkt` defines two small functions, `default-chat-model` and `default-embedding-model`, and the other examples in this book that just need "a chat model" or "an embedding model" call them instead of naming a model:
+
+```racket
+(llm-ask (default-chat-model) "What is the capital of France?")
+(llm-embedding (default-embedding-model) "some text")
+```
+
+The defaults are `"openai/gpt-5-mini"` and `"openai/text-embedding-3-small"`. You can override both without editing any code by setting environment variables, for example to run everything against local models:
+
+```bash
+export LLM_CHAT_MODEL=ollama/qwen3:1.7b
+export LLM_EMBEDDING_MODEL=ollama/nomic-embed-text
+```
+
+The examples in the rest of this chapter name models explicitly because the point is to show how routing works.
 
 ### Model routing and provider registry
 
@@ -379,8 +397,9 @@ The module `gemini.rkt` interacts with the native Google Generative Language API
 (define *gemini-max-tokens* 8192)
 
 (define *google-api-key*
-  (or (getenv "GOOGLE_API_KEY")
-      (error "GOOGLE_API_KEY environment variable is not set")))
+  (or (getenv "GEMINI_API_KEY")
+      (getenv "GOOGLE_API_KEY")
+      (error "GEMINI_API_KEY (or GOOGLE_API_KEY) environment variable is not set")))
 
 (define *base-url*
   "https://generativelanguage.googleapis.com/v1beta/models")
@@ -596,7 +615,7 @@ For developers wishing to inspect the raw wire communication with OpenAI, `opena
            (list
             (string-append
              "{\"input\": \"" text "\","
-             " \"model\": \"text-embedding-ada-002\"}"))))
+             " \"model\": \"text-embedding-3-small\"}"))))
          (auth (lambda (uri headers params)
                  (values
                   (hash-set*
@@ -701,7 +720,7 @@ Running models locally gives you complete privacy, zero API costs, and offline e
 To build and run the server:
 
 ```bash
-git clone https://github.com/ggerganov/llama.cpp.git
+git clone https://github.com/ggml-org/llama.cpp.git
 cd llama.cpp && make
 mkdir models
 # Download a GGUF model into models/
@@ -742,7 +761,7 @@ The file `llama_local.rkt` interfaces with `llama-server`'s `/completion` endpoi
 
 ### Running local models: Ollama (`ollama_ai_local.rkt`)
 
-[Ollama](https://ollama.ai) is an easy way to run local open-weight models on macOS, Linux, and Windows. Once installed, pull a model from the terminal:
+[Ollama](https://ollama.com) is an easy way to run local open-weight models on macOS, Linux, and Windows. Once installed, pull a model from the terminal:
 
 ```bash
 ollama run mistral
@@ -832,7 +851,8 @@ The `source-code/llmapis/` directory is structured as follows:
 | `ollama_ai_local.rkt` | Direct Ollama client: local text generation and embeddings. |
 | `llama_local.rkt` | Direct llama.cpp client: local text completion. |
 | `main.rkt` | Package entry point re-exporting per-provider modules. |
-| `test.rkt` | Smoke test and live demonstration of the uniform API. |
+| `tests.rkt` | Offline unit tests: routing, message and tool translation, response parsing, error mapping. Run with `raco test tests.rkt`. |
+| `live-test.rkt` | Smoke test and live demonstration of the uniform API. Providers with no key or server are skipped. |
 
 The following diagram illustrates the architecture of the uniform API and its provider adapters:
 
@@ -841,7 +861,7 @@ The following diagram illustrates the architecture of the uniform API and its pr
 
 ### Installing as a local package
 
-You can install `llmapis` as a linked local Racket package so other projects in the book (such as `embeddingsdb`, `RAG`, and `pdf_chat`) can require it directly via `(require llmapis)`:
+The other projects in this book that use this library (such as `embeddingsdb`, `RAG`, and `ollama_tools`) load it with a relative path, `(require "../llmapis/llmapis.rkt")`, so they work with no install step. If you want to use the library from your own projects elsewhere on your computer, you can install `llmapis` as a linked local Racket package and then write `(require llmapis/llmapis)`:
 
 ```bash
 cd source-code/llmapis
@@ -861,7 +881,7 @@ raco make main.rkt llmapis.rkt
 
 Since I wrote my initial LLM client libraries, William J. Bowman wrote an interesting new Racket language extension (`#lang llm`) that can be used interactively in DrRacket or imported as a library in standard `#lang racket` programs.
 
-The examples are located in **Racket-AI-book/source-code/racket_llm_language**:
+The examples are located in **Racket-AI-book/source-code/racket_llm_language**. I ran them with Racket 8.12 and the model modules that the package provided at that time (`gpt4o-mini` and `phi3`). Check the package documentation linked below for the model modules it provides now:
 
 - `test_lang_mode_llm_openai.rkt` - uses `#lang llm`
 - `test_llm_openai.rkt` - uses `#lang racket`

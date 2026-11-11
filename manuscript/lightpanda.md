@@ -203,7 +203,7 @@ Note that `extract-links` is *not* listed in `provide` — Racket's module syste
 
 ## Usage examples
 
-After installing with `raco pkg install --scope user` (from the source directory), or by running the file directly:
+After installing with `raco pkg install --scope user` (from the source directory) you can load the library from anywhere with `(require lightpanda)`. Without installing, load it by path, for example `(require "lightpanda.rkt")` from the source directory:
 
 ```racket
 (require lightpanda)
@@ -240,6 +240,8 @@ Found 14 link(s):
   ...
 ```
 
+The directory also contains **tests.rkt**, which runs without the lightpanda program or a network connection. It checks link extraction on a fixed HTML string, and it checks that a missing binary gives `#f` and an empty list of links instead of an exception. Run it with **raco test tests.rkt**.
+
 ## Key Racket takeaways
 
 1. `subprocess`: portable subprocess execution; returns four values (process, stdout, stdin, stderr)
@@ -256,4 +258,4 @@ This pattern (shelling out to a specialized tool and processing its output) is a
 1. Verify Binary Installation: implement a function `verify-lightpanda-path` that validates if the configured `lightpanda-binary` path exists using `find-executable-path`. If the binary cannot be resolved, raise a clear user-facing error message with advice on installation.
 2. Support Dynamic Fetch Options: extend the `fetch-url` function to support additional command-line parameters that Lightpanda offers (for example, setting a custom `--user_agent` or specifying custom `--headers`).
 3. Capture Process Standard Error: in `run-command`, standard error output is discarded. Refactor the subprocess handling to capture `stderr` from the subprocess and include its contents in the error output logs when the exit code is non-zero.
-
+4. Compare With a Plain HTTP Fetch: pick a web page that builds its content with JavaScript. Fetch it with `web-uri->text` from the web scraping chapter and with `(fetch-url url #:dump "markdown")` from this chapter, and compare the amount of readable text each one returns. Then try a mostly static page, where the two should agree, and time both approaches.

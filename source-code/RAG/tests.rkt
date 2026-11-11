@@ -524,3 +524,6 @@
 
 (module+ main
   (run-tests all-tests))
+
+(module+ test
+  (void (run-tests all-tests)))

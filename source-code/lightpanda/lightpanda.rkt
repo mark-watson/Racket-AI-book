@@ -6,7 +6,8 @@
 (provide fetch-url
          fetch-and-extract-links
          demo-fetch
-         lightpanda-binary)
+         lightpanda-binary
+         extract-links)   ; exported so it can be tested without lightpanda
 
 ;;; -------------------------------------------------------------------------
 ;;; Configuration

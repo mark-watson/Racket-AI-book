@@ -1,0 +1,34 @@
+name: Example code
+
+# Compiles every example and runs the offline test suites.
+# No API keys are needed: none of these tests touch the network.
+
+on:
+  push:
+    paths:
+      - "source-code/**"
+      - ".github/workflows/test.yml"
+  pull_request:
+    paths:
+      - "source-code/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Bogdanp/setup-racket@v1.11
+        with:
+          architecture: x64
+          distribution: full
+          variant: CS
+          version: stable
+      - name: Install Racket packages
+        run: raco pkg install --auto --skip-installed http-easy html-parsing
+      - name: Compile
+        working-directory: source-code
+        # Bridge_Game_webkit needs macOS WebKit to run, but it compiles anywhere.
+        run: make compile
+      - name: Offline tests
+        working-directory: source-code
+        run: make test

@@ -1,8 +1,6 @@
 # Implementing OPS5 in Racket: A forward-chaining production system
 
-I converted OPS5 from Common Lisp to MIT Scheme in the early 1980s. The code for this chapter is that code, converted to run in Racket. Dear reader, even though I spent years of my life working on rule based symbolic AI, now I don't really recommend rule based systems for practical work.
-
-Dear reader, while the material in this chapter is important to me for historic reasons, the next chapter uses a modern logic library **Racklog** to solve the same two example problems covered in this chapter.
+I converted OPS5 from Common Lisp to MIT Scheme in the early 1980s. The code for this chapter is that code, converted to run in Racket. Dear reader, even though I spent years of my life working on rule based symbolic AI, now I don't really recommend rule based systems for practical work. The material in this chapter is important to me for historic reasons, and I think it is still worth your time for two things: the Rete algorithm is a beautiful piece of engineering, and the conversion is a worked example of bringing a large old Lisp program into Racket. The next chapter uses a modern logic library **Racklog** to solve the same two example problems covered in this chapter.
 
 OPS5 was written by Charles Forgy (Carnegie Mellon University) and is the classic production-system language. The original Common Lisp code was "very hackable" and I heavily modified it twice for projects at SAIC in the 1980s. I hope that Racket developers find this version converted to Racket to also be "hackable."
 
@@ -723,6 +721,8 @@ A `modify` action reads the bound condition-element fact, removes it from workin
 ## Running the code
 
 You need Racket. No packages are required; the code uses only the standard library and the `r5rs` language that ships with Racket.
+
+The directory has a regression test, **tests.rkt**, that starts the system on each of the two example files, types the same commands shown below, and checks the output. With a program of this size in one file, I recommend running **raco test tests.rkt** after any change you make.
 
 Run the system from the example directory. Give it a `.ops` file to load before the REPL starts.
 

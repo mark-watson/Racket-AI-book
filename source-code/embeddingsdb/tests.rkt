@@ -3,7 +3,8 @@
 ;;; Copyright (C) 2026 Mark Watson <markw@markwatson.com>
 ;;; Apache 2 License
 ;;;
-;;; Tests for rag_extensions.rkt. Everything here runs offline.
+;;; Tests for rag_extensions.rkt and for the SQLite store in
+;;; embeddingsdb.rkt. Everything here runs offline.
 
 (require rackunit)
 (require "rag_extensions.rkt")
@@ -102,3 +103,49 @@
   (check-true (string-suffix? prompt "Question: the question")))
 
 (displayln "\nAll tests passed.")
+
+;;; -----------------------------------------------------------------------------
+;;; The SQLite store in embeddingsdb.rkt, with the embedding model replaced
+;;; by the offline hash-embed stub and a temporary database file
+
+(require "embeddingsdb.rkt")
+
+(test-case "store: indexing, re-indexing, and top-k retrieval"
+  (define db-file (make-temporary-file "embeddingsdb-test-~a.db"))
+  (define doc (make-temporary-file "embeddingsdb-doc-~a.txt"))
+  (with-output-to-file doc #:exists 'truncate
+    (lambda ()
+      (display (string-append
+                (make-string 30 #\a) " chemistry atoms molecules "
+                (make-string 150 #\b)
+                " football soccer goals " (make-string 170 #\c)))))
+  (define calls 0)
+  (define (fake-embedding model input . _)
+    (set! calls (+ calls 1))
+    (list (hash-embed input)))
+  (parameterize ([*embeddingsdb-file* (path->string db-file)]
+                 [*embedding-fn* fake-embedding]
+                 [current-output-port (open-output-nowhere)])
+    (define n (create-document (path->string doc)))
+    (check-true (> n 1))
+    (check-equal? calls n)
+    ;; indexing the same file again replaces its rows instead of adding more
+    (check-equal? (create-document (path->string doc)) n)
+    (check-equal? (length (best-matches "anything" 1000)) n)
+    ;; the best match for a chemistry question is the chemistry chunk
+    (check-true (string-contains? (first (best-matches "chemistry molecules" 1))
+                                  "chemistry"))
+    (check-equal? (length (best-matches "football" 2)) 2)
+    (delete-document (path->string doc))
+    (check-equal? (best-matches "football" 2) '()))
+  (delete-file doc))
+
+(test-case "store: a failing embedding call is reported, not swallowed"
+  (define db-file (make-temporary-file "embeddingsdb-test-~a.db"))
+  (define doc (make-temporary-file "embeddingsdb-doc-~a.txt"))
+  (with-output-to-file doc #:exists 'truncate (lambda () (display "some text")))
+  (parameterize ([*embeddingsdb-file* (path->string db-file)]
+                 [*embedding-fn* (lambda (model input . _) (error "no API key"))])
+    (check-exn #rx"no API key"
+               (lambda () (create-document (path->string doc)))))
+  (delete-file doc))

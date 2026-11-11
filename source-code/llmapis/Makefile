@@ -1,5 +1,8 @@
 clean:
 	rm -r -f */compiled */*.rkt~
 
-repopack:
-	repopack --ignore kgn/data,nlp/data
+test:
+	raco test tests.rkt
+
+live-test:
+	racket live-test.rkt

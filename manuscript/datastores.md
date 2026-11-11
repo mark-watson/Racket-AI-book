@@ -1,45 +1,84 @@
 # Datastores
 
-For my personal research projects the only datastores that I often use are the embedded relational database and Resource Description Framework (RDF) datastores that might be local to my laptop or public Knowledge Graphs like DBPedia and WikiData. The use of RDF data and the SPARQL query language is part of the fields of the semantic web and linked data.
+For my personal research projects the only datastores that I often use are the embedded relational database and Resource Description Framework (RDF) datastores that might be local to my laptop or public Knowledge Graphs like DBpedia and WikiData. The use of RDF data and the SPARQL query language is part of the fields of the semantic web and linked data.
 
 
-## Accessing public RDF Knowledge Graphs - a DBPedia example
+## Accessing public RDF Knowledge Graphs - a DBpedia example
 
-I will not cover RDF data and the SPARQL query language in great detail here. Rather, please reference the following link to read the RDF and SPARQL tutorial data in my Common Lisp book: [Loving Common Lisp, or the Savvy Programmer's Secret Weapon](https://leanpub.com/lovinglisp/read#leanpub-auto-semantic-web-and-linked-data).
+I will not cover RDF data and the SPARQL query language in great detail here. For a longer treatment please read the RDF and SPARQL tutorial material in my Common Lisp book: [Loving Common Lisp, or the Savvy Programmer's Secret Weapon](https://leanpub.com/lovinglisp/read#leanpub-auto-semantic-web-and-linked-data). The following short background is enough to follow the code in this chapter and the next one.
 
-In the following Racket code example for accesing data on DBPedia using SPARQL, the primary objective is to interact with DBpedia's SPARQL endpoint to query information regarding a person based on their name or URI. The code is structured into several functions, each encapsulating a specific aspect of the querying process, thereby promoting modular design and ease of maintenance.
+### Just enough RDF and SPARQL
 
-### Function definitions
+RDF data is a set of *triples*. Each triple is a statement with three parts: a subject, a predicate, and an object. Subjects and predicates are URIs, written inside angle brackets. An object is either another URI or a literal value like a string or a number:
 
-- sparql-dbpedia-for-person: this function takes a `person-uri` as an argument and constructs a SPARQL query to retrieve the comment and website associated with the person. The `@string-append` macro helps in constructing the SPARQL query string by concatenating the literals and the `person-uri` argument.
+```
+<http://dbpedia.org/resource/Steve_Jobs>
+    <http://xmlns.com/foaf/0.1/name>
+    "Steve Jobs"@en .
+```
 
-- sparql-dbpedia-person-uri: similar to the above function, this function accepts a `person-name` argument and constructs a SPARQL query to fetch the URI and comment of the person from DBpedia.
+This triple says that the thing identified by the first URI has the name "Steve Jobs", and the **@en** tag says that the string is in English. Because the object of one triple can be the subject of another, a collection of triples forms a graph, which is where the term Knowledge Graph comes from.
 
-- sparql-query->hash: this function encapsulates the logic for sending the constructed SPARQL query to the DBpedia endpoint. It takes a `query` argument, encodes it into a URL format, and sends an HTTP request to the DBpedia SPARQL endpoint. The response, expected in JSON format, is then converted to a Racket expression using `string->jsexpr`.
+A SPARQL query is a pattern with variables, which are names that start with a question mark. The query engine finds every way of filling in the variables so that the pattern matches triples in the datastore:
 
-- json->listvals: this function is designed to transform the JSON expression obtained from the SPARQL endpoint into a more manageable list of values. It processes the hash data structure, extracting the relevant bindings and converting them into a list format.
+```sparql
+SELECT ?person ?comment {
+  ?person <http://xmlns.com/foaf/0.1/name> "Steve Jobs"@en .
+  ?person <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
+  FILTER (lang(?comment) = 'en')
+}
+```
 
-- **gd** (Data Processing Function): This function processes the data structure obtained from `json->listvals`. It defines four inner functions `gg1`, `gg2`, `gg3`, and `gg4`, each designed to handle a specific number of variables returned in the SPARQL query result. It uses a `case` statement to determine which inner function to call based on the length of the data.
+The two patterns share the variable **?person**, so a result must satisfy both: something named "Steve Jobs" that also has a comment. The **FILTER** line keeps only English comments. The queries in this chapter also use **OPTIONAL** (keep the result even if this part does not match) and **UNION** (match either of two patterns).
 
-- sparql-dbpedia: this is the entry function which accepts a `sparql` argument, invokes `sparql-query->hash` to execute the SPARQL query, and then calls `gd` to process the resulting data structure.
+### A SPARQL client for DBpedia
 
-### Usage flow
+The following listing shows the file **Racket-AI-book/source-code/sparql/sparql.rkt**. It queries DBpedia's public SPARQL endpoint for information about a person or place and converts the reply into Racket lists. Here is what each function does:
 
-The typical flow would be to call **sparql-dbpedia-person-uri** with a person's name to obtain the person's URI and comment from DBpedia. Following that, **sparql-dbpedia-for-person** can be invoked with the obtained URI to fetch more detailed information like websites associated with the person. The results from these queries are then processed through **sparql-query->hash**, **json->listvals**, and **gd** to transform the raw JSON response into a structured list format, making it easier to work with within the Racket environment.
+- **sparql-escape-string** prepares a name typed by a user for use inside a quoted SPARQL string. Without it, a name that contains a double quote character would end the string early and break the query.
+- **sparql-dbpedia-person-uri** takes a person's name and builds a query for the URIs and comments of everything with that name. **sparql-dbpedia-place-uri** does the same for places.
+- **sparql-dbpedia-for-person** takes a person URI (including the angle brackets) and builds a query for a comment and for web sites associated with that person.
+- **sparql-query->hash** sends a query to the endpoint and converts the JSON reply to a Racket hash table with **string->jsexpr**. A busy public endpoint sometimes replies with an HTML error page, so this function raises an error that shows the start of the reply when the reply is not JSON.
+- **json->listvals** pulls the variable bindings out of the reply, giving one list per query variable.
+- **gd** turns those per-variable lists into one list per result row.
+- **sparql-dbpedia** is the function you will usually call: it runs a query and returns the rows.
 
+The file starts with **#lang at-exp racket**. The *at-exp* reader adds a syntax for text with embedded Racket values, which is convenient for query templates. In the form **@string-append{...}** everything between the curly braces is literal text, except that **@name** inserts the value of the variable **name**. The odd looking **@"@"** is how you write a literal at sign, which SPARQL needs for the language tag **@en**.
 
 ```racket
 #lang at-exp racket
 
-(provide sparql-dbpedia-person-uri)
-(provide sparql-query->hash)
-(provide json->listvals)
-(provide sparql-dbpedia)
+;;; sparql.rkt — A small SPARQL client for the DBpedia public endpoint
+;;; Apache 2 License
+
+(provide sparql-dbpedia-for-person
+         sparql-dbpedia-person-uri
+         sparql-dbpedia-place-uri
+         sparql-escape-string
+         sparql-query->hash
+         json->listvals
+         extract-name-uri-and-comment
+         gd
+         sparql-dbpedia
+         *sparql-endpoint*)
 
 (require net/url)
 (require net/uri-codec)
 (require json)
 (require racket/pretty)
+
+;; The endpoint is a parameter so you can point the same code at another
+;; SPARQL service, for example https://query.wikidata.org/sparql
+(define *sparql-endpoint* (make-parameter "https://dbpedia.org/sparql"))
+
+;; Names typed by a user go inside a quoted SPARQL literal. Escape the
+;; characters that would end the literal early or break the query.
+(define (sparql-escape-string s)
+  (let* ([s (string-replace s "\\" "\\\\")]
+         [s (string-replace s "\"" "\\\"")]
+         [s (string-replace s "\n" "\\n")]
+         [s (string-replace s "\r" "\\r")])
+    s))
 
 (define (sparql-dbpedia-for-person person-uri)
   @string-append{
@@ -60,11 +99,12 @@ The typical flow would be to call **sparql-dbpedia-person-uri** with a person's 
      } LIMIT 4})
 
 (define (sparql-dbpedia-person-uri person-name)
+  (define name (sparql-escape-string person-name))
   @string-append{
     SELECT DISTINCT ?personuri ?comment {
       ?personuri
         <http://xmlns.com/foaf/0.1/name>
-        "@person-name"@"@"en .
+        "@name"@"@"en .
       {
         ?personuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
         FILTER (lang(?comment) = 'en')
@@ -74,18 +114,48 @@ The typical flow would be to call **sparql-dbpedia-person-uri** with a person's 
       }
 }})
 
+(define (sparql-dbpedia-place-uri place-name)
+  (define name (sparql-escape-string place-name))
+  @string-append{
+    SELECT DISTINCT ?placeuri ?comment {
+      ?placeuri
+        <http://xmlns.com/foaf/0.1/name>
+        "@name"@"@"en .
+      {
+        ?placeuri <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
+        FILTER (lang(?comment) = 'en')
+      } UNION {
+        ?placeuri <http://dbpedia.org/ontology/description> ?comment .
+        FILTER (lang(?comment) = 'en')
+      }
+}})
 
+;; Send a query and return the JSON reply as a hash table. A busy public
+;; endpoint sometimes answers with an HTML error page instead of JSON, so
+;; a reply that does not parse raises an error that says what came back.
 (define (sparql-query->hash query)
-  (call/input-url
-   (string->url
-    (string-append
-     "https://dbpedia.org/sparql?query="
-     (uri-encode query)))
-   get-pure-port
-   (lambda (port)
-     (string->jsexpr (port->string port)))
-   '("Accept: application/json")))
+  (define reply
+    (call/input-url
+     (string->url
+      (string-append
+       (*sparql-endpoint*)
+       "?query="
+       (uri-encode query)))
+     get-pure-port
+     port->string
+     '("Accept: application/json")))
+  (with-handlers
+      ([exn:fail:read?
+        (lambda (e)
+          (error 'sparql-query->hash
+                 "endpoint did not return JSON; reply starts with: ~a"
+                 (substring reply 0 (min 200 (string-length reply)))))])
+    (define result (string->jsexpr reply))
+    (unless (hash? result)
+      (error 'sparql-query->hash "unexpected JSON reply: ~a" result))
+    result))
 
+;; One list per query variable; each element is (variable-name value)
 (define (json->listvals a-hash)
   (let* ([head (hash-ref a-hash 'head (hash))]
          [vars (hash-ref head 'vars '())]
@@ -98,70 +168,140 @@ The typical flow would be to call **sparql-dbpedia-person-uri** with a person's 
                [a-value (hash-ref var-info 'value "")])
           (list var a-value))))))
 
+;; Turn the per-variable lists into one list per result row. "Zipping"
+;; with (apply map list ...) works for any number of query variables.
 (define (gd data)
   (let ([jd (json->listvals data)])
-    (define gg1 (lambda (x) (map list (car x))))
-    (define gg2 (lambda (x) (map list (car x) (cadr x))))
-    (define gg3 (lambda (x) (map list (car x) (cadr x) (caddr x))))
-    (define gg4 (lambda (x) (map list (car x) (cadr x) (caddr x) (cadddr x))))
-    (case (length jd)
-      [(1) (gg1 jd)]
-      [(2) (gg2 jd)]
-      [(3) (gg3 jd)]
-      [(4) (gg4 jd)]
-      [else (error "sparql queries with 1 to 4 vars")])))
+    (if (null? jd)
+        '()
+        (apply map list jd))))
 
-(define sparql-dbpedia
-  (lambda (sparql)
-    (gd (sparql-query->hash sparql))))
+;; Used by the Knowledge Graph Navigator: pair up the values of the
+;; first two query variables as (uri comment) lists
+(define (extract-name-uri-and-comment l1 l2)
+  (map (lambda (a b) (list (second a) (second b)))
+       l1 l2))
 
-;; (sparql-dbpedia (sparql-dbpedia-person-uri "Steve Jobs"))
+(define (sparql-dbpedia sparql)
+  (gd (sparql-query->hash sparql)))
+
+(module+ main
+  ;; (pretty-print (sparql-dbpedia (sparql-dbpedia-person-uri "Steve Jobs")))
+  ;; (pretty-print (sparql-dbpedia (sparql-dbpedia-for-person "<http://dbpedia.org/resource/Steve_Jobs>")))
+  (void))
 ```
+
+The function **gd** is short but worth a second look. If **json->listvals** returns the lists (a1 a2) for the first variable and (b1 b2) for the second, then **(apply map list ...)** pairs them up as ((a1 b1) (a2 b2)), one list per result row. This works for any number of query variables.
 
 Let's try an example in a Racket REPL:
 
 ```racket
-'((("personuri" "http://dbpedia.org/resource/Steve_Jobs")
+> (require "sparql.rkt")
+> (sparql-dbpedia (sparql-dbpedia-person-uri "Steve Jobs"))
+'((("personuri" "http://dbpedia.org/resource/Steve_Jobs_(book)")
+   ("comment" "2011 authorized biography by Walter Isaacson"))
+  (("personuri" "http://dbpedia.org/resource/Steve_Jobs")
    ("comment"
-    "Steven Paul Jobs (February 24, 1955 – October 5, 2011) was an American entrepreneur, industrial designer, media proprietor, and investor. He was the co-founder, chairman, and CEO of Apple; the chairman and majority shareholder of Pixar; a member of The Walt Disney Company's board of directors following its acquisition of Pixar; and the founder, chairman, and CEO of NeXT. He is widely recognized as a pioneer of the personal computer revolution of the 1970s and 1980s, along with his early business partner and fellow Apple co-founder Steve Wozniak."))
-  (("personuri" "http://dbpedia.org/resource/Steve_Jobs_(film)")
-   ("comment"
-    "Steve Jobs is a 2015 biographical drama film directed by Danny Boyle and written by Aaron Sorkin. A British-American co-production, it was adapted from the 2011 biography by Walter Isaacson and interviews conducted by Sorkin, and covers 14 years (1984–1998) in the life of Apple Inc. co-founder Steve Jobs. Jobs is portrayed by Michael Fassbender, with Kate Winslet as Joanna Hoffman and Seth Rogen, Katherine Waterston, Michael Stuhlbarg, and Jeff Daniels in supporting roles."))
-  (("personuri" "http://dbpedia.org/resource/Steve_Jobs_(book)")
-   ("comment"
-    "Steve Jobs is the authorized self-titled biography of American business magnate and Apple co-founder Steve Jobs. The book was written at the request of Jobs by Walter Isaacson, a former executive at CNN and TIME who has written best-selling biographies of Benjamin Franklin and Albert Einstein. The book was released on October 24, 2011, by Simon & Schuster in the United States, 19 days after Jobs's death. A film adaptation written by Aaron Sorkin and directed by Danny Boyle, with Michael Fassbender starring in the title role, was released on October 9, 2015.")))
+    "American entrepreneur; co-founder of Apple Inc. (1955–2011)")))
 ```
 
-In practice, I start exploring data on DBPedia using the SPARQL query web app [https://dbpedia.org/sparql](https://dbpedia.org/sparql). I experiment with different SPARQL queries for whatever application I am working on and then embed those queries in my Racket, Common Lisp, [Clojure](https://leanpub.com/clojureai/read#leanpub-auto-clojure-wrapper-for-the-jena-rdf-and-sparql-library) (link to read my Clojure AI book free online), and other programming languages I use.
+DBpedia is rebuilt from Wikipedia from time to time, so the results you see will probably differ from mine. Notice that the name "Steve Jobs" matched a book as well as a person. The Knowledge Graph Navigator application in a later chapter shows the user a list to choose from when this happens.
 
-In addition to using DBPedia I often also use the WikiData public Knowledge Graph and local RDF data stores hosted on my laptop with Apache Jena. I might add examples for these two use cases in future versions of this *live eBook*.
+In practice, I start exploring data on DBpedia using the SPARQL query web app [https://dbpedia.org/sparql](https://dbpedia.org/sparql). I experiment with different SPARQL queries for whatever application I am working on and then embed those queries in my Racket, Common Lisp, [Clojure](https://leanpub.com/clojureai/read#leanpub-auto-clojure-wrapper-for-the-jena-rdf-and-sparql-library) (link to read my Clojure AI book free online), and other programming languages I use.
 
+In addition to using DBpedia I often also use the WikiData public Knowledge Graph and local RDF data stores hosted on my laptop with Apache Jena. The endpoint in **sparql.rkt** is the parameter **\*sparql-endpoint\***, so you can point the same code at another SPARQL service with **parameterize**. One of the practice problems at the end of this chapter asks you to try this with WikiData.
+
+The directory also contains **tests.rkt**, which checks the result-processing functions against a saved JSON reply. You can run it without a network connection using **raco test tests.rkt**.
 
 ## SQLite
 
-Using SQlite in Racket is simple so we will just look at a single example. We will be using the Racket source file **sqlite.rkt** in the directory **Racket-AI-book/source-code/misc_code** for the code snippets in this REPL:
+Racket's standard **db** library supports SQLite, so there is no package to install. The following listing shows the file **sqlite.rkt** in the directory **Racket-AI-book/source-code/misc_code**:
 
 ```racket
-$ racket
-Welcome to Racket v8.10 [cs].
-> (require db)
-> (require sqlite-table)
-> (define db-file "test.db")
-> (define db (sqlite3-connect #:database db-file #:mode 'create))
-> (query-exec db
-     "create temporary table the_numbers (n integer, d varchar(20))")
-> (query-exec db
-     "create  table person (name varchar(30), age integer, email varchar(20))")
-> (query-exec db
-     "insert into person values ('Mary', 34, 'mary@test.com')")
-> (query-rows db "select * from person")
-'(#("Mary" 34 "mary@test.com"))
-> 
+#lang racket
+
+;;; sqlite.rkt — Using SQLite through Racket's built-in db library
+;;; Apache 2 License
+
+(require db)
+
+(provide open-person-db add-person! find-person update-person-age!)
+
+;; Open (creating if needed) a database and make sure the table exists.
+;; Pass 'memory for a throwaway in-memory database.
+(define (open-person-db [db-file "test.db"])
+  (define conn (sqlite3-connect #:database db-file #:mode 'create))
+  (query-exec conn
+              "create table if not exists person
+                 (name varchar(30) primary key, age integer, email varchar(40))")
+  conn)
+
+;; Always pass values as query parameters (the ? placeholders) and never
+;; build SQL by pasting strings together: parameters are escaped for you.
+(define (add-person! conn name age email)
+  (query-exec conn
+              "insert or replace into person values (?, ?, ?)"
+              name age email))
+
+;; query-maybe-row returns one row as a vector, or #f when nothing matches.
+(define (find-person conn name)
+  (query-maybe-row conn "select * from person where name = ?" name))
+
+(define (update-person-age! conn name new-age)
+  (query-exec conn "update person set age = ? where name = ?" new-age name))
+
+(module+ main
+  (define conn (open-person-db 'memory))
+  (add-person! conn "Mary" 34 "mary@test.com")
+  ;; A transaction: either both inserts happen or neither does.
+  (call-with-transaction
+   conn
+   (lambda ()
+     (add-person! conn "Carlos" 51 "carlos@test.com")
+     (add-person! conn "Ana" 28 "ana@test.com")))
+  (println (query-rows conn "select * from person order by name"))
+  (println (find-person conn "Mary"))
+  (update-person-age! conn "Mary" 35)
+  (println (find-person conn "Mary"))
+  (println (find-person conn "Nobody"))
+  (println (query-value conn "select count(*) from person"))
+  (disconnect conn))
+
+(module+ test
+  (require rackunit)
+  (define conn (open-person-db 'memory))
+  (add-person! conn "Mary" 34 "mary@test.com")
+  (check-equal? (find-person conn "Mary") (vector "Mary" 34 "mary@test.com"))
+  (update-person-age! conn "Mary" 35)
+  (check-equal? (vector-ref (find-person conn "Mary") 1) 35)
+  (check-false (find-person conn "Nobody"))
+  ;; a name containing a quote is safe because it is a parameter
+  (add-person! conn "O'Brien" 40 "ob@test.com")
+  (check-equal? (query-value conn "select count(*) from person") 2)
+  (disconnect conn))
 ```
 
-Here we see how to interact with a SQLite database using the **db** and **sqlite-table** libraries in Racket. The **sqlite3-connect** function is used to connect to the SQLite database specified by the string value of **db-file**. The **#:mode 'create** keyword argument indicates that a new database should be created if it doesn't already exist. The database connection object is bound to the identifier **db**. 
+The function **open-person-db** uses **sqlite3-connect** to open a database file. The **#:mode 'create** keyword argument creates the file if it does not exist, and the **create table if not exists** statement makes the function safe to call on a database that already has the table. Passing **'memory** instead of a file name gives a database that lives only in memory, which is what the example and the tests use.
 
-The **query-exec** function call is made to create a permanent table named **person** with three columns: **name** of type **varchar(30)**, **age** of type **integer**, and **email** of type **varchar(20)**. The next **query-exec** function call is made to insert a new row into the **person** table with the values 'Mary', 34, and 'mary@test.com'. There is a function **query** that we don't use here that returns the types of the columns returned by a query. We use the alternative function **query-rows** that only returns the query results with no type information.
+There are four things to notice in the rest of the code:
+
+- Values are passed as query parameters. Each question mark in the SQL text is replaced by the corresponding extra argument to **query-exec**. Never build SQL by pasting strings together, because a value containing a quote character, like the name O'Brien in the test, would break the statement or worse.
+- **query-exec** runs a statement that returns no rows, **query-rows** returns a list of rows with each row a vector, **query-maybe-row** returns one row or **#f**, and **query-value** returns a single value.
+- **call-with-transaction** runs a function inside a transaction. If the function raises an error then none of its changes are kept.
+- The **test** submodule at the end runs with **raco test sqlite.rkt**.
+
+Running the file prints:
+
+```
+$ racket sqlite.rkt
+'(#("Ana" 28 "ana@test.com")
+  #("Carlos" 51 "carlos@test.com")
+  #("Mary" 34 "mary@test.com"))
+'#("Mary" 34 "mary@test.com")
+'#("Mary" 35 "mary@test.com")
+#f
+3
+```
 
 The following diagram shows the high-level architecture of the datastore integrations developed in this chapter:
 
@@ -170,6 +310,6 @@ The following diagram shows the high-level architecture of the datastore integra
 
 ## Optional practice problems
 
-1. Extend the SQLite Example: modify the SQLite code to support updating an existing person's age or email, and writing a query function to retrieve a person by their name.
-2. Dynamic SPARQL Variable Handling: the `gd` function in `sparql.rkt` is limited to handling up to 4 return variables. Rewrite `gd` to support an arbitrary number of variables using a general list-zipping function.
-3. DBpedia Location Search: write a function `sparql-dbpedia-for-city` that queries DBpedia for a city's name (e.g., "Paris" or "Tokyo"), returning its URI, country, and population, using SPARQL query templates.
+1. Extend the SQLite example: add a function that deletes a person by name and a function that returns everyone older than a given age, both using query parameters. Add a test for each to the **test** submodule.
+2. Query WikiData: use **parameterize** to bind **\*sparql-endpoint\*** to `https://query.wikidata.org/sparql` and run a simple query such as `SELECT ?s ?p ?o { ?s ?p ?o } LIMIT 3`. WikiData asks clients to identify themselves, so you may need to add a `User-Agent` header next to the `Accept` header in **sparql-query->hash**.
+3. DBpedia location search: write a function `sparql-dbpedia-for-city` that queries DBpedia for a city's name (e.g., "Paris" or "Tokyo"), returning its URI, country, and population, using SPARQL query templates.

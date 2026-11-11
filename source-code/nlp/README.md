@@ -8,25 +8,20 @@ This project implements various NLP utilities in Racket, including Part-Of-Speec
 
 ![Generated image](architecture.png)
 
-## Install as a local package
+## Use from another program
+
+Other examples in this repository load the library with a relative path, which needs no install step:
+
+    (require "../nlp/main.rkt")
+
+You can also install it as a linked local package and then `(require nlp)` from anywhere:
 
     raco pkg install --scope user
 
-When you create a package with "--scope user" you are defining a link to the location of your Racket library source code. For example, after doing this install, look in the file:
-
-    ~/Library/Racket/8.10/links.rktd
-
-On macOS, you might see the following list added:
-
-    ("nlp" (up up up #"GITHUB" #"Racket-AI-book-code" #"nlp"))
-
 ## Run
 
-You can uncomment the test cases at the bottom of the file fasttag.rkt and then run:
-
     racket main.rkt
-    # Or to test the tagger directly:
-    racket fasttag.rkt
+    raco test tests.rkt     # offline tests for the tagger and name finders
 
 ## License and Copyright
 

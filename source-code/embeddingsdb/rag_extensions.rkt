@@ -32,10 +32,10 @@
 ;;;
 ;;; Dot product answers "how much do these vectors add up together", which
 ;;; depends on their lengths. Cosine similarity divides by both magnitudes,
-;;; so it measures only the angle between the vectors. OpenAI's
-;;; text-embedding-ada-002 returns unit-length vectors, so dot product and
-;;; cosine similarity give the same ranking there; with any other model you
-;;; should use cosine.
+;;; so it measures only the angle between the vectors. OpenAI's embedding
+;;; models return unit-length vectors, so dot product and cosine similarity
+;;; give the same ranking there; with a model that does not promise
+;;; unit-length vectors you should use cosine.
 
 (define (magnitude v)
   (sqrt (for/sum ([x v]) (* x x))))

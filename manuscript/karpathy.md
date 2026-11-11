@@ -457,6 +457,10 @@ sample 11: kalen
 sample 12: jorena
 ```
 
+On my laptop the whole run, 1000 training steps followed by generating the names, takes about 12 seconds. The loss starts near 3.3, which is what you expect from guessing uniformly among 27 tokens (the natural logarithm of 27 is about 3.3), and it ends at around 2. It bounces around from step to step because each step trains on a single name. Your names will differ from mine because the weights are initialized randomly.
+
+The directory also has a test file, **tests.rkt**, that checks the autograd engine by comparing each gradient that `back` computes with a numerical estimate. If you change one of the operations, or add a new one such as the GELU activation in the first practice problem, run **raco test tests.rkt** to check your derivative.
+
 
 The following diagram shows the high-level architecture of the MicroGPT Transformer model implemented in this chapter:
 
