@@ -1,4 +1,4 @@
-# Agentic RAG Using the Gemini API
+# Agentic RAG using the Gemini API
 
 Standard RAG systems, like the one we built in the earlier chapter on embeddings, do one thing: embed a question, retrieve a few text chunks, and hand them to an LLM to write an answer. That is fine for simple questions, but it falls apart when a question needs facts from several documents, or when the first retrieval misses part of the answer. In this chapter we build an **agentic RAG** system in Racket where four specialized agents cooperate: a query rewriter, a search fanout, a sufficiency checker, and an answer synthesizer. The design follows Google's research on agentic RAG.
 
@@ -50,7 +50,7 @@ The code is in the directory `Racket-AI-book/source-code/RAG` and is split into 
 
 Before we walk through the code, a note on configuration. The system uses one environment variable, `GOOGLE_API_KEY` (or `GEMINI_API_KEY`), and nothing else. All LLM contact goes through the uniform API in `source-code/llmapis/llmapis.rkt`: it calls `gemini-embedding-001` for embeddings and `gemini-3-flash-preview` for all generation. Model names are uniform `"provider/model"` addresses, so passing `#:model "openai/gpt-5-mini"` to any agent call switches providers with no other changes.
 
-## Embeddings and Vector Math
+## Embeddings and vector math
 
 The `embeddings.rkt` module handles all embedding contact through the uniform API in `source-code/llmapis/llmapis.rkt`. Documents are split into chunks of about 500 characters with 50 characters of overlap, each chunk is embedded once, and the vectors are kept in a hash table so repeated runs do not re-embed text. The cache is bounded by `*embedding-cache-cap*` and clears itself when full; this is deliberately simple, and a production system would use a proper LRU cache.
 
@@ -89,7 +89,7 @@ Chunk vectors are stored **normalized** (unit length), so scoring a query agains
        chunks))
 ```
 
-## The Vector Store
+## The vector store
 
 `vector-store.rkt` defines the data structures and the retrieval logic. Two structs hold state:
 
@@ -140,7 +140,7 @@ Corpora can be saved to disk and loaded back. `save-corpus` writes one s-express
 
 Retrieval scores every chunk in a corpus against a query embedding and returns the top *k* as `(score . chunk)` pairs sorted by descending score. `search-corpora` does the same across several corpora, which is what makes cross-corpus questions possible.
 
-## The Agents
+## The agents
 
 The interesting logic is in `agents.rkt`. Every LLM call goes through `rag-generate`, which applies the retry wrapper and signals an error if the model returns nothing. The model is stored in the parameter `*rag-model*` and can be overridden per call with a keyword argument.
 
@@ -158,7 +158,7 @@ Generation itself goes through the uniform API. The default `*generate-fn*` is `
       "No response"))
 ```
 
-### Agent 1: Query Rewriter
+### Agent 1: Query rewriter
 
 The rewriter asks Gemini to break the user's question into 1 to 3 short search queries. The prompt is strict: one query per line, no numbering, no bullets, under 15 words each. The raw response often comes back with markdown formatting, so `parse-query-lines` strips leading `-`, `*`, `+`, and numbered prefixes like `4. ` while preserving digits that are part of the query text itself (`2024 lithium prices` stays intact; `4. fourth query` loses its prefix).
 
@@ -183,7 +183,7 @@ The original question is always appended to the rewritten list as a fallback, so
   (remove-duplicates (append queries (list user-query))))
 ```
 
-### Agent 2: Search Fanout
+### Agent 2: Search fanout
 
 The fanout embeds every sub-query in one batched API call, searches all corpora with each embedding, and deduplicates the results by `(source . text)`. Keeping the source in the key matters: the same text in a different file is a different chunk and must not be collapsed. Results are sorted by descending score before being returned.
 
@@ -202,7 +202,7 @@ The fanout embeds every sub-query in one batched API call, searches all corpora 
   (sort all-results > #:key car))
 ```
 
-### Agent 3: Sufficient Context Agent
+### Agent 3: Sufficient context agent
 
 This agent separates agentic RAG from vanilla RAG. The prompt gives the model the question and every retrieved passage, and asks it to answer in exactly three lines: `VERDICT`, `REASON`, and `MISSING`. The parser is deliberately defensive. If the model forgets the format, we treat the context as sufficient. This bounds cost, because the only other safeguard is the iteration limit, and a wrong "insufficient" verdict wastes API calls without improving the answer.
 
@@ -225,11 +225,11 @@ This agent separates agentic RAG from vanilla RAG. The prompt gives the model th
      (values #t feedback)]))
 ```
 
-### Agent 4: Synthesis Agent
+### Agent 4: Synthesis agent
 
 The last agent writes the answer. The prompt is simple: use only the retrieved passages, cite the source file for each fact, and if the passages do not cover the question, say what is missing.
 
-### The Orchestrator
+### The orchestrator
 
 `agentic-rag` ties the four agents together. It runs the rewriter, then the fanout, then enters the sufficiency loop. On each iteration it assesses the current context; if sufficient, it synthesizes and returns. If not, it refines the queries using the feedback from the sufficiency agent, searches again, merges the new chunks with the old ones (deduplicating by `(source . text)`), and tries once more.
 
@@ -262,7 +262,7 @@ Two details matter. First, `max-iterations` bounds the loop, and at the last ite
              (sort accumulated > #:key car))))))
 ```
 
-## Running the Demo
+## Running the demo
 
 The demo in `main.rkt` builds three corpora from the sample texts in `data/` (renewable energy, electric vehicles, climate science), loads them, and asks three questions in order of difficulty. Load the module and call `(test)`:
 
@@ -356,7 +356,7 @@ Solid-state batteries and pumped-storage hydroelectricity play complementary rol
 
 This prints a `RAG>` prompt and answers questions until you type `quit`.
 
-## Testing Without the Network
+## Testing without the network
 
 Everything that talks to the outside world is behind a parameter. `*embedding-fn*` produces embedding vectors, `*batch-request-fn*` embeds one batch of texts through the uniform API, and `*generate-fn*` calls the LLM. In `tests.rkt` all three are replaced with stubs using `parameterize`, so the entire suite runs offline:
 
@@ -379,14 +379,14 @@ You should see:
 16 success(es) 0 failure(s) 0 error(s) 16 test(s) run
 ```
 
-## Wrap Up
+## Wrap up
 
 The agentic pipeline costs more API calls than vanilla RAG: one call to rewrite the query, at least one to assess sufficiency, and one more to synthesize. In exchange you get answers that hold together for multi-hop questions, with citations that point back to the source files. The iteration bound and the context cap keep the cost predictable even on hard questions.
 
-## Optional Practice Problems
+## Optional practice problems
 
-1. **Persist the cache**: `*embedding-cache*` lives in memory and is lost when the program exits. Change `get-embedding` so the cache is written to a file after each batch call and read back at startup. What happens to startup time for the demo?
+1. Persist the cache: `*embedding-cache*` lives in memory and is lost when the program exits. Change `get-embedding` so the cache is written to a file after each batch call and read back at startup. What happens to startup time for the demo?
 
-2. **Score-weighted context**: The synthesis agent receives chunks in descending score order but no scores. Modify `format-retrieved-chunks` and the synthesis prompt so each passage shows its relevance score, and experiment with instructing the model to prefer higher-scoring passages when they conflict.
+2. Score-weighted context: the synthesis agent receives chunks in descending score order but no scores. Modify `format-retrieved-chunks` and the synthesis prompt so each passage shows its relevance score, and experiment with instructing the model to prefer higher-scoring passages when they conflict.
 
-3. **Async fanout**: `search-fanout` searches each sub-query in turn. Use `racket/async-channel` or futures to search all sub-queries in parallel and measure the speedup on a corpus of a few hundred chunks.
+3. Async fanout: `search-fanout` searches each sub-query in turn. Use `racket/async-channel` or futures to search all sub-queries in parallel and measure the speedup on a corpus of a few hundred chunks.

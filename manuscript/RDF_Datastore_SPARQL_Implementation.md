@@ -1,4 +1,4 @@
-# Implementing a Simple RDF Datastore With Partial SPARQL Support in Racket
+# Implementing a simple RDF datastore with partial SPARQL support in Racket
 
 This chapter explains a Racket implementation of a simple RDF (Resource Description Framework) datastore with partial SPARQL (SPARQL Protocol and RDF Query Language) support. We'll cover the core RDF data structures, query parsing and execution, helper functions, and the main function with example queries. The file **rdf_sparql.rkt** can be found online at [https://github.com/mark-watson/Racket-AI-book/source-code/simple_RDF_SPARQL](https://github.com/mark-watson/Racket-AI-book/tree/main/source-code/simple_RDF_SPARQL).
 
@@ -88,11 +88,11 @@ Look at the first query output for a moment, because it contains the single most
 The file doubles as a library. The `(module+ main ...)` wrapper at the bottom runs the demo only when you execute `racket rdf_sparql.rkt` directly; when another module **require**s the file, only the definitions load. That is what lets the extensions and test suite later in this chapter reuse the engine without copying it.
 
 
-## 1. Core RDF Data Structures and Basic Operations
+## 1. Core RDF data structures and basic operations
 
 There are two parts to this example in file **rdf_sparql.rkt**: a simple unindexed RDF datastore and a partial SPARQL query implementation that supports compound where clause matches like: **select * where { ?name age ?age . ?name likes pizza }**.
 
-### 1.1 RDF Triple Structure
+### 1.1 RDF triple structure
 
 The foundation of our RDF datastore is the `triple` structure:
 
@@ -102,7 +102,7 @@ The foundation of our RDF datastore is the `triple` structure:
 
 This structure represents an RDF triple, consisting of a subject, predicate, and object. The `#:transparent` keyword makes the structure's fields accessible for easier debugging and printing.
 
-### 1.2 RDF Datastore
+### 1.2 RDF datastore
 
 The RDF datastore is implemented as a simple list:
 
@@ -110,7 +110,7 @@ The RDF datastore is implemented as a simple list:
 (define rdf-store '())
 ```
 
-### 1.3 Basic Operations
+### 1.3 basic operations
 
 Two fundamental operations are defined for the datastore:
 
@@ -133,9 +133,9 @@ Two fundamental operations are defined for the datastore:
                 rdf-store)))
 ```
 
-## 2. Query Parsing and Execution
+## 2. Query parsing and execution
 
-### 2.1 SPARQL Query Structure
+### 2.1 SPARQL query structure
 
 A simple SPARQL query is represented by the `sparql-query` structure:
 
@@ -143,7 +143,7 @@ A simple SPARQL query is represented by the `sparql-query` structure:
 (struct sparql-query (select-vars where-patterns) #:transparent)
 ```
 
-### 2.2 Query Parsing
+### 2.2 query parsing
 
 First, we need to split the query string into tokens, ignoring the curly braces `{` and `}`. We define a helper `split-string`:
 
@@ -192,7 +192,7 @@ The main `parse-sparql-query` function takes a query string and converts it into
   (sparql-query select-vars where-patterns))
 ```
 
-### 2.3 Query Execution
+### 2.3 query execution
 
 Query execution works recursively. `execute-where-patterns` initiates execution by finding bindings for the first pattern in the `WHERE` clause. Subsequent patterns are matched using `execute-where-patterns-with-bindings`, combining existing variable bindings with new ones:
 
@@ -245,7 +245,7 @@ The main query execution function is `execute-sparql-query`:
 
 This function parses the query, executes the WHERE patterns, and projects the results based on the SELECT variables.
 
-## 3. Helper Functions and Utilities
+## 3. Helper functions and utilities
 
 Several helper functions are implemented to support query execution:
 
@@ -315,7 +315,7 @@ Several helper functions are implemented to support query execution:
   (printf "\n"))
 ```
 
-## 4. How a Join Actually Runs, Step by Step
+## 4. How a join actually runs, step by step
 
 The query engine deserves one slow walk-through, because the two functions `execute-where-patterns` and `execute-where-patterns-with-bindings` are the whole engine, and everything else is plumbing. Take this query against the demo data:
 
@@ -343,7 +343,7 @@ The shape to notice is the classic generate-and-test loop written functionally. 
 
 This is also why the engine is a teaching tool rather than a database. Every pattern match is a full scan of `rdf-store`, so a query with three patterns over a million triples scans three million triples. A production triple store indexes on subject, predicate, and object so a bound pattern like `("John" "likes" "pizza")` is a single hash lookup. The join algorithm would be identical; only the index changes.
 
-### The Library Interface
+### The library interface
 
 The `provide` block at the top of **rdf_sparql.rkt** exports the full engine so other modules can build on it:
 
@@ -370,7 +370,7 @@ The `provide` block at the top of **rdf_sparql.rkt** exports the full engine so 
 
 The rest of this chapter uses exactly these exports, nothing more, which is a good sign that the interface is complete.
 
-## 5. Saving and Loading Triples: N-Triples Persistence
+## 5. Saving and Loading triples: N-triples persistence
 
 An in-memory store forgets everything when the process exits. The file **rdf_extended.rkt**, also in the **simple_RDF_SPARQL** directory, fixes that with the simplest serialization RDF has: N-Triples, one triple per line, subject and predicate and object separated by spaces, each line ending with a period. A line of our store on disk looks like:
 
@@ -448,7 +448,7 @@ The extended module requires the original engine and builds on it:
 
 The writer is three lines: format each triple, join with newlines, and write. The reader is the part worth reading slowly. The regexp captures three quoted strings, and anything that does not match returns `#f`, which `load-store` skips. Blank lines and trailing junk therefore never crash a load; worst case they are silently ignored, which is what you want when a file has been hand-edited.
 
-### A Larger Demo Dataset
+### A larger demo dataset
 
 Six triples cannot show off joins, so **rdf_extended.rkt** defines a small knowledge graph of five people, their ages, foods they like, and a `knows` relation among them:
 
@@ -498,7 +498,7 @@ Query: people and the foods liked by someone they know
 
 Each row is a path of length two through the graph. Adding a third pattern such as `?friend age ?age` would extend every row again, and rows whose friend has no age triple would drop out. Multi-hop path queries in SQL need self-joins with aliases; here they are one line.
 
-## 6. Adding FILTER to the Engine
+## 6. Adding FILTER to the engine
 
 Real SPARQL puts `FILTER(?age > 30)` inside the `WHERE` clause. Our parser splits patterns on periods and would choke on that syntax, so **rdf_extended.rkt** takes a simpler route that keeps the engine untouched: run the query as usual, then filter the resulting binding lists with an ordinary Racket predicate:
 
@@ -578,7 +578,7 @@ Query after reload: everyone who likes sushi
 
 The filtered query keeps only Alice (age 41) and Bob (age 35) from the six friend rows. The persistence round trip proves the reload by re-asking a question whose answer survives an empty store only if the load worked.
 
-## 7. Testing the Engine
+## 7. Testing the engine
 
 The query engine is pure functions over a global list, which makes it easy to test thoroughly. The file **tests.rkt** in the same directory uses the built-in **rackunit** library and exercises each layer: store mutation, the tokenizer, single-pattern matches, joins, binding helpers, persistence, and filters:
 
@@ -774,11 +774,11 @@ The following diagram shows the high-level architecture of the RDF datastore and
 
 This implementation provides a basic framework for an RDF datastore with partial SPARQL support in Racket. While it lacks many features of a full-fledged RDF database and SPARQL engine, it demonstrates the core concepts: triples as a universal data shape, pattern matching as query, shared variables as joins, and N-Triples as a human-readable file format. The extended module adds persistence and result filtering, and the test suite pins the contracts that make the engine safe to build on. From here, every missing feature, such as indexes, `OPTIONAL`, `UNION`, or remote endpoints, is an increment, not a rewrite.
 
-## Optional Practice Problems
+## Optional practice problems
 
-1. **Index the Store**: Replace the `rdf-store` list scan in `query-triples` with three hash tables indexed by subject, predicate, and object. When a pattern has a bound subject, predicate, or object, use the corresponding index instead of scanning. Time `select * where { ?name age ?age . ?name likes ?food }` over 100,000 generated triples before and after your change.
-2. **Parse FILTER Inside WHERE**: Extend `parse-sparql-query` so a pattern list can end with the tokens `FILTER ( ?age > 30 )`, and extend the execution loop to apply the comparison at that point. This is the version of filtering that prunes rows early instead of after projection.
-3. **Support for UNION Queries**: Modify `execute-where-patterns` to handle basic `UNION` blocks, allowing a query to match one of multiple sub-patterns and merge their resulting bindings.
-4. **DISTINCT and ORDER BY**: Add support for `select distinct ?name ...` and a trailing `order by ?age`, so `select distinct ?food where { ?who likes ?food } order by ?food` lists each food once, sorted.
-5. **Typed Literals**: Our N-Triples writer stores `"30"` as a string, so age comparisons must call `string->number` on every row. Extend the store to keep a typed value alongside each object (integer, string), read and write real N-Triples typed literals like `"30"^^<http://www.w3.org/2001/XMLSchema#integer>`, and make `comparison->predicate` skip the conversion for integer-typed values.
-6. **A mini Wikidata**: Download a small N-Triples extract from a public source (or export one from a SPARQL endpoint), load it with `load-store`, and write three interesting queries against it. Which parts of the loaded data did our limited parser have to discard, and why?
+1. Index the Store: replace the `rdf-store` list scan in `query-triples` with three hash tables indexed by subject, predicate, and object. When a pattern has a bound subject, predicate, or object, use the corresponding index instead of scanning. Time `select * where { ?name age ?age . ?name likes ?food }` over 100,000 generated triples before and after your change.
+2. Parse FILTER Inside WHERE: extend `parse-sparql-query` so a pattern list can end with the tokens `FILTER ( ?age > 30 )`, and extend the execution loop to apply the comparison at that point. This is the version of filtering that prunes rows early instead of after projection.
+3. Support for UNION Queries: modify `execute-where-patterns` to handle basic `UNION` blocks, allowing a query to match one of multiple sub-patterns and merge their resulting bindings.
+4. DISTINCT and ORDER BY: add support for `select distinct ?name ...` and a trailing `order by ?age`, so `select distinct ?food where { ?who likes ?food } order by ?food` lists each food once, sorted.
+5. Typed Literals: our N-Triples writer stores `"30"` as a string, so age comparisons must call `string->number` on every row. Extend the store to keep a typed value alongside each object (integer, string), read and write real N-Triples typed literals like `"30"^^<http://www.w3.org/2001/XMLSchema#integer>`, and make `comparison->predicate` skip the conversion for integer-typed values.
+6. A mini Wikidata: download a small N-Triples extract from a public source (or export one from a SPARQL endpoint), load it with `load-store`, and write three interesting queries against it. Which parts of the loaded data did our limited parser have to discard, and why?

@@ -1,4 +1,4 @@
-# Natural Language Processing
+# Natural language processing
 
 I have a Natural Language Processing (NLP) library that I wrote in Common Lisp. Here we will use code that I wrote in pure Scheme and converted to Racket.
 
@@ -174,13 +174,13 @@ Initial data preparation consists of defining the hash tables `*last-name-hash*`
 
 We define two Named Entity Recognition (NER) functions:
 
-1. **`find-human-names`**: Takes a word vector and an exclusion list.
+1. `find-human-names`: takes a word vector and an exclusion list.
    - Utilizes parts-of-speech tags.
    - Checks for names that have 1 to 4 words.
    - Adds names to `ret` list if conditions are met, considering the exclusion list.
    - Returns processed names (`ret2`).
 
-2. **`find-place-names`**: Similar to `find-human-names`, but specifically for place names.
+2. `find-place-names`: similar to `find-human-names`, but specifically for place names.
    - Works on 1 to 3 word place names.
    - Returns processed place names.
 
@@ -484,15 +484,15 @@ The following diagram shows the high-level architecture of the NLP library devel
 {width: "100%"}
 ![Architecture diagram](images/nlp_architecture.jpg)
 
-## NLP Wrap Up
+## NLP wrap up
 
 The NLP library is still a work in progress so please check for updates to this *live eBook* and the GitHub repository for this book:
 
 [https://github.com/mark-watson/Racket-AI-book/source-code](https://github.com/mark-watson/Racket-AI-book/source-code)
 
-## Optional Practice Problems
+## Optional practice problems
 
-1. **Dynamic Lexicon Updates**: The Part-of-Speech tagger loads its word lexicon from static files. Implement a function `add-to-lexicon!` that allows developers to dynamically register new words and their corresponding tags at runtime without modifying the source data files.
-2. **Enhance Named Entity Recognition (NER)**: Heuristics in `names.rkt` extract sequences of proper nouns (`NNP`). Extend these rules to correctly handle titles (e.g., "Dr.", "Professor") and middle initials (e.g., "George W. Bush") when extracting complete names.
-3. **Sentence Tokenizer**: Implement a sentence tokenizer function that segments paragraphs into individual sentences. Make sure it correctly distinguishes between sentence-ending punctuation and abbreviations such as "e.g.", "i.e.", or "Ms.".
+1. Dynamic Lexicon Updates: the Part-of-Speech tagger loads its word lexicon from static files. Implement a function `add-to-lexicon!` that allows developers to dynamically register new words and their corresponding tags at runtime without modifying the source data files.
+2. Enhance Named Entity Recognition (NER): heuristics in `names.rkt` extract sequences of proper nouns (`NNP`). Extend these rules to correctly handle titles (e.g., "Dr.", "Professor") and middle initials (e.g., "George W. Bush") when extracting complete names.
+3. Sentence Tokenizer: implement a sentence tokenizer function that segments paragraphs into individual sentences. Make sure it correctly distinguishes between sentence-ending punctuation and abbreviations such as "e.g.", "i.e.", or "Ms.".
 

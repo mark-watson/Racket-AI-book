@@ -1,4 +1,4 @@
-# Ollama Tools/Function Calling in Racket
+# Ollama Tools/Function calling in Racket
 
 One of the most powerful features of modern LLMs is their ability to call external functions (tools) during a conversation. This allows the model to perform actions beyond just generating text: it can fetch live data, interact with files, call APIs, and more.
 
@@ -9,22 +9,22 @@ The examples for this chapter are in the directory **Racket-AI-book/source-code/
 The library talks to Ollama through its OpenAI-compatible `/v1/chat/completions` route using the uniform API in `source-code/llmapis/llmapis.rkt`. The registry, handlers, and schemas below are unchanged; only the transport moved.
 
 
-## How Tool Calling Works
+## How tool calling works
 
 The flow is:
 
-1. **You define tools**: functions with JSON schemas describing their parameters
-2. **Send request to Ollama**: include the tool definitions and user prompt
-3. **Model decides**: if it needs a tool, it returns a `tool_calls` array
-4. **You execute the tool**: call your Racket function with the arguments
-5. **Return result**: add the tool result to the message history
-6. **Model responds**: uses the tool output to generate its final answer
+1. You define tools: functions with JSON schemas describing their parameters
+2. Send request to Ollama: include the tool definitions and user prompt
+3. Model decides: if it needs a tool, it returns a `tool_calls` array
+4. You execute the tool: call your Racket function with the arguments
+5. Return result: add the tool result to the message history
+6. Model responds: uses the tool output to generate its final answer
 
 This creates a conversation loop where the LLM can request information it doesn't have intrinsically from its training data.
 
 Your program, not the model, runs every function. The model only emits structured JSON that names a function and its arguments. This separation matters for two reasons. First, it keeps you in control of what the model can do: a tool is just a Racket function you wrote, so it can be audited, tested, and sandboxed like any other code. Second, it means the model never blocks on I/O. It asks for data, your code fetches it, and the conversation continues.
 
-### What the Wire Format Looks Like
+### What the wire format looks like
 
 It helps to see the actual JSON that travels between your program and Ollama. When you send a prompt with tools available, the request body looks like this (shortened for clarity):
 
@@ -86,7 +86,7 @@ The second request includes the full history, so the model sees both its own req
 
 Some models can emit several tool calls in one response. The library here processes each call in the `tool_calls` array and appends one tool message per call, so multi-call responses work without extra code on your side.
 
-## A Racket Tools Library
+## A Racket tools library
 
 The following code defines a reusable library for Ollama tool calling. It provides:
 
@@ -393,7 +393,7 @@ This tool use implementation relies on a central registry, **available-tools** w
 
 A key technical highlight is how little transport code this needs. `call-ollama-with-tools` adapts registry tools with `registry->llm-tools` and hands the loop to the uniform API's `llm-chat-with-tools`, which sends the OpenAI-compatible request, executes returned tool calls with real Racket functions, and feeds results back for up to ten rounds. Registry handlers already take one args hash, which is exactly the uniform tool convention, so no handler code changed at all. This structure allows developers to expand the LLM's capabilities indefinitely by simply registering new Racket functions to the registry.
 
-## Complete Example Using the Tools Library and Example Tools
+## Complete example using the tools library and example tools
 
 Here we use the example tool that we previously saw implemented in the file **tools.rkt**.
 
@@ -568,14 +568,14 @@ The following diagram shows the high-level architecture of the Ollama tool-calli
 {width: "100%"}
 ![Architecture diagram](images/Ollama_Tools_architecture.jpg)
 
-## Writing Your Own Tools
+## Writing your own tools
 
 The built-in tools in **tools.rkt** are a starting point. Real applications need tools that match their own domain, and the registry makes adding them simple: write a Racket function that takes a hash of arguments and returns a string, describe it with a JSON schema, and call `register-tool`.
 
 The file **custom-tools.rkt** in the **ollama_tools** directory implements three more tools that each teach a different design point:
 
-- **calculate**: a safe arithmetic evaluator
-- **fetch_url**: fetches a web page and returns a short plain-text excerpt
+- calculate: a safe arithmetic evaluator
+- fetch_url: fetches a web page and returns a short plain-text excerpt
 - **save_note**, **list_notes**, **clear_notes**: a persistent scratchpad that gives the model memory across runs
 
 Here is the complete file:
@@ -839,7 +839,7 @@ Here is the complete file:
 |#
 ```
 
-### Why the Calculator Parses Instead of Evaluating
+### Why the calculator parses instead of evaluating
 
 The most important line in the calculator is the one that is not there: there is no call to `eval` or `read`. It is tempting to implement a calculator by wrapping the model's expression in parentheses and calling `eval`, but that would let the model run any Racket code, including code that deletes files or forks processes. The model does not mean harm, but it is a text predictor, and users will paste hostile or malformed input into your prompts.
 
@@ -847,13 +847,13 @@ Instead, `eval-arithmetic` uses a tokenizer that only recognizes digits and arit
 
 Operator precedence falls out of the grammar for free. Expressions like `2 + 3 * 4` parse as `2 + (3 * 4)` because `parse-expression` only accepts `+` and `-`, and delegates everything else down to `parse-term`, which accepts the tighter-binding operators first.
 
-### The Scratchpad: Giving the Model Memory
+### The scratchpad: Giving the model memory
 
 The notes tools show how little code it takes to give an LLM durable memory. Every saved note is one JSON object on its own line appended to `notes.jsonl`, a format called JSON Lines. Appending a line never requires reading or rewriting the existing file, and because each line is a self-contained JSON object, the file survives a crash mid-write with only the last line damaged.
 
 Notice how `register-custom-tools` registers three related tools that share one file. Models are good at picking the right tool from a family when the descriptions are crisp. "Save a short note", "List all notes", and "Delete all notes" give the model everything it needs to choose.
 
-### Running the Custom Tools
+### Running the custom tools
 
 Here is an interactive session with the custom tools. The model used here is `qwen3.5:4b`:
 
@@ -895,7 +895,7 @@ concepts and creating new domain-specific languages.
 
 Keep two things in mind when you try this yourself. First, smaller models sometimes answer from memory instead of calling the tool, especially for questions that look like general knowledge. Phrasing the prompt to name the action you want ("fetch this URL", "save a note") steers the model toward the tool. Second, tool-calling only works with models trained for it. If your selected model ignores tools entirely, check the model's page on ollama.com for the **tools** tag.
 
-## Testing Tools Without a Running Ollama Server
+## Testing tools without a running Ollama server
 
 Tool handlers are ordinary functions, and `handle-tool-call` is exported from **tools.rkt**, so you can test the whole dispatch path with no LLM and no network. The file **tests.rkt** uses the built-in **rackunit** library:
 
@@ -1050,7 +1050,7 @@ Giving an LLM the ability to run functions on your machine is powerful and genui
 
 **Return errors as data.** Every handler in this chapter wraps its body in `with-handlers`. An error string lets the model see what went wrong and often recover on its own, for example by retrying a Wikipedia search with a simpler query.
 
-## Design Tips for Your Own Tools
+## Design tips for your own tools
 
 A few lessons from building and testing these examples:
 
@@ -1064,21 +1064,21 @@ A few lessons from building and testing these examples:
 
 Tool calling transforms LLMs from passive text generators into active agents that can:
 
-- **Access live data**: weather, news, stock prices
-- **Interact with the system**: read/write files, run commands
-- **Call external APIs**: databases, web services
-- **Chain operations**: multiple tools in sequence
+- Access live data: weather, news, stock prices
+- Interact with the system: read/write files, run commands
+- Call external APIs: databases, web services
+- Chain operations: multiple tools in sequence
 
 In this chapter we built a small but complete framework: a tool registry, a dispatch loop that speaks the OpenAI-compatible tool-calling protocol through the uniform `llmapis.rkt` API, five built-in tools, five custom tools including a safe arithmetic parser and a persistent scratchpad, and a test suite that runs without a server. The same structure scales to real applications, whether the tools query a database, drive a home automation system, or call a cloud API.
 
 This is foundational for building AI agents and assistants. In the next chapter on agents, we'll see how tools enable more complex autonomous behavior.
 
-## Optional Practice Problems
+## Optional practice problems
 
-1. **Add a Unit Conversion Tool**: Register a tool named `convert_units` that takes a numeric value, a source unit, and a target unit (e.g., fahrenheit to celsius, miles to kilometers) and returns the converted value. Write rackunit tests for every unit pair you support before trying the tool with a live model.
-2. **Structured Error Messages**: Extend `handle-tool-call` so the tool message it returns distinguishes between "unknown tool", "missing required argument", and "handler raised an exception". Test all three cases by constructing `tool_call` hashes by hand, as `tests.rkt` does.
-3. **Schema Validation**: Write a Racket function to validate the tool arguments received from the LLM against the parameters' JSON schema defined in `register-tool` before executing the tool's handler. Return a schema error response to the LLM if validation fails.
-4. **Streaming Tool Calls**: The uniform API waits for complete responses, but Ollama can also stream partial responses. Write a variant transport that posts to the OpenAI-compatible `/v1/chat/completions` route with streaming enabled using `net/http-easy`, reusing the registry and `handle-tool-call` for everything else, and prints the final answer token by token (tip: only stream the last round, after all tool calls are done), reading the newline-delimited JSON response with `read-line` on the response port.
-5. **A Conversation REPL**: `call-ollama-with-tools` starts a fresh message list on every call, so the model remembers nothing between prompts. Refactor it to accept and return a message history, then build a REPL on top that supports multi-turn conversation with tools. You can reuse the JSON Lines trick from the notes scratchpad to persist conversations between sessions.
-6. **Defensive Fetching**: `fetch_url` will fetch any URL the model asks for, including addresses on your local network. Add a check that rejects URLs whose host is `localhost`, a loopback address, or a private network range, and test it with hand-built argument hashes.
+1. Add a Unit Conversion Tool: register a tool named `convert_units` that takes a numeric value, a source unit, and a target unit (e.g., fahrenheit to celsius, miles to kilometers) and returns the converted value. Write rackunit tests for every unit pair you support before trying the tool with a live model.
+2. Structured Error Messages: extend `handle-tool-call` so the tool message it returns distinguishes between "unknown tool", "missing required argument", and "handler raised an exception". Test all three cases by constructing `tool_call` hashes by hand, as `tests.rkt` does.
+3. Schema Validation: write a Racket function to validate the tool arguments received from the LLM against the parameters' JSON schema defined in `register-tool` before executing the tool's handler. Return a schema error response to the LLM if validation fails.
+4. Streaming Tool Calls: the uniform API waits for complete responses, but Ollama can also stream partial responses. Write a variant transport that posts to the OpenAI-compatible `/v1/chat/completions` route with streaming enabled using `net/http-easy`, reusing the registry and `handle-tool-call` for everything else, and prints the final answer token by token (tip: only stream the last round, after all tool calls are done), reading the newline-delimited JSON response with `read-line` on the response port.
+5. A Conversation REPL: `call-ollama-with-tools` starts a fresh message list on every call, so the model remembers nothing between prompts. Refactor it to accept and return a message history, then build a REPL on top that supports multi-turn conversation with tools. You can reuse the JSON Lines trick from the notes scratchpad to persist conversations between sessions.
+6. Defensive Fetching: `fetch_url` will fetch any URL the model asks for, including addresses on your local network. Add a check that rejects URLs whose host is `localhost`, a loopback address, or a private network range, and test it with hand-built argument hashes.
 

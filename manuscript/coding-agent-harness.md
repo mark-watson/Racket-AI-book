@@ -1,8 +1,8 @@
-# A Racket Coding Agent
+# A Racket coding agent
 
 The source code for this example is in the directory **coding-agent-harness**.
 
-## The Agentic Loop
+## The agentic loop
 
 Modern large language models are not limited to answering questions in a single turn. When given access to *tools* (i.e., callable functions that can read files, run commands, or search the web) an LLM can operate as an autonomous agent: it reasons about what it needs to know, calls a tool to gather information, receives the result, and continues reasoning until the task is complete. This pattern is called an **agentic loop**.
 
@@ -19,7 +19,7 @@ The key architectural insight is that the LLM is stateless between API calls. It
 
 This chapter builds a complete Racket implementation of such a coding agent. The agent classifies each user request as a coding task, a general question, or a hybrid, and routes it accordingly. It supports live web search via Brave or Exa AI, renders colored unified diffs before any file is written, and gates every accepted edit on `make check`. Model access is configurable: named provider profiles in a JSON config file select the endpoint, the model, the generation parameters, and the pricing, so the same loop runs against either a cloud provider such as Fireworks AI or a local MLX server. The same program also works as a Unix-style command that runs a single prompt and exits, while the interactive REPL adds readline editing, persistent history, and Tab completion.
 
-## Module Architecture
+## Module architecture
 
 The project is organized into nine source files, each with a single clear responsibility:
 
@@ -39,7 +39,7 @@ The dependency graph is acyclic and close to linear. `harness-config.rkt` reads 
 
 The one place where a static `require` is not enough is `line-input.rkt`. Racket's `readline` collection raises at instantiation time when no Editline or GNU Readline shared library is installed, so an unconditional `require` would take the whole harness down on machines without one. The module loads `readline/readline` with `dynamic-require` inside an exception handler instead, so a missing library degrades to a plain `read-line` rather than a startup failure. That is also why the `Makefile` builds the standalone executable with `++lib readline/readline`: the flag embeds the module for `raco exe` while leaving it uninstantiated until the REPL actually needs it.
 
-## The Provider-Agnostic Agentic Loop
+## The provider-agnostic agentic loop
 
 The heart of the agent is a loop that is deliberately independent of any particular model vendor. It lives in `chat-loop.rkt` and is parameterized by a `post-fn` argument: a function that takes an OpenAI-style chat-completions payload and returns a normalized response hash. Both the Fireworks client and the MLX client supply their own `post-fn`, and the loop never talks to a network directly.
 
@@ -226,9 +226,9 @@ There are two edge cases worth noting. The first is a model that emits *both* te
 
 The `without-dangling` helper trims a trailing assistant message whose `tool_calls` have no matching `tool` results, the state a history lands in if a run is cut short. The current loop never calls it, but it is the repair to reach for if you add a path that can abandon a turn mid-flight.
 
-## The Fireworks AI Client
+## The Fireworks AI client
 
-### The API and Pricing
+### The API and pricing
 
 Fireworks AI is a hosted inference platform that serves many open-weight models through an OpenAI-compatible API. The agent does not compile in an endpoint, a model, or a price. All of those come from the active provider profile in the harness config, which is covered later in this chapter. The example profile used in this chapter declares DeepSeek Flash (`accounts/fireworks/models/deepseek-v4p1-flash`) at $0.14 per million uncached input tokens, $0.028 per million cached input tokens (an 80 percent cache discount), and $0.28 per million output tokens.
 
@@ -240,7 +240,7 @@ The estimated session cost accumulated over a conversation is:
 
 where `p` is the total prompt tokens, `k` is the cached portion of those prompt tokens (billed at the discount), and `c` is the total completion tokens. The agent tracks all of these and displays the running total on demand. The rates themselves are read from the profile's `pricing` block, so a different profile can declare different numbers; a profile that declares no pricing at all reports the cost as unknown rather than pretending it is free.
 
-### Streaming with Server-Sent Events
+### Streaming with server-sent Events
 
 Unlike the plain one-shot `chat`, the Fireworks client streams its responses using **server-sent events (SSE)**. The API sends a sequence of `data:` lines, each carrying a small *delta* of the response, terminated by a `data: [DONE]` line. Streaming removes any wall-clock cap on generation time, at the cost of reassembling the response on the client side. The only timeouts are `CURL-MAX-TIME` (seconds to wait for response headers and the TCP connection) and `STREAM-IDLE-TIMEOUT` (seconds of *silence* from the server before giving up). As long as tokens keep flowing, a request may run for minutes.
 
@@ -674,7 +674,7 @@ Here is the complete file:
                     #:max-iterations max-iterations))
 ```
 
-### Reassembling the SSE Stream
+### Reassembling the SSE stream
 
 The SSE stream is a sequence of lines like:
 
@@ -695,11 +695,11 @@ data: [DONE]
 
 The output is a single normalized response hash with the same shape the non-streaming MLX backend produces, so `chat-loop.rkt` never knows which backend it is talking to.
 
-### Token Accounting and Cost
+### Token accounting and cost
 
 Because Fireworks is a paid service, the module tracks usage. The session counters live in boxes guarded by a semaphore, the same defensive pattern used for shared mutable state elsewhere in the harness. Cached input tokens are reported by Fireworks in `usage.prompt_tokens_details.cached_tokens`; they are part of `prompt_tokens` but are billed at the discounted rate. The `session-cost` function subtracts them from the uncached pool and bills them separately, and it returns `#f` when the active profile declares no rates at all. The `/tokens` command prints the breakdown, including the cached-token percentage.
 
-## The MLX Client
+## The MLX client
 
 The MLX backend, `mlx-serve.rkt`, mirrors the Fireworks interface so that the agent loop and the REPL can swap providers with a single parameter. It targets `mlx_lm.server`, which exposes the OpenAI-compatible `/v1/chat/completions` route. That protocol already returns exactly the shape `chat-loop.rkt` consumes, namely `choices[].message` with optional `tool_calls` and `usage.prompt_tokens` / `completion_tokens`, so unlike Ollama's native `/api/chat` there is no message re-shaping at the boundary: the module forwards the OpenAI payload as it is and returns the response unchanged.
 
@@ -879,7 +879,7 @@ Here is the complete file:
                     #:max-iterations max-iterations))
 ```
 
-### No Conversion Functions Needed
+### No conversion functions needed
 
 Because `mlx_lm.server` speaks the OpenAI-compatible protocol end to end, `mlx-serve.rkt` needs no boundary conversion functions. Outgoing messages and incoming responses already carry tool-call `arguments` as JSON strings and token counts as `prompt_tokens` / `completion_tokens`, exactly the shape the shared loop expects.
 
@@ -887,7 +887,7 @@ The module keeps one parameter, `mlx-active-provider`, which holds the provider 
 
 Because local inference is free, the cost display is always `$0`. The stats are informational only.
 
-## Hierarchical Provider Configuration
+## Hierarchical provider configuration
 
 Earlier versions of this harness selected a provider with a single environment variable. This version moves every provider-specific value into configuration, in the rough style of the Pi coding harness. Two JSON layers are merged at startup, and the project-local file wins over the global one:
 
@@ -1126,7 +1126,7 @@ Here is the complete module:
   (displayln (format "Active:       ~a" (or (config-active-provider-name) "(defaults)"))))
 ```
 
-### Merging the Two Layers
+### Merging the two layers
 
 `load-harness-config` reads both files, deep-merges them, and stores the result in the `harness-config` parameter. `deep-merge` recurses into nested hashes so a local file can override a single field, such as a model id, without restating the whole provider; anything that is not a hash, such as a string, a number, or a list, is replaced wholesale by the local value. A missing or malformed file is treated as an empty hash, so the harness starts with whatever configuration is actually present.
 
@@ -1134,9 +1134,9 @@ The active provider is a name kept in a box. On first use, `config-active-provid
 
 The accessors near the bottom of the file, `provider-endpoint`, `provider-model`, `provider-api-key-env`, `provider-generation`, and `provider-pricing`, are deliberately tolerant: each returns `#f` or an empty hash when the field is absent, and the caller decides whether that is fatal. The two clients treat a missing endpoint or model as an error, so a half-written profile produces a clear message instead of a request sent to `#f`. `pricing-ref` and `generation-ref` accept either a symbol or a string key, because `read-json` returns JSON object keys as symbols while a hand-written config might use strings.
 
-## The Tool Registry
+## The tool registry
 
-### Defining and Rendering Tools
+### Defining and rendering tools
 
 `tools.rkt` maintains a central hash table of all registered tools. Here is the complete file:
 
@@ -1491,7 +1491,7 @@ The accessors near the bottom of the file, `provider-endpoint`, `provider-model`
 
 Each tool is stored as a hash with its name, description, parameter list, and handler function. `render-tools` converts the registry entries into OpenAI function-calling schema format: a list of hashes the API understands as callable functions. The model receives these alongside the conversation and decides which, if any, to invoke.
 
-### Tool Dispatch
+### Tool dispatch
 
 `execute-tool-calls` receives the list of tool call objects from the API response and dispatches each one:
 
@@ -1541,7 +1541,7 @@ Each tool is stored as a hash with its name, description, parameter list, and ha
 
 Each call prints its name and a truncated copy of its arguments unless quiet mode is on, so the user can watch what the model is doing. These error branches matter more than they look. A weak model can truncate a tool call mid-generation, which leaves the function name empty; it can emit arguments that are not valid JSON; or it can emit valid JSON that is not an object. Each of those cases becomes an explanatory string that goes back to the model as the tool result. A raised exception inside a handler is caught the same way. The loop therefore keeps running and the model gets a chance to correct itself, rather than the whole session dying on one malformed call.
 
-### The Five Coding Tools
+### The five coding tools
 
 The agent registers five tools at startup:
 
@@ -1606,7 +1606,7 @@ Do not let the short list suggest that the model can wander the filesystem. `rea
 
 If the model attempts a disallowed command, or names a file the agent considers internal, it receives an error string describing what is allowed. It can then adapt its approach rather than causing the agent to crash. The whitelist currently allows `make`, `ls`, `pwd`, `cat`, and `uv` (the Python package runner). Everything else is refused.
 
-### The `propose_edit` Approval Gate
+### The `propose_edit` approval gate
 
 `propose_edit` is the most critical tool. Before writing any file it checks for several error conditions, shows the user a diff, waits for approval or applies the change automatically, and then runs `make check`:
 
@@ -1672,9 +1672,9 @@ The three application paths share the same write and check code. `--dry-run` sto
 
 The `make check` gate closes another important feedback loop. If the edit compiles cleanly, `"applied; make check passed"` goes back into the conversation history and the model can proceed. If `make check` fails, the output goes back as well, giving the model the compiler errors it needs to self-correct on the next turn. The output is truncated to `MAX-CHECK-OUTPUT-CHARS` characters so a huge build log does not blow up the context window.
 
-## The Approval and Diff System
+## The approval and diff system
 
-### Generating a Unified Diff
+### Generating a unified diff
 
 `approval.rkt` generates diffs by writing the two file versions to temporary files and calling the system `diff -u` utility. Here is the full source file:
 
@@ -1789,7 +1789,7 @@ The `make check` gate closes another important feedback loop. If the edit compil
 
 `dynamic-wind` takes three thunks: a before-thunk (here `void`), a body-thunk, and an after-thunk. The after-thunk runs whether the body completes normally or raises an exception, analogous to Python's `try/finally`. This guarantees the three temporary files are cleaned up regardless of what goes wrong.
 
-### Colorizing the Diff
+### Colorizing the diff
 
 `print-colored-diff` walks each line of the unified diff output and applies ANSI terminal color codes:
 
@@ -1813,7 +1813,7 @@ The `make check` gate closes another important feedback loop. If the edit compil
 
 Lines beginning with `+` are added lines and appear green; lines beginning with `-` are removed and appear red; diff headers (`+++`, `---`, `@@`) appear cyan. This makes it straightforward to review a proposed change without reading both full file versions. The `color-enabled?` parameter turns the codes off for `--plain`, `--no-color`, and piped output, where escape sequences would only corrupt a log.
 
-### The Approval Prompt
+### The approval prompt
 
 `prompt-yes-no-skip` reads a cooked line from stdin and re-prompts until it sees one of the three answers:
 
@@ -1846,7 +1846,7 @@ Lines beginning with `+` are added lines and appear green; lines beginning with 
 
 The prompt uses plain `read-line` rather than the readline-based reader that drives the REPL. Approval happens in the middle of a tool call, where a short `y`/`n`/`s` answer is easier to reason about than an edited line with history, and `read-line` behaves correctly when stdin is a pipe, which is what makes `--stdin` and one-shot scripting work. `prompt-reason` collects the explanation for a skipped edit.
 
-## Web Search Integration
+## Web search integration
 
 `search.rkt` provides two search backends with identical return shapes, making them interchangeable at the call site. Here is the complete file:
 
@@ -1921,9 +1921,9 @@ Both functions return a list of `(url title description)` triples. Brave uses a 
 
 The `net/http-easy` package, installable via `raco pkg install http-easy`, provides the `get`, `post`, and `response-json` procedures used here.
 
-## The Main REPL
+## The main REPL
 
-### Provider Dispatch
+### Provider dispatch
 
 `agent.rkt` is the entry point that ties everything together. It no longer holds a provider parameter of its own. The active provider is a profile in the harness config, and every model call goes through two dispatch functions that read it:
 
@@ -2018,7 +2018,7 @@ Both dispatch functions resolve the model id and the generation parameters the s
 
 A session-level model override sits in front of the profile's model. `/model <id>` and `--model <id>` set it, and `switch-provider!` clears it so that changing providers always adopts the new profile's own model. The `/provider` command with no argument prints the active profile and lists every profile in the config; with an argument it switches to that profile.
 
-### Intent Classification
+### Intent classification
 
 Before sending any message to the model, `agent.rkt` classifies the user's intent as one of three categories: `"general"`, `"coding"`, or `"hybrid"`. The classification uses a two-stage approach.
 
@@ -2088,7 +2088,7 @@ If the heuristic returns `#f` (the query is ambiguous), stage two calls the mode
 
 `max-tokens 10` and `temperature 0.0` keep the classifier call cheap and deterministic. Both are passed explicitly, and because the dispatcher prefers an explicit argument over the profile's value, the classifier's tiny budget is not overridden by a profile that declares a large `max_tokens`. If the classifier itself fails, the handler defaults to `"coding"`, a conservative choice that enables the full tool set.
 
-### Routing to the Model
+### Routing to the model
 
 `send-to-model` uses the classification to choose the right system prompt and call path:
 
@@ -2127,7 +2127,7 @@ If the heuristic returns `#f` (the query is ambiguous), stage two calls the mode
 
 General questions use a lightweight one-shot call and a simple system prompt, and they always run a web search. Coding requests go through the full agentic tool loop using a system prompt that describes the five tools and the rules for using them. Hybrid requests get the tool loop plus web search results prepended to the message, but only when `/search` is on. The `[intent: ...]` line is suppressed in quiet mode so scripted runs stay clean.
 
-### The System Prompt
+### The system prompt
 
 The coding system prompt is set once per session and injected as the first message with `role "system"`. It tells the model which tools are available and how to use them correctly:
 
@@ -2144,7 +2144,7 @@ The coding system prompt is set once per session and injected as the first messa
 
 The `{cwd}` placeholder is replaced with the actual working directory at session start. Telling the model the working directory helps it construct relative paths for `read_file` and `list_dir` calls. The prompt also states the rule that matters most in practice: read a file before editing it, and pass its exact current contents as `old`.
 
-### Context Management
+### Context management
 
 As an agentic conversation grows, every tool result is appended to the message list, and the context window fills up. `agent.rkt` provides two commands to manage this. `/context` shows a formatted table of messages with estimated character and token counts, plus a short preview of each message:
 
@@ -2193,7 +2193,7 @@ Each preview is collapsed to a single line and wrapped to at most three 60-chara
 
 The agent supports loading "skills" from `~/.agents/skills/<name>/SKILL.md`. Each skill file is a Markdown document that is injected into the conversation as a system message, telling the model to treat it as authoritative guidance. `/skills` lists the available skills, parsing a `description:` field from each file's YAML frontmatter, and `/<skill-name>` loads one. This lets you package reusable instructions that the model will follow for the rest of the session.
 
-### Line Editing, History, and Completion
+### Line editing, history, and completion
 
 Interactive input is the job of `line-input.rkt`. When stdin is a terminal and Racket's bundled `readline` collection can be loaded, the REPL gets cursor editing, in-session history with the arrow keys and `Ctrl-R`, and Tab completion, all in process and with no external `rlwrap` wrapper. Two things can go wrong, and both degrade to a plain `read-line` instead of failing the harness: the native library may be missing, and stdin may not be a terminal at all (a pipe, a heredoc, or `--stdin`).
 
@@ -2285,7 +2285,7 @@ Completion is installed as a callback that receives the word under the cursor. `
 
 `setup-line-input!` wires the three pieces together and registers a plumber flush hook, so history is saved when the process exits normally. It returns `#t` only when the backend is actually active, and the REPL works unchanged when it returns `#f`.
 
-### The REPL Loop
+### The REPL loop
 
 The main loop in `agent.rkt` is a straightforward tail-recursive function:
 
@@ -2324,7 +2324,7 @@ The main loop in `agent.rkt` is a straightforward tail-recursive function:
 
 `handle-slash-command` recognizes `/reset`, `/history`, `/context`, `/compact`, `/model`, `/provider`, `/debug`, `/search`, `/tokens`, `/help`, `/skills`, and any other `/<name>` as a skill lookup, all before any model call is made. Input is read through `read-input-line`, so the same loop gets readline editing on a terminal and a plain prompt otherwise. The `module+ main` form lets `agent.rkt` be both loaded as a library (for testing) and run directly from the command line.
 
-## The Command-Line Interface
+## The command-line interface
 
 Because `agent.rkt` ends in a `module+ main` submodule, it is also an ordinary Unix-style command. If any prompt is supplied, the harness runs a single task and exits; otherwise it starts the REPL. The flags are declared with `racket/cmdline`:
 
@@ -2352,11 +2352,11 @@ Because `agent.rkt` ends in a `module+ main` submodule, it is also an ordinary U
 
 Two flags exist for automation. `--yes` prints the diff and applies it without prompting, and `--dry-run` prints the diff and writes nothing. `--quiet` suppresses the banner, the `[intent]` line, and most tool chatter, while `--plain` (or `--no-color`) turns off ANSI codes, which is what you want when redirecting output to a file.
 
-### Exit Codes
+### Exit codes
 
 One-shot runs are meant to compose with shell scripts, so the harness maps outcomes to exit codes: `0` for a normal finish, `1` for a model or network error, `2` when a `make check` gate failed, `3` when the user rejected or skipped a change, and `5` for bad arguments. The `infer-exit-code` helper derives the code by scanning the tool results in the conversation for the strings the tools produce, which keeps the decision in one place instead of threading a status value through the agentic loop.
 
-## Running the Agent
+## Running the agent
 
 ### Installation
 
@@ -2403,7 +2403,7 @@ Coding Agent REPL.  /help for commands, /quit to exit.
   model:    accounts/fireworks/models/deepseek-v4p1-flash
 ```
 
-### Sample Session
+### Sample session
 
 The following session asks the agent to add a helper function to an existing file. Lines beginning with `>` are user input; everything else is agent output.
 
@@ -2443,7 +2443,7 @@ Session token usage:
 > /quit
 ```
 
-### Enabling Web Search
+### Enabling web search
 
 Toggle search on with `/search`. Switch between engines with `/search brave` or `/search exa`:
 
@@ -2463,7 +2463,7 @@ Web search ON (engine: brave)
 As of mid-2026, the current stable release of Racket is version 8.14.
 ```
 
-### Switching Providers
+### Switching providers
 
 The `/provider` command with no argument reports the active profile and everything the config declares. With a profile name it switches, and the next call uses that profile's endpoint, model, and generation settings:
 
@@ -2483,7 +2483,7 @@ Session token usage (local MLX -- no API cost):
   Estimated cost:    $0  (local model mlx-community/gemma-4-26B-A4B-it-OptiQ-4bit)
 ```
 
-### Running One-Shot Commands
+### Running one-shot commands
 
 Any prompt makes the run non-interactive. This is the form to use from a script or a Makefile:
 
@@ -2495,7 +2495,7 @@ racket agent.rkt -y -p "fix the failing test"
 echo $?   # 0 ok, 2 make check failed, 3 rejected, 5 bad args
 ```
 
-### Building an Executable
+### Building an executable
 
 The `Makefile` also builds and installs a standalone binary, and it regenerates shell completions:
 
@@ -2508,7 +2508,7 @@ make dist                       # raco distribute -> ./dist/
 
 The executable runs from any directory on this machine. Because it is built with `++lib readline/readline`, line editing survives the packaging step, while a machine without libedit still falls back to plain input at run time.
 
-## Interpreting the Output
+## Interpreting the output
 
 When the agent prints `* tool-name arguments` it is showing a tool call in progress. The tool name and a truncated version of the arguments help you follow the model's reasoning. `read_file utils.rkt` means the model decided it needs to see the file before editing it, a sign it is following the system prompt rules. `propose_edit` always appears after a `read_file` for the same path.
 
@@ -2520,7 +2520,7 @@ The `[intent: ...]` line tells you how the agent routed your request. A general 
 
 A line such as `(stopped: the model repeated the identical tool call(s) 2 times ...)` means the repetition guard fired. That is a signal that the model is too weak for the task or is emitting malformed arguments, not that the harness has crashed.
 
-## Wrap Up
+## Wrap up
 
 This chapter built a complete Racket coding agent in roughly 2,800 lines across nine focused modules. The main ideas were:
 
@@ -2540,39 +2540,39 @@ This chapter built a complete Racket coding agent in roughly 2,800 lines across 
 
 These patterns (tool registries, approval gates with stale-base guards, intent routing, quality gates, provider adapters, and config-driven backends) apply broadly across languages and LLM providers. The Racket implementation here serves as a concrete reference for how each piece fits together at the system level.
 
-## Optional Practice Problems
+## Optional practice problems
 
-**Problem 1: Add a `write_file` tool**
+### Problem 1: Add a `write_file` tool
 
 The agent currently has no way for the model to create a file without going through `propose_edit`. Add a `write_file` tool to `tools.rkt` that accepts a `path` and `content` parameter, writes the content directly (without a diff prompt), and returns a confirmation string. Register it in `register-all` and add it to `ENABLED-TOOLS`. Consider what safety constraints, if any, should prevent the model from overwriting files outside the working directory, and whether the existing `hidden-file?` predicate should apply.
 
-**Problem 2: Extend the shell whitelist dynamically**
+### Problem 2: Extend the shell whitelist dynamically
 
 `SHELL-WHITELIST` is currently a compile-time constant. Add a `/allow-cmd` slash command to `agent.rkt` that lets the user append a command to the whitelist at runtime, so that `/allow-cmd git` would let the model run `git status` and `git diff`. Update `handle-slash-command` to recognize the new command and update the set stored in `tools.rkt`. Think about where the mutable whitelist state should live and how `tools.rkt` should expose it.
 
-**Problem 3: Persistent session history**
+### Problem 3: Persistent session history
 
 At present, `/reset` discards the conversation history and there is no way to resume a previous session. Add two slash commands: `/save <filename>` that writes the current `messages-box` contents to a JSON file using `jsexpr->string`, and `/load <filename>` that reads that file and restores the conversation. Use `string->jsexpr` for loading. Handle file-not-found and malformed JSON gracefully by printing an error and leaving the existing history unchanged.
 
-**Problem 4: Token-budget guard**
+### Problem 4: Token-budget guard
 
 `chat-with-tools*` will keep iterating until the model stops calling tools or `max-iterations` is reached. Add a token-budget guard that checks the running token total after each iteration and returns early with a warning message if it exceeds a configurable threshold. The counters live in private boxes in `fireworks-ai.rkt`, and `mlx-serve.rkt` keeps a smaller pair of its own, so you will need to export a reader or thread a check through the `post-fn` adapter. Expose the threshold as a `/budget <n>` slash command that sets it, and a `/budget` command with no argument that prints the current setting and the remaining budget.
 
-**Problem 5: Second search backend -- DuckDuckGo**
+### Problem 5: A second search backend with DuckDuckGo
 
 Add a `ddg-search` function to `search.rkt` using the DuckDuckGo Instant Answer API at `https://api.duckduckgo.com/?q=QUERY&format=json`. The response contains a `RelatedTopics` array of objects with `Text` and `FirstURL` fields. Return results in the same `(url title description)` triple format as `brave-search` and `exa-search`. Update `agent.rkt` to accept `/search ddg` as a valid engine selection, and add it to the `SEARCH-ENGINES` list so Tab completes it.
 
-**Problem 6: Colored intent label in the REPL prompt**
+### Problem 6: Colored intent label in the REPL prompt
 The line `[intent: coding → coding tools, no search]` is printed in plain text. Use ANSI codes to color the label: green for `"coding"`, cyan for `"general"`, and yellow (`"\033[33m"`) for `"hybrid"`. Update `send-to-model` in `agent.rkt` to apply the color. `approval.rkt` already defines the constants, but they are not in its `provide` list, so decide whether to export them, redefine them locally, or move them to a shared `ansi.rkt` module.
 
-**Problem 7: Retry on `make check` failure**
+### Problem 7: Retry on `make check` failure
 
 Currently, when `propose_edit` runs `make check` and it fails, the failure output is returned to the model as a tool result, but the model must then propose a new edit from scratch. Modify `tool-propose-edit` so that on a `make check` failure it offers the user a `[r]etry` option at the approval prompt (in addition to the existing `y/n/s` choices). On retry, revert the file to its previous contents using `call-with-output-file`, print a confirmation, and return a result string that tells the model the file was reverted and includes the check output so it can try again with a corrected edit.
 
-**Problem 8: Stream the SSE deltas to the terminal**
+### Problem 8: Stream the SSE deltas to the terminal
 
 The Fireworks client already reassembles the SSE stream into a single response via `parse-sse-response`, but the user does not see the reply being written in real time. Modify `post-fireworks` so that, while `parse-sse-response` is accumulating the response, each `delta.content` fragment is also `display`ed to the terminal as it arrives. Consider how to do this without double-printing the final text (which the REPL also prints after the call returns), and whether the tool-call argument fragments should be hidden.
 
-**Problem 9: Add a provider profile without touching code**
+### Problem 9: Add a provider profile without touching code
 
 The provider layer is data, not code. Confirm that by adding a second local profile to `~/.coding_harness.json` that points at a different port, for example oMLX on 8000 or sushi on 12345. Switch to it with `/provider <name>`, check it with `/provider` alone and with `/tokens`, and verify that Tab completion offers the new profile name. Then override one field in `.local_coding_harness.json` and confirm that the deep merge replaces just that field while the rest of the global profile survives.

@@ -1,35 +1,35 @@
-# Implementing OPS5 in Racket: A Forward-Chaining Production System
+# Implementing OPS5 in Racket: A forward-chaining production system
 
-I converted OPS5 from Common Lisp to MIT Scheme in the early 1980s. The code for this chapter is that code, converted to run in Racket. Dear reader, even though I spent years of my life working on rule based symbolic AI, now I don’t really recommend rule based systems for practical work.
+I converted OPS5 from Common Lisp to MIT Scheme in the early 1980s. The code for this chapter is that code, converted to run in Racket. Dear reader, even though I spent years of my life working on rule based symbolic AI, now I don't really recommend rule based systems for practical work.
 
 Dear reader, while the material in this chapter is important to me for historic reasons, the next chapter uses a modern logic library **Racklog** to solve the same two example problems covered in this chapter.
 
-OPS5 was written by Charles Forgy (Carnegie Mellon University) and is the classic production-system language. The original Common Lisp code was “very hackable” and I heavily modified it twice for projects at SAIC in the 1980s. I hope that Racket developers find this version converted to Racket to also be “hackable.”
+OPS5 was written by Charles Forgy (Carnegie Mellon University) and is the classic production-system language. The original Common Lisp code was "very hackable" and I heavily modified it twice for projects at SAIC in the 1980s. I hope that Racket developers find this version converted to Racket to also be "hackable."
 
 An expert system shell is a program that runs rules over a set of facts. You write the rules. The shell decides which rules apply, picks one, fires it, and repeats.
 
 The Racket conversion does not change the algorithm. The interesting work is the algorithm itself: how a forward-chaining rule engine matches rule conditions against facts without scanning every fact on every cycle. The answer is the Rete algorithm, and it is the heart of this chapter.
 
-## Production Systems and Forward Chaining
+## Production systems and forward chaining
 
 A production system has three parts:
 
-1. **Working memory**: a set of facts. In OPS5 each fact is a tagged list, such as `(card heart 10)` or `(monkey ^ at 5-7 ^ on couch ^ holds nothing)`.
-2. **Productions**: rules. Each production has a left-hand side (LHS), a pattern that matches working memory, and a right-hand side (RHS), actions that change working memory.
-3. **The inference engine**: the loop that matches the LHS of every production against working memory, chooses one matching production, and runs its RHS.
+1. Working memory: a set of facts. In OPS5 each fact is a tagged list, such as `(card heart 10)` or `(monkey ^ at 5-7 ^ on couch ^ holds nothing)`.
+2. Productions: rules. Each production has a left-hand side (LHS), a pattern that matches working memory, and a right-hand side (RHS), actions that change working memory.
+3. The inference engine: the loop that matches the LHS of every production against working memory, chooses one matching production, and runs its RHS.
 
 Forward chaining means the engine works from facts to conclusions. It looks at what is true now, finds rules whose conditions hold, fires them, and lets the new facts trigger more rules. It runs until no rule matches or until a rule halts it. This is the opposite of backward chaining, which starts from a goal and asks which rules could prove it.
 
 The engine repeats one cycle:
 
-1. **Match**: find all productions whose LHS is satisfied by the current working memory. The set of satisfied instantiations is the **conflict set**.
-2. **Resolve**: pick one instantiation from the conflict set.
-3. **Act**: run that instantiation's RHS, which adds, removes, or changes facts.
+1. Match: find all productions whose LHS is satisfied by the current working memory. The set of satisfied instantiations is the **conflict set**.
+2. Resolve: pick one instantiation from the conflict set.
+3. Act: run that instantiation's RHS, which adds, removes, or changes facts.
 4. **Repeat**, unless a halt fires or the conflict set is empty.
 
 The hard part is step 1. A naive engine, on every cycle, tests every production against every combination of facts. If a production has several condition elements, the engine must try combinations of facts across those elements. The cost grows fast. We fix this with the Rete algorithm.
 
-## The Rete Algorithm
+## The Rete algorithm
 
 Rete (Latin for "net") solves the match problem by storing partial matches in a network and updating them incrementally. When a fact enters or leaves working memory, the engine pushes that one change through the network instead of re-scanning everything.
 
@@ -51,16 +51,16 @@ At the bottom of the network sits a **terminal node** (`&p`) for each production
 
 Rete also shares nodes across productions. If two rules test `(card <suit> <num>)`, they can share the alpha subnetwork for that pattern. The stats the engine prints separate **real** nodes from **virtual** nodes: virtual counts every node the compiler builds, real counts the unique ones after sharing. We will see that in this conversion the two counts come out equal, because the node-sharing lookup does not find matches.
 
-## Conflict Resolution
+## Conflict resolution
 
 Many productions may match at once. OPS5 picks one with a strategy. This code supports two.
 
-- **LEX (lexicographic)**: among matching instantiations, prefer the one whose matched facts are most recent. If two share the same recency pattern, the engine breaks the tie by sorting the time tags of the matched facts and comparing the sorted lists element by element.
-- **MEA (means-ends analysis)**: like LEX, but it first compares only the time tag of the first condition element. The first condition element acts as the goal condition and dominates the choice.
+- LEX (lexicographic): among matching instantiations, prefer the one whose matched facts are most recent. If two share the same recency pattern, the engine breaks the tie by sorting the time tags of the matched facts and comparing the sorted lists element by element.
+- MEA (means-ends analysis): like LEX, but it first compares only the time tag of the first condition element. The first condition element acts as the goal condition and dominates the choice.
 
 Both strategies also respect **refraction**: an instantiation that has already fired cannot fire again on the same facts. This stops a rule from firing forever on unchanged working memory. The engine records fired instantiations and rejects them when they reappear.
 
-## The OPS5 Language
+## The OPS5 language
 
 An OPS5 program is a sequence of forms. The core forms are `literalize`, `p`, `make`, and `run`.
 
@@ -98,11 +98,11 @@ The RHS actions are `make`, `modify`, `ops-remove`, `ops-write`, `bind`, `cbind`
 
 With the language in hand, we can read the two example programs that ship with the system.
 
-## The Example Programs
+## The example programs
 
 The directory holds two `.ops` files. They are the data this system runs on, and they show two different uses of OPS5: one does pattern finding, the other does planning.
 
-### draw.ops: finding pairs in a poker hand
+### draw.ops: Finding pairs in a poker hand
 
 This program looks at a hand of cards and finds pairs and three of a kind. The facts are simple: a goal flag and one fact per card. Here is the complete file.
 
@@ -147,7 +147,7 @@ The second production, `look-for-three-of-a-kind`, extends the same idea to thre
 
 The five `make` calls at the end seed working memory with the goal and the four cards. When you run the program, the rules fire and the hand gets analyzed.
 
-### monkey.ops: the monkey and the bananas
+### monkey.ops: The monkey and the bananas
 
 The second program is the classic monkey-and-bananas planning problem. A monkey sits on a couch. Bananas hang on the ceiling out of reach. A light ladder lies on the floor elsewhere. The monkey must form a plan: get off the couch, walk to the ladder, pick it up, carry it under the bananas, climb it, and grab the bananas.
 
@@ -245,7 +245,7 @@ The monkey starts at `5-7` on the couch. The bananas are on the ceiling at `2-2`
 
 The full `monkey.ops` file has 18 productions (`mb1` through `mb18`) plus the starter. Each follows the same shape as the three shown here: match a goal and some world facts, print a line, and make or satisfy a subgoal.
 
-## The Racket Conversion: One File of Pure Code
+## The Racket conversion: One file of pure code
 
 Dear reader, I had many problems with the Racket conversion. For a long time I worked around them with a hack: the whole system lived inside one giant string, which the driver wrote to a temporary file and loaded into a dedicated namespace. That preserved the sequential, load-time semantics the code relies on, but it was ugly and hard to edit. The fix turned out to be one line: the file now starts with `#lang racket/load` and contains nothing but plain Racket code.
 
@@ -319,7 +319,7 @@ A `while` macro handles a subtle truthiness gap. MIT Scheme treats the empty lis
 
 This gap, between `'()` as false and `'()` as true, is the single most common source of bugs when porting old Scheme to Racket. The compatibility layer localizes the fix. You will see the same care in the compiler and network code, where comments note each place the original relied on MIT's empty-list-is-false rule.
 
-## The Top-Level Commands as Macros
+## The top-level commands as macros
 
 The user-facing OPS5 commands are `p`, `make`, `modify`, `run`, `wm`, and `strategy`. In the original code these were MIT `macro` forms. In Racket they become `define-syntax` transformers that build their expansions as data and quote the arguments. This preserves the key behavior: a production form reaches the compiler unevaluated, so the compiler sees the literal pattern.
 
@@ -352,7 +352,7 @@ The `p` macro rewrites `(p name lhs --> rhs)` into `(old-p '(p name lhs --> rhs)
 
 `old-make` is the runtime half. It resets the result array that builds a new fact, evaluates the arguments into that array, and asserts the assembled fact into working memory. We will see `!reset`, `eval-args`, and `!assert` when we reach the RHS.
 
-## Compiling a Production into the Network
+## Compiling a production into the network
 
 The LHS compiler turns a production's pattern into Rete nodes. The entry point is `old-p`, which prints the production name, finishes any pending `literalize` declarations, and calls `compile-production`.
 
@@ -453,7 +453,7 @@ Node sharing happens in the linker. Before creating a node, the compiler checks 
 
 If an equivalent node already exists, the compiler reuses it and does not increment the real-node count. This is how two rules that share `(card <suit> <num>)` end up sharing the alpha nodes for that pattern.
 
-## The Network Interpreter
+## The network interpreter
 
 When a fact enters or leaves working memory, the engine calls `match` to push the change into the network from the top.
 
@@ -522,7 +522,7 @@ The terminal `&p` node is where a complete match becomes a conflict-set entry.
 
 On an add, `insertcs` adds the instantiation to the conflict set. On a remove, `removecs` takes it out. The instantiation is the production name plus the data part, the list of matched facts that will bind the RHS variables.
 
-## Working Memory
+## Working memory
 
 Working memory is a hash of fact lists. The hash key is the first symbol in the fact, found by `wm-hash`, so facts cluster by class. Each fact carries a time tag, a number that records when it was added. Time tags drive LEX and MEA conflict resolution.
 
@@ -574,7 +574,7 @@ The `(wm)` command prints working memory by mapping over the class buckets.
 
 Each fact prints as `(time-tag (fact))`. The optional argument filters by time tag. With no argument, `wm` prints every fact.
 
-## The Recognize-Act Loop
+## The recognize-act loop
 
 The `run` command sets the cycle budget and calls `do-continue`, which processes pending changes and calls `main`.
 
@@ -720,7 +720,7 @@ A `make` action assembles a new fact in a result array and asserts it. `!value` 
 
 A `modify` action reads the bound condition-element fact, removes it from working memory, copies its fields into the result array, applies the changes, and asserts the result. This remove-then-add is what makes `modify` propagate through the network: the removal withdraws old matches, and the add creates new ones. That propagation is why firing one rule can trigger the next.
 
-## Running the Code
+## Running the code
 
 You need Racket. No packages are required; the code uses only the standard library and the `r5rs` language that ships with Racket.
 
@@ -830,7 +830,7 @@ End -- no production true
 
 Run each example in a fresh session. The README warns about two quirks. `(i-g-v)` excises all loaded productions, so after a reset you must reload the `.ops` file before `(run)`. And loading a second `.ops` file without resetting keeps the old working memory, so rules can fire against stale facts. The simple habit is to `(exit)` and relaunch with the next file.
 
-## Interpreting the Results
+## Interpreting the results
 
 The monkey trace is a plan. Read it top to bottom. The monkey wants the bananas. Because they are on the ceiling, it decides to move the ladder under them. Because the ladder is light, it can move it, but first it must pick it up, so it decides to walk to the ladder. To walk it must be on the floor, so it jumps off the couch. It walks to the ladder, picks it up, carries it to `2-2`, and climbs it. The last firing, `mb3`, sets a sub-goal to free the monkey's hands before the grab. No later rule satisfies that sub-goal in this setup, so the engine stops one step short of the grab and ends with no production true. Each line is one production firing, and the chain of goals drives the next line. This is forward chaining producing goal-directed behavior: there is no search tree and no backtracking. The goal facts and the rule order do the work, and when no rule matches the current goal, the run stops.
 
@@ -843,15 +843,15 @@ The final line of each run is a statistics report. It has four parts.
 (48 mean token memory size (60 maximum))
 ```
 
-- **Productions and nodes**: `19 productions` fired here. `212 // 212 nodes` gives virtual nodes and real nodes. Virtual is every node the compiler built. Real is the unique nodes after sharing. They are equal in this program because no two productions share enough to merge nodes. In a larger program with shared patterns, real would be smaller than virtual.
-- **Firings and RHS actions**: `16 firings` means 16 productions fired. `42 RHS actions` counts the individual `make`, `modify`, `ops-write`, and other actions those firings ran. One firing can run several actions, so the action count is higher than the firing count.
-- **Working memory size**: `10 Mean working memory size (14 maximum)`. On average 10 facts were in memory across cycles, and at peak there were 14. The monkey program keeps a small world, so these numbers stay low.
-- **Conflict set size**: `2 mean conflict set size (3 maximum)`. On average 2 instantiations competed each cycle, peaking at 3. A small conflict set means the strategy had little to choose from, which fits a planning program that mostly has one sensible next step.
-- **Token memory size**: `48 mean token memory size (60 maximum)`. Tokens are the partial matches stored in beta memories. This is the memory cost of Rete. It is larger than the working memory size because one fact can participate in many partial matches.
+- Productions and nodes: `19 productions` fired here. `212 // 212 nodes` gives virtual nodes and real nodes. Virtual is every node the compiler built. Real is the unique nodes after sharing. They are equal in this program because no two productions share enough to merge nodes. In a larger program with shared patterns, real would be smaller than virtual.
+- Firings and RHS actions: `16 firings` means 16 productions fired. `42 RHS actions` counts the individual `make`, `modify`, `ops-write`, and other actions those firings ran. One firing can run several actions, so the action count is higher than the firing count.
+- Working memory size: `10 Mean working memory size (14 maximum)`. On average 10 facts were in memory across cycles, and at peak there were 14. The monkey program keeps a small world, so these numbers stay low.
+- Conflict set size: `2 mean conflict set size (3 maximum)`. On average 2 instantiations competed each cycle, peaking at 3. A small conflict set means the strategy had little to choose from, which fits a planning program that mostly has one sensible next step.
+- Token memory size: `48 mean token memory size (60 maximum)`. Tokens are the partial matches stored in beta memories. This is the memory cost of Rete. It is larger than the working memory size because one fact can participate in many partial matches.
 
 Compare the two programs. The draw program has a large, noisy conflict set (mean 16, max 30) because many suit orderings match at once. The monkey program has a small one (mean 2, max 3) because the goal chain keeps the choices tight. The token memory tells the same story: draw averages 98 tokens, monkey averages 48, even though monkey has far more productions. More rules do not mean more memory when the working memory stays small and the goals channel the matching.
 
-## Wrap Up
+## Wrap up
 
 This chapter walked through a working OPS5 implementation in Racket. The core ideas are independent of the host language.
 
@@ -861,7 +861,7 @@ The Racket conversion did not change any of this. It ported the MIT Scheme diale
 
 The two examples show the range. `draw.ops` uses OPS5 for pattern finding over a small fixed set of facts, and the noisy output shows what happens when many orderings match. `monkey.ops` uses OPS5 for planning, where a chain of goal facts drives a sequence of actions from a couch toward a bunch of bananas, stopping one step short of the grab. The statistics line in each run ties the behavior back to the algorithm: node counts reflect sharing, the conflict set reflects how much the strategy had to choose from, and token memory reflects the cost Rete pays to keep matching cheap.
 
-## Optional Practice Problems
+## Optional practice problems
 
 These exercises build on the example code in this directory. Run each in a fresh session with `racket ops5.rkt your-file.ops`.
 

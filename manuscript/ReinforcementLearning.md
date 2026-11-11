@@ -1,4 +1,4 @@
-# Reinforcement Learning in Racket: Bandits, Q-Learning, Policy Gradients and DQN
+# Reinforcement learning in Racket: Bandits, Q-learning, policy gradients and DQN
 
 Supervised learning needs a label for every input. Reinforcement learning
 (RL) needs only a reward, and often a delayed one: the agent acts, the
@@ -6,12 +6,12 @@ world changes, and only later does it find out whether the sequence of
 choices was good. This chapter builds three complete RL examples in plain
 Racket, with no package dependencies:
 
-1. **multi-armed bandits** — the one-state problem, where all that matters
+1. multi-armed bandits: the one-state problem, where all that matters
    is how to explore;
-2. **tabular temporal-difference control** — Q-learning, SARSA, expected
+2. tabular temporal-difference control: q-learning, SARSA, expected
    SARSA and Double Q-learning on a small maze, checked against value
    iteration;
-3. **policy gradient methods and deep Q-networks** — the same maze solved
+3. policy gradient methods and deep Q-networks: the same maze solved
    with a softmax policy and with a neural network, plus a continuous-state
    CartPole controller.
 
@@ -56,24 +56,24 @@ and a fresh agent per run keeps the statistics clean.
 
 The strategies, and the idea behind each:
 
-- **greedy** — always take the best estimate so far. It is the fastest
+- greedy: always take the best estimate so far. It is the fastest
   learner if the first pulls happen to be lucky, and hopeless if they are
   not.
-- **epsilon-greedy** — explore a uniformly random arm with probability
+- epsilon-greedy: explore a uniformly random arm with probability
   `\epsilon`$. The estimate can be a plain sample average (right for a
   stationary problem) or a constant step size `\alpha`$ that forgets old
   rewards (right when the means move).
-- **optimistic initialization** — start every arm at +5. Greedy
+- optimistic initialization: start every arm at +5. Greedy
   exploitation then *is* exploration, until each arm has been tried once.
-- **UCB1** — pull the arm maximizing `Q(a) + c\sqrt{\log t / N(a)}$`: a
+- UCB1: pull the arm maximizing `Q(a) + c\sqrt{\log t / N(a)}$`: a
   bonus that shrinks as an arm is used, so under-tried arms stay
   attractive. Total regret grows logarithmically instead of linearly.
-- **Thompson sampling** — keep a `\text{Beta}(1,1)`$ posterior per arm,
+- Thompson sampling: keep a `\text{Beta}(1,1)`$ posterior per arm,
   draw one sample per arm, pull the largest. Exploration is automatic: an
   arm with little evidence has a wide posterior. (A Beta sample is built
   from two integer-shape Gamma samples, and a Gamma sample is a sum of
   exponentials — see `random-gamma-int`.)
-- **softmax** — sample arm `a` with probability proportional to
+- softmax: sample arm `a` with probability proportional to
   `e^{Q(a)/\tau}$`.
 
 Two hundred runs of a thousand pulls each give the following table, where
@@ -212,7 +212,7 @@ Value iteration sweeps Bellman's optimality equation
 
 until the largest change falls below `10^{-10}`$; on this maze it needs
 eight sweeps, one per step of the horizon, and produces the exact `V^*`$
-and `Q^*`$. Having a model-based answer is not cheating — it is how the
+and `Q^*`$. Having a model-based answer is not cheating. It is how the
 sampled methods in the rest of the chapter are verified, and how the
 `\gamma`$ and reward choices were checked in the first place.
 
@@ -275,8 +275,7 @@ baselines should explain the state, not just the episode.
 ### From a table to a function
 
 GridWorld has 25 states, so a 25x4 score table is fine. CartPole has four
-continuous state variables — position, velocity, pole angle, angular
-velocity — so there is no table to write. The fix is to compute the scores
+continuous state variables (position, velocity, pole angle, angular velocity) so there is no table to write. The fix is to compute the scores
 from features:
 
 `\theta \cdot f(s) = \begin{pmatrix} \theta_0 \cdot f(s) \\ \theta_1 \cdot f(s) \end{pmatrix}, \qquad f(s) = (\text{scaled } x, \dot{x}, \theta, \dot{\theta}, 1)`$
@@ -284,8 +283,7 @@ from features:
 Feature scaling is not optional here. The raw variables have very
 different ranges (the angle stays within 0.21 rad while velocities reach
 several units), so `cartpole-observe` divides each by a rough scale and
-appends a bias term. With that, REINFORCE plus Adam — note the gradient
-sign, since Adam descends and this is an ascent problem — learns to
+appends a bias term. With that, REINFORCE plus Adam (note the gradient sign, since Adam descends and this is an ascent problem) learns to
 balance the pole:
 
 ```
@@ -300,7 +298,7 @@ linear policy is balancing the pole indefinitely. A linear policy is
 enough for CartPole because the task really is almost linear: push in the
 direction the pole is falling, harder when it is falling faster.
 
-## Part 4: Deep Q-Networks
+## Part 4: Deep Q-networks
 
 The last example replaces the Q table with a neural network so that
 Q-learning can handle continuous states. `neural_net.rkt` provides the
@@ -349,8 +347,7 @@ Only the input features change between GridWorld and CartPole:
 loss. CartPole is much harder for DQN than for the linear policy gradient
 above, and the comparison is a lesson in sample efficiency. After 300
 episodes the greedy policy survives 106.8 steps on average (best 112),
-where a random policy survives about 22 — the network has discovered the
-balancing rule but has not mastered it — while the linear policy gradient
+where a random policy survives about 22 (the network has discovered the balancing rule but has not mastered it) while the linear policy gradient
 balances for the full 500 steps in 600 episodes. The linear policy starts
 with the right inductive bias: its inputs are position, velocity, angle
 and angular velocity, exactly the quantities a balancing control law

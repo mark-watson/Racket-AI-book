@@ -4,10 +4,10 @@ The Knowledge Graph Navigator (which I will often refer to as KGN) is a tool for
 
 I cover SPARQL and linked data/knowledge Graphs is previous books I have written and while I give you a brief background here, I ask interested users to look at either for more details:
 
-- The chapter **Knowledge Graph Navigator** in my book **Loving Common Lisp, or the Savvy Programmer’s Secret Weapon**
+- The chapter **Knowledge Graph Navigator** in my book **Loving Common Lisp, or the Savvy Programmer's Secret Weapon**
 - The chapters **Background Material for the Semantic Web and Knowledge Graphs**, **Knowledge Graph Navigator** in my book **Practical Artificial Intelligence Programming With Clojure**
 
-We use the Natural Language Processing (NLP) library from the last chapter to find human and place names in input text and  then construct SPARQL queries to access data from DBPedia.
+We use the Natural Language Processing (NLP) library from the last chapter to find human and place names in input text and then construct SPARQL queries to access data from DBPedia.
 
 The KGN application is still a work in progress so please check for updates to this *live eBook*. The following screenshots show the current version of the application:
 
@@ -46,7 +46,7 @@ For the rest of this chapter we will just use DBPedia or data copied from DBPedi
 
 After looking at an interactive session using the example program for this chapter we will look at the implementation.
 
-## Entity Types Handled by KGN
+## Entity types handled by KGN
 
 To keep this example simple we handle just two entity types:
 
@@ -55,13 +55,13 @@ To keep this example simple we handle just two entity types:
  
 The Common Lisp version of KGN also searches for relationships between entities. This search process consists of generating a series of SPARQL queries and calling the DBPedia SPARQL endpoint. I may add this feature to the Racket version of KGN in the future.
 
-## KGN Implementation
+## KGN implementation
 
 The example application works processing a list or Person, Place, and Organization names. We generate SPARQL queries to DBPedia to find information about the entities and relationships between them.
 
 We are using two libraries developed for this book that can be found in the directories **Racket-AI-book/source-code/sparql** and **Racket-AI-book/source-code/nlp** to supply support for SPARQL queries and natural language processing.
 
-### SPARQL Client Library
+### SPARQL client library
 
 We already looked at code examples for making simple SPARQL queries in the chapter **Datastores** and here we continue with more examples that we need to the KGN application.
 
@@ -73,23 +73,23 @@ Lastly, there are two functions **json->listvals** and **gd** for processing the
 
 We already saw most of the following code listing in the previous chapter **Datastores**. The following listings in this chapter will be updated in future versions of this *live eBook* when I finish writing the KGN application.
 
-Part of solving this problem is constructing SPARQL queries as strings. We will look in some detail at one utility function `sparql-dbpedia-for-person` that constructs a SPARQL query string for fetching data from DBpedia about a specific person. The function takes one parameter, `person-uri`, which is expected to be the URI of a person in the DBpedia dataset. The query string is built by appending strings, including the dynamic insertion of the `person-uri` parameter value. Here’s a breakdown of how the code works:
+Part of solving this problem is constructing SPARQL queries as strings. We will look in some detail at one utility function `sparql-dbpedia-for-person` that constructs a SPARQL query string for fetching data from DBpedia about a specific person. The function takes one parameter, `person-uri`, which is expected to be the URI of a person in the DBpedia dataset. The query string is built by appending strings, including the dynamic insertion of the `person-uri` parameter value. Here's a breakdown of how the code works:
 
-1. **Function Definition**: The function `sparql-dbpedia-for-person` is defined with one parameter, `person-uri`. This parameter is used to dynamically insert the person’s URI into the SPARQL query.
+1. Function Definition: the function `sparql-dbpedia-for-person` is defined with one parameter, `person-uri`. This parameter is used to dynamically insert the person's URI into the SPARQL query.
 
-2. **String Appending (`@string-append`)**: The `@string-append` construct (which seems like a custom or pseudo-syntax, as the standard Scheme function for string concatenation is `string-append` without the `@`) is used to concatenate multiple strings to form the complete SPARQL query. This includes static parts of the query as well as dynamic parts where the `person-uri` is inserted.
+2. String Appending (`@string-append`): the `@string-append` construct (which seems like a custom or pseudo-syntax, as the standard Scheme function for string concatenation is `string-append` without the `@`) is used to concatenate multiple strings to form the complete SPARQL query. This includes static parts of the query as well as dynamic parts where the `person-uri` is inserted.
 
-3. **SPARQL Query Construction**: The function constructs a SPARQL query with the following key components:
-   - **SELECT Clause**: This part of the query specifies what information to return. It uses `GROUP_CONCAT` to aggregate multiple `?website` values into a single string, separated by `”  |  “`, and also selects the `?comment` variable.
-   - **OPTIONAL Clauses**: Two OPTIONAL blocks are included:
-     - The first block attempts to fetch English comments (`?comment`) associated with the person, filtering to ensure the language of the comment is English (`lang(?comment) = ‘en’`).
-     - The second block fetches external links (`?website`) associated with the person but filters out any URLs containing “dbpedia” (case-insensitive), to likely avoid self-references within DBpedia.
-   - **Dynamic URI Insertion**: The `@person-uri` placeholder is replaced with the actual `person-uri` passed to the function. This dynamically targets the SPARQL query at a specific DBpedia resource.
-   - **LIMIT Clause**: The query is limited to return at most 4 results with `LIMIT 4`.
+3. SPARQL Query Construction: the function constructs a SPARQL query with the following key components:
+   - SELECT Clause: this part of the query specifies what information to return. It uses `GROUP_CONCAT` to aggregate multiple `?website` values into a single string, separated by `"  |  "`, and also selects the `?comment` variable.
+   - OPTIONAL Clauses: two OPTIONAL blocks are included:
+     - The first block attempts to fetch English comments (`?comment`) associated with the person, filtering to ensure the language of the comment is English (`lang(?comment) = 'en'`).
+     - The second block fetches external links (`?website`) associated with the person but filters out any URLs containing "dbpedia" (case-insensitive), to likely avoid self-references within DBpedia.
+   - Dynamic URI Insertion: the `@person-uri` placeholder is replaced with the actual `person-uri` passed to the function. This dynamically targets the SPARQL query at a specific DBpedia resource.
+   - LIMIT Clause: the query is limited to return at most 4 results with `LIMIT 4`.
 
-4. **Usage of `@person-uri` Placeholder**: The code shows `@person-uri` placeholders within the query string, indicating where the `person-uri` parameter’s value should be inserted. However, the mechanism for replacing these placeholders with the actual URI value is not explicitly shown in the snippet. Typically, this would involve string replacement functionality, ensuring the final query string includes the specific URI of the person of interest.
+4. Usage of `@person-uri` Placeholder: the code shows `@person-uri` placeholders within the query string, indicating where the `person-uri` parameter's value should be inserted. However, the mechanism for replacing these placeholders with the actual URI value is not explicitly shown in the snippet. Typically, this would involve string replacement functionality, ensuring the final query string includes the specific URI of the person of interest.
 
-In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SPARQL query to fetch English comments and external links (excluding DBpedia links) for a given person from DBpedia, with the results limited to a maximum of 4 entries. The use of string concatenation (or a pseudo-syntax resembling `@string-append`) allows for the dynamic insertion of the person’s URI into the query.
+In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SPARQL query to fetch English comments and external links (excluding DBpedia links) for a given person from DBpedia, with the results limited to a maximum of 4 entries. The use of string concatenation (or a pseudo-syntax resembling `@string-append`) allows for the dynamic insertion of the person's URI into the query.
 
 
 ```racket
@@ -182,26 +182,26 @@ In summary, the `sparql-dbpedia-for-person` function dynamically constructs a SP
 
 The function **gd** converts JSON data to Scheme nested lists and then extracts the values for up to four variables.
 
-### NLP Library
+### NLP library
 
 We implemented a library in the chapter **Natural Language Processing** that we use here.
 
 Please make sure you have read that chapter before the following sections.
 
 
-### Implementation of KGN Application Code
+### Implementation of KGN application code
 
 The file **Racket-AI-book/source-code/kgn/main.rkt** contains library boilerplate and the file **Racket-AI-book/source-code/kgn/kgn.rkt** the application code. The provided Racket scheme code is structured for interacting with the DBPedia SPARQL endpoint to retrieve information about persons or places based on a user's string query. The code is organized into several defined functions aimed at handling different steps of the process:
 
-**Query Parsing and Entity Recognition**:
+### Query parsing and entity Recognition
 
 The **parse-query** function takes a string **query-str** and tokenizes it into a list of words after replacing certain characters (like "." and "?"). It then checks for keywords like "who" or "where" to infer the type of query - person or place. Using **find-human-names** and **find-place-names** (defined in the earlier section on SPARQL), it extracts the entity names from the tokens. Depending on the type of query and the entities found, it returns a list indicating the type and name of the entity, or **unknown** if no relevant entities are identified.
 
-**SPARQL Query Construction and Execution**:
+### SPARQL query construction and execution
 
 The functions **get-person-results** and **get-place-results** take a name string, construct a SPARQL query to get information about the entity from DBPedia, execute the query, and process the results. They utilize the **sparql-dbpedia-person-uri**, **sparql-query->hash**, and **json->listvals** functions that we listed previously to construct the query, execute it, and convert the returned JSON data to a list, respectively.
 
-**Query Interface**:
+### Query interface
 
 The **ui-query-helper** function acts as the top-level utility for processing a string query to generate a SPARQL query, execute it, and return the results. It first calls **parse-query** to understand the type of query and the entity in question. Depending on whether the query is about a person or a place, it invokes **get-person-results** or **get-place-results**, respectively, to get the relevant information from DBPedia. It then returns a list containing the SPARQL query and the results, or **#f** if the query type is unknown.
 
@@ -501,15 +501,14 @@ The following diagram shows the high-level architecture of the Knowledge Graph N
 {width: "100%"}
 ![Architecture diagram](images/kgn_architecture.jpg)
 
-## Knowledge Graph Navigator Wrap Up
+## Knowledge Graph Navigator wrap up
 
 This KGN example was hopefully both interesting to you and simple enough in its implementation to use as a jumping off point for your own projects. 
 
 I had the idea for the KGN application because I was spending quite a bit of time manually setting up SPARQL queries for DBPedia (and other public sources like WikiData) and I wanted to experiment with partially automating this process. I have experimented with versions of KGN written in Java, Hy language ([Lisp running on Python that I wrote a short book on](https://leanpub.com/hy-lisp-python/read)), Swift, and Common Lisp and all four implementations take different approaches as I experimented with different ideas.
 
-## Optional Practice Problems
+## Optional practice problems
 
-1. **Extend templates for Historical Events**: The current KGN implementation only recognizes persons and places. Add support to `sparql-utils.rkt` for querying historical events (e.g., battles, treaty signings) by crafting a new SPARQL template and corresponding parsing logic.
-2. **Add Wikidata Backend**: Currently, KGN only queries DBpedia. Implement alternative search functions in `sparql-utils.rkt` targeting Wikidata's SPARQL endpoint, mapping the resulting entities back to the GUI.
-3. **Query History in the GUI**: Modify the GUI code in `main.rkt` to include a historical list of past queries in the user interface. Clicking on an item in the history list should automatically reload and execute that query.
-
+1. Extend templates for Historical Events: the current KGN implementation only recognizes persons and places. Add support to `sparql-utils.rkt` for querying historical events (e.g., battles, treaty signings) by crafting a new SPARQL template and corresponding parsing logic.
+2. Add Wikidata Backend: currently, KGN only queries DBpedia. Implement alternative search functions in `sparql-utils.rkt` targeting Wikidata's SPARQL endpoint, mapping the resulting entities back to the GUI.
+3. Query History in the GUI: modify the GUI code in `main.rkt` to include a historical list of past queries in the user interface. Clicking on an item in the history list should automatically reload and execute that query.

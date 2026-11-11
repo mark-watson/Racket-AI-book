@@ -1,4 +1,4 @@
-# Web Scraping
+# Web scraping
 
 I often write software to automatically collect and use data from the web and other sources. As a practical matter, much of the data that many people use for machine learning comes from either the web or from internal data sources. This section provides some guidance and examples for getting text data from the web.
 
@@ -6,7 +6,7 @@ Before we start a technical discussion about web scraping I want to point out th
 
 We start with low-level Racket code examples in the GitHub repository for this book in the directory **Racket-AI-book/source-code/misc_code**. We will then implement a standalone library in the directory **Racket-AI-book/source-code/webscrape**.
 
-## Getting Started Web Scraping
+## Getting started web scraping
 
 All of the examples in the section can be found in the Racket code snippet files in the directory **Racket-AI-book/source-code/misc_code**.
 
@@ -71,7 +71,7 @@ Different element types are **html**, **head**, **p**, **h1**, **h2**, etc. If y
 "
 ```
 
-Now we will extract HTML anchor links:
+Extracting the anchor links takes one call:
 
 ```racket
 > (se-path*/list '(href) lst) ;; get all links from HTML as a lisp
@@ -93,30 +93,30 @@ Now we will extract HTML anchor links:
 )
 ```
 
-## Implementation of a Racket Web Scraping Library
+## Implementation of a Racket web scraping library
 
 The web scraping library listed below can be found in the directory **Racket-AI-book/source-code/webscrape**. The following listing of **webscrape.rkt** should look familiar after reading the code snippets in the last section.
 
 The provided Racket Scheme code defines four functions to interact with and process web resources: `web-uri->xexp`, `web-uri->text`, `web-uri->links`, and `web-uri->html-headers`.
 
-**`web-uri->xexp`**:
+### `web-uri->xexp`
    - Requires libraries: `net/http-easy`, `html-parsing`, and `net/url xml xml/path`.
    - Given a URI (`a-uri`), it creates a stream using the `get` function from the `net/http-easy` library to fetch the contents of the URI.
    - Converts the HTML content of the URI to an S-expression (`xexp`) using the `html->xexp` function from the `html-parsing` library.
    - Closes the response stream using `response-close!` and returns the `xexp`.
 
-**`web-uri->text`**:
+### `web-uri->text`
    - Calls `web-uri->xexp` to convert the URI content to an `xexp`.
    - Utilizes `se-path*/list` from the `xml/path` library to extract all paragraph elements (`p`) from the `xexp`.
    - Filters the paragraph elements to retain only strings (excluding nested tags or other structures).
    - Joins these strings with a newline separator, normalizing spaces using `string-normalize-spaces` from the `srfi/13` library.
 
-**`web-uri->links`**:
+### `web-uri->links`
    - Similar to `web-uri->text`, it starts by converting URI content to an `xexp`.
    - Utilizes `se-path*/list` to extract all `href` attributes from the `xexp`.
    - Filters these `href` attributes to retain only those that are external links (those beginning with "http").
 
-**`web-uri->html-headers`**:
+### `web-uri->html-headers`
    - Extracts H1, H2, and H3 headers from a web page.
    - Returns a list of three lists: `((h1-headers...) (h2-headers...) (h3-headers...))`.
    - Each inner list contains text strings from headers of that level.
@@ -218,8 +218,8 @@ If you want to install this library on your laptop using linking (requiring the 
 
    raco pkg install --scope user
 
-## Optional Practice Problems
+## Optional practice problems
 
-1. **Resolve Relative Links**: Currently, `web-uri->links` only keeps links that start with `"http"`. Modify the function to accept the original URI as a base and resolve any relative paths (e.g., `/about.html` or `../contact`) into absolute URLs.
-2. **Extract Full Page Text**: The `web-uri->text` function only retrieves text nested within `<p>` tags. Extend it to also extract text from headers (`<h1>` to `<h6>`) and list items (`<li>`) to get a more complete textual representation of the page, or use the new `web-uri->html-headers` function.
-3. **Graceful Error and Timeout Handling**: Wrap the HTTP `get` request in `with-handlers` to catch connection issues, timeouts, or non-200 HTTP statuses, returning a meaningful error code or an empty xexp instead of crashing the program.
+1. Resolve Relative Links: currently, `web-uri->links` only keeps links that start with `"http"`. Modify the function to accept the original URI as a base and resolve any relative paths (e.g., `/about.html` or `../contact`) into absolute URLs.
+2. Extract Full Page Text: the `web-uri->text` function only retrieves text nested within `<p>` tags. Extend it to also extract text from headers (`<h1>` to `<h6>`) and list items (`<li>`) to get a more complete textual representation of the page, or use the new `web-uri->html-headers` function.
+3. Graceful Error and Timeout Handling: wrap the HTTP `get` request in `with-handlers` to catch connection issues, timeouts, or non-200 HTTP statuses, returning a meaningful error code or an empty xexp instead of crashing the program.

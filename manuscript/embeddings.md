@@ -1,50 +1,50 @@
-# Retrieval Augmented Generation of Text Using Embeddings
+# Retrieval augmented generation of text using embeddings
 
 Retrieval-Augmented Generation (RAG) is a framework that combines the strengths of pre-trained language models (LLMs) with retrievers. Retrievers are system components for accessing knowledge from external sources of text data. In RAG a retriever selects relevant documents or passages from a corpus, and a generator produces a response based on both the retrieved information and the input query. The process typically follows these steps that we will use in the example Racket code:
 
-- **Query Encoding**: The input query is encoded into a vector representation.
-- **Document Retrieval**: A retriever system uses the query representation to fetch relevant documents or passages from an external corpus.
-- **Document Encoding**: The retrieved documents are encoded into vector representations.
-- **Joint Encoding**: The query and document representations are combined, often concatenated or mixed via attention mechanisms.
-- **Generation**: A generator, usually LLM, is used to produce a response based on the joint representation.
+- Query Encoding: the input query is encoded into a vector representation.
+- Document Retrieval: a retriever system uses the query representation to fetch relevant documents or passages from an external corpus.
+- Document Encoding: the retrieved documents are encoded into vector representations.
+- Joint Encoding: the query and document representations are combined, often concatenated or mixed via attention mechanisms.
+- Generation: a generator, usually LLM, is used to produce a response based on the joint representation.
 
-RAG enables the LLM to access and leverage external text data sources, which is crucial for tasks that require information beyond what the LLM has been trained on. It's a blend of retrieval-based and generation-based approaches, aimed at boosting the factual accuracy and informativeness of generated responses. 
+RAG gives a model a way to read text it was never trained on. You retrieve passages from your own corpus, put them in the prompt, and let the model answer from those. The point is accuracy. An answer drawn from text that exists beats whatever the weights happen to remember. 
 
-## Example Implementation
+## Example implementation
 
 In the following short Racket example program (file **Racket-AI-book/source-code/embeddingsdb
 /embeddingsdb.rkt**) I implement some ideas of a RAG architecture. At file load time the text files in the subdirectory **data** are read, split into "chunks", and each chunk along with its parent file name and uniform-API text embedding is stored in a local SQLite database. When a user enters a query, the OpenAI embedding is calculated, and this embedding is matched against the embeddings of all chunks using the dot product of two 1536 element embedding vectors. The "best" chunks are concatenated together and this "context" text is passed to the chat model along with the user's original query. Here I describe the code in more detail:
 
 The provided Racket code uses a local SQLite database and the uniform `llmapis.rkt` API for calculating text embeddings and for text completions (OpenAI models by default; the `*embeddingsdb-chat-model*` and `*embeddingsdb-embedding-model*` parameters switch models).
 
-**Utility Functions:**
+### Utility functions
 
 - `floats->string` and `string->floats` are utility functions for converting between a list of floats and its string representation.
-- `read-file` reads a file’s content.
+- `read-file` reads a file's content.
 - `join-strings` joins a list of strings with a specified separator.
 - `truncate-string` truncates a string to a specified length.
 - `interleave` merges two lists by interleaving their elements.
 - `break-into-chunks` breaks a text into chunks of a specified size.
 - `string-to-list` and `decode-row` are utility functions for parsing and processing database rows.
 
-**Database Setup:**
+### Database setup
 
 - Database connection is established to "test.db" and a table named "documents" is created with columns for document_path, content, and embedding.
 
-**Document Management:**
+### Document management
 
 - `insert-document` inserts a document and its associated information into the database.
 - `get-document-by-document-path` and `all-documents` are utility functions for querying documents from the database.
 - `create-document` reads a document from a file path, breaks it into chunks, computes embeddings for each chunk via `llm-embedding` from the uniform API (model `openai/text-embedding-ada-002` unless `*embeddingsdb-embedding-model*` is rebound), and inserts these into the database.
 
-**Semantic Matching and Interaction:**
+### Semantic matching and interaction
 
 - `execute-to-list` and `dot-product` are utility functions for database queries and vector operations.
 - `semantic-match` performs a semantic search by calculating the dot product of embeddings of the query and documents in the database. It then aggregates contexts of documents with a similarity score above a certain threshold, and sends a new query constructed with these contexts to the chat model (`openai/gpt-5-mini` unless `*embeddingsdb-chat-model*` is rebound) for further processing.
 - `QA` is a wrapper around `semantic-match` for querying.
 - `CHAT` initiates a loop for user interaction where each user input is processed through `semantic-match` to generate a response, maintaining a context of the previous chat.
 
-**Test Code:**
+### Test code
 
 - `test` function creates documents by reading from specified file paths, and performs some queries using the `QA` function.
 
@@ -223,7 +223,7 @@ The code uses a local SQLite database to store and manage document embeddings an
 
 ```
 
-Let's look at a few examples form a Racket REPL:
+A few examples from a Racket REPL:
 
 ```
 > (QA "What is the history of the science of chemistry?")
@@ -245,7 +245,7 @@ In summary, the history of the science of chemistry spans centuries, starting fr
 
 This output is the combination of data found in the text files in the directory **Racket-AI-book/source-code/embeddingsdb/data** and the data that the OpenAI chat model was trained on. Since the local "document" file **chemistry.txt** is very short, most of this output is derived from the innate knowledge the chat model has from its training data.
 
-In order to show that this example is also using data in the local "document" text files, I manually edited the file **data/chemistry.txt** adding the following made-up organic compound:
+To show that this example is also using data in the local "document" text files, I manually edited the file **data/chemistry.txt** adding the following made-up organic compound:
 
     ZorroOnian Alcohol is another organic compound with the formula C 6 H 10 O.
     
@@ -283,7 +283,7 @@ Enter chat (STOP or empty line to stop) >>
 
 Notice how the second question, "Where was he born?", contains no name at all. The CHAT loop prepends the previous turns as custom context ("PREVIOUS CHAT: ..."), so the model sees the word "he" against the earlier mention of Robert Boyle. This is the whole trick behind chat-over-documents systems: the retrieval machinery stays the same, and conversation history is just more context.
 
-## What an Embedding Actually Is
+## What an embedding actually is
 
 The code above treats embeddings as opaque lists of 1536 floats. It is worth building an intuition for what those numbers are, because every design decision in a RAG system follows from it.
 
@@ -324,7 +324,7 @@ The new file **rag_extensions.rkt** in the **embeddingsdb** directory implements
 
 The zero check matters more than it looks: a chunk of text that produces an all-zero vector (it happens, for example with some models on empty or whitespace-only input) would otherwise crash the division in the middle of an indexing run. Return 0.0 instead, and that chunk simply never matches anything.
 
-## Chunking: the Most Underrated Part of RAG
+## Chunking: The most underrated part of RAG
 
 Look again at how `create-document` in **embeddingsdb.rkt** prepares text for the index: `break-into-chunks` splits the file every 200 characters. Here is what that does to a normal paragraph, compared with sentence-aware chunking. The output below is real, produced by the code in this section:
 
@@ -415,7 +415,7 @@ The structure is deliberately simple: one pass packs sentences, a second pass ad
 
 How do you pick `chunk-size` and `overlap`? Smaller chunks retrieve more precisely (each vector is about one thing) but carry less context; larger chunks are more forgiving but blur several topics into one vector. Around 300 to 1000 characters with a 10 to 20 percent overlap is a good default for prose. The only real rule: treat chunking as an experiment you rerun against your own documents, not a constant you set once.
 
-## Retrieval, Without Thresholds
+## Retrieval, without thresholds
 
 `semantic-match` filters with a hard similarity cutoff of 0.7. Any chunk scoring above it goes into the prompt, everything else vanishes. That means one bad day can return zero context (and the LLM answers from training alone), while a query where twenty chunks all score 0.71 drowns the model in context and blows the token budget.
 
@@ -442,7 +442,7 @@ Ranking instead of thresholding fixes both: always take the *top k* chunks, what
                " "))
 ```
 
-### Seeing the Whole Pipeline Offline
+### Seeing the whole pipeline offline
 
 The problem with developing a RAG system is that every experiment costs API calls. The last piece of **rag_extensions.rkt** is a tiny deterministic embedder that lets you run and test the entire pipeline (chunk, embed, rank, assemble) offline. It is a stand-in with the same *shape* as a real embedder: text in, unit-length vector of floats out. It hashes each word into one of 256 buckets and normalizes, so texts that share words score well together. Never use it in production; do use it to test your plumbing:
 
@@ -493,7 +493,7 @@ Each query's best match lands on the right document, and the scores show the use
 
 The last block shows the honest output of `assemble-prompt`: retrieved context, a blank custom context, then the question. The word "Question:" is not decoration. It gives the LLM a stable separator between evidence to read and the task to do, and prompts that keep that structure consistent across every call get more consistent answers.
 
-## Testing the Pipeline
+## Testing the pipeline
 
 **tests.rkt** in the same directory runs the whole stack with rackunit, still offline. A few of the properties it pins down:
 
@@ -536,7 +536,7 @@ All tests passed.
 11 tests passed
 ```
 
-## Production Notes
+## Production notes
 
 A few hard-won notes if you carry this design further:
 
@@ -550,16 +550,15 @@ The following diagram shows the high-level architecture of the RAG pipeline deve
 {width: "100%"}
 ![Architecture diagram](images/embeddings_architecture.jpg)
 
-## Retrieval Augmented Generation Wrap Up
+## Retrieval Augmented generation wrap up
 
 Retrieval Augmented Generation (RAG) is one of the best use cases for semantic search. Another way to write RAG applications is to use a web search API to get context text for a query, and add this context data to whatever context data you have in a local embeddings data store.
 
-## Optional Practice Problems
+## Optional practice problems
 
-1. **Wire the Upgrades In**: Modify `create-document` in **embeddingsdb.rkt** to use `chunk-by-sentences` instead of `break-into-chunks`, and `semantic-match` to use `cosine-similarity` and top-k ranking instead of `dot-product` with a cutoff. Run the chemistry and sports queries before and after and compare answers.
-2. **Measure Chunking**: Write a utility that reports, for a given document and chunker settings, the number of chunks, their min/max/mean lengths, and how many chunks end mid-word. Use it to compare the old and new chunkers on **data/chemistry.txt**.
-3. **Hybrid Retrieval**: Some questions are pure keyword ("what is the formula for ZorroOnian Alcohol") and some are conceptual ("why is teamwork valuable"). Add a keyword score (a simple word-overlap count) alongside the embedding score, and combine them with a weight. Show a query where hybrid beats embeddings alone, and one where it does not.
-4. **Extend Database Operations**: Add a function `delete-document` that deletes all chunks and vector representations associated with a given file path from the SQLite database, and a test that proves re-adding a modified file does not leave stale chunks behind.
-5. **Score-Gap Detection**: Add a check to `rank-chunks` callers that detects "no good match": top score below a floor *and* a small gap between first and second place. When detected, have the prompt tell the LLM explicitly that the local documents may not contain the answer, and observe how its answers change.
-
+1. Wire the Upgrades In: modify `create-document` in **embeddingsdb.rkt** to use `chunk-by-sentences` instead of `break-into-chunks`, and `semantic-match` to use `cosine-similarity` and top-k ranking instead of `dot-product` with a cutoff. Run the chemistry and sports queries before and after and compare answers.
+2. Measure Chunking: write a utility that reports, for a given document and chunker settings, the number of chunks, their min/max/mean lengths, and how many chunks end mid-word. Use it to compare the old and new chunkers on **data/chemistry.txt**.
+3. Hybrid Retrieval: some questions are pure keyword ("what is the formula for ZorroOnian Alcohol") and some are conceptual ("why is teamwork valuable"). Add a keyword score (a simple word-overlap count) alongside the embedding score, and combine them with a weight. Show a query where hybrid beats embeddings alone, and one where it does not.
+4. Extend Database Operations: add a function `delete-document` that deletes all chunks and vector representations associated with a given file path from the SQLite database, and a test that proves re-adding a modified file does not leave stale chunks behind.
+5. Score-Gap Detection: add a check to `rank-chunks` callers that detects "no good match": top score below a floor *and* a small gap between first and second place. When detected, have the prompt tell the LLM explicitly that the local documents may not contain the answer, and observe how its answers change.
 
